@@ -26,7 +26,10 @@ github_username:  syenpark
 # Navigation links
 header_pages:
   - about.md
-  - portfolio.md
+#  - portfolio.md
+
+disqus:
+  shortname: syen
 
 # Exclude from processing.
 # The following items will not be processed, by default. Create a custom list
