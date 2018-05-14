@@ -25,11 +25,10 @@ facebook_username: syenpark
 github_username:  syenpark
 rss: rss
 
-# Build settings
-markdown: kramdown
-theme: minima
-plugins:
-  - jekyll-feed
+# Navigation links
+header_pages:
+  - about.md
+  - portfolio.md
 
 # Exclude from processing.
 # The following items will not be processed, by default. Create a custom list
@@ -47,3 +46,9 @@ plugins:
 # refer to http://shopify.github.io/liquid/filters/date/ if you want to customize this
 minima:
   date_format: "%d %b %Y"
+
+# Build settings
+markdown: kramdown
+theme: minima
+plugins:
+  - jekyll-feed
