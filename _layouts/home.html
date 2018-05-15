@@ -10,8 +10,18 @@ layout: default
   {{ content }}
 
   {%- if site.posts.size > 0 -%}
-    <h2 class="post-list-heading">{{ page.list_title | default: "Posts" }}</h2>
-    test
+    <h2 class="post-list-heading">{{ page.list_title | default: "Posts" }}</h2> 
+    
+    <p class="home-categories" align="right">
+	<a href="{{ "/" | relative_url }}categories/data_science.html">
+	    Data Science
+	</a>
+        &nbsp;&nbsp;
+	<a href="{{ "/" | relative_url }}categories/uncategorized.html">
+	    Uncategorized
+	</a>
+    </p>
+    
     <ul class="post-list">
       {%- for post in site.posts -%}
       <li>
