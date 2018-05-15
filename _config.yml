@@ -30,7 +30,9 @@ github_username:  syenpark
 # Navigation links
 header_pages:
   - about.md
-#  - portfolio.md
+  - portfolio.md
+  - aflsp.md
+  - english.md
 
 disqus:
   shortname: syen
