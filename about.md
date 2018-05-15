@@ -23,21 +23,21 @@ You can find the source code for Jekyll at GitHub:
 <script src="https://www.amcharts.com/lib/3/themes/dark.js" type="text/javascript"></script>
 <div id="mapdiv" style="width: 100%; height: 400px;"></div>
 <script type="text/javascript">
-var map = AmCharts.makeChart("mapdiv",{
-type: "map",
-theme: "dark",
-projection: "winkel3",
-panEventsEnabled : true,
-backgroundColor : "#535364",
-backgroundAlpha : 1,
-zoomControl: {
-zoomControlEnabled : true
-},
-dataProvider : {
-map : "worldHigh",
-getAreasFromMap : true,
-areas :
-[
+    var map = AmCharts.makeChart("mapdiv",{
+    type: "map",
+    theme: "dark",
+    projection: "winkel3",
+    panEventsEnabled : true,
+    backgroundColor : "#535364",
+    backgroundAlpha : 1,
+    zoomControl: {
+       zoomControlEnabled : true
+    },
+    dataProvider : {
+        map : "worldHigh",
+        getAreasFromMap : true,
+        areas :
+        [
 	{
 		"id": "AT",
 		"showAsSelected": true
@@ -110,17 +110,17 @@ areas :
 		"id": "KR",
 		"showAsSelected": true
 	}
-]
-},
-areasSettings : {
-autoZoom : true,
-color : "#B4B4B7",
-colorSolid : "#84ADE9",
-selectedColor : "#84ADE9",
-outlineColor : "#666666",
-rollOverColor : "#9EC2F7",
-rollOverOutlineColor : "#000000"
-}
-});
+        ]
+    },
+    areasSettings : {
+        autoZoom : true,
+        color : "#B4B4B7",
+        colorSolid : "#84ADE9",
+        selectedColor : "#84ADE9",
+        outlineColor : "#666666",
+        rollOverColor : "#9EC2F7",
+        rollOverOutlineColor : "#000000"
+    }
+    });
 </script>
 
