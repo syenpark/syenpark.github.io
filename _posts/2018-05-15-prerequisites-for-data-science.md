@@ -1,7 +1,8 @@
 ---
 layout: post
 title:  "Prerequisites for Data Science"
-date:   2018-05-15 16:46:06 +0900
+author: Syen Park
+date:   2018-05-15
 categories: data_science
 ---
 
