@@ -12,11 +12,9 @@ layout: default
   {%- if site.posts.size > 0 -%}
     <h2 class="post-list-heading">{{ page.list_title | default: "Posts" }}</h2> 
     
-    
-  {%- assign site_categories = site.categories -%}
-  {%- if site_categories -%}
+  {%- if site.categories -%}
     <p class="home-categories" align="right">
-	{%- for category in site_categories -%}
+	{%- for category in site.categories -%}
         	{% capture category_name %}{{ category | first }}{% endcapture %}
 		<a href="{{ "/" | relative_url }}categories/{{category_name}}.html">
             		{{category_name}}
