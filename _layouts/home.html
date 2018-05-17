@@ -12,15 +12,19 @@ layout: default
   {%- if site.posts.size > 0 -%}
     <h2 class="post-list-heading">{{ page.list_title | default: "Posts" }}</h2> 
     
+  {%- if site.categories -%}
     <p class="home-categories" align="right">
-	<a href="{{ "/" | relative_url }}categories/data_science.html">
-	    Data Science
-	</a>
-        &nbsp;&nbsp;
-	<a href="{{ "/" | relative_url }}categories/uncategorized.html">
-	    Uncategorized
-	</a>
+	{%- for category in site.categories -%}
+        	{% capture category_name %}{{ category | first }}{% endcapture %}
+		<a href="{{ "/" | relative_url }}categories/{{category_name}}.html">
+            		{{category_name}}
+        	</a>
+		{%- unless forloop.last -%}
+			&nbsp
+		{%- endunless -%}
+	{%- endfor -%}
     </p>
+   {%- endif -%}
     
     <ul class="post-list">
       {%- for post in site.posts -%}
