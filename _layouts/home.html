@@ -16,17 +16,15 @@ layout: default
   {%- assign site_categories = site.categories -%}
   {%- if site_categories -%}
     <p class="home-categories" align="right">
-	<a href="{{ "/" | relative_url }}categories/data_science.html">
-	    Data Science
-	</a>
-        &nbsp;&nbsp;
-	<a href="{{ "/" | relative_url }}categories/uncategorized.html">
-	    Uncategorized
-	</a>
-
-	{%- for path in site_categories -%}
-	    {{path}}
-        {%- endfor -%}
+	{%- for category in site_categories -%}
+        	{% capture category_name %}{{ category | first }}{% endcapture %}
+		<a href="{{ "/" | relative_url }}categories/{{category_name}}.html">
+            		{{category_name}}
+        	</a>
+		{%- unless forloop.last -%}
+			&nbsp
+		{%- endunless -%}
+	{%- endfor -%}
     </p>
    {%- endif -%}
     
