@@ -55,6 +55,9 @@ disqus:
 minima:
   date_format: "%d %b %Y"
 
+# Google analytics
+google_analytics: UA-119695916-1
+
 # Build settings
 markdown: kramdown
 theme: minima
