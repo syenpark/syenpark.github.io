@@ -17,6 +17,8 @@ The following skills and theories are typical requirements in a bachelor of comp
     [SQL Tutorial (W3Schools)](https://www.w3schools.com/sql/) and [Stanford's Databases MOOC](https://cs.stanford.edu/people/widom/DB-mooc.html)
 
 ### Mathematics
+Have a quick glance at [Curriculum in MATH is FUN](https://www.mathsisfun.com/links/index-curriculum.html) to be familiar with mathematical terminology and expression in English.
+
 - #### Calculus
     [Single Variable Calculus (MIT OWC)](https://ocw.mit.edu/courses/mathematics/18-01sc-single-variable-calculus-fall-2010/) and [Multivariable Calculus (MIT OWC)](https://ocw.mit.edu/courses/mathematics/18-02sc-multivariable-calculus-fall-2010/)
 
@@ -29,7 +31,7 @@ The following skills and theories are typical requirements in a bachelor of comp
 - #### Algorithms
     [Algorithms (Coursera)](https://www.coursera.org/specializations/algorithms)
 
-Leaning more towards data science:
+Below things leaning more towards data science and deep learning.
     
 ### Machine Learning
 - #### Statistical Learning
