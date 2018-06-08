@@ -7,7 +7,7 @@ categories: data_science
 modified_date: 2018-06-08
 ---
 
-The following skills and theories are typical requirements to earn a bachelor of computer science degree and essential before you dive into data science.
+The following skills and theories are typical requirements in a bachelor of computer science degree and essential before you dive into data science.
 
 ### Programming
 - #### Python
@@ -26,15 +26,16 @@ The following skills and theories are typical requirements to earn a bachelor of
 - #### Probability and Statistics
 
 ### Computer Science
-- #### Introduction to Algorithms
+- #### Algorithms
+    [Algorithms (Coursera)](https://www.coursera.org/specializations/algorithms)
 
-Here are advanced prerequisites for data science.
-
+Leaning more towards data science:
     
 ### Machine Learning
 - #### Statistical Learning
     [Introduction to Statistical Learning](http://www-bcf.usc.edu/~gareth/ISL/index.html)
 - #### Deep Learning
+    Deep Learning from Scratch
 
 ### Programming
 - #### R
