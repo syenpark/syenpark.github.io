@@ -9,14 +9,14 @@ modified_date: 2018-06-08
 
 The following skills and theories are typical requirements in a bachelor of computer science degree and essential before you dive into data science.
 
-### Programming
+### __Programming__
 - #### Python
     [Introduction to Computer Science and Programming using Python (MIT OCW)](https://www.edx.org/course/introduction-computer-science-mitx-6-00-1x-11?utm_source=OCW&utm_medium=CHP&utm_campaign=OCW)
     
 - #### SQL
     [SQL Tutorial (W3Schools)](https://www.w3schools.com/sql/) and [Stanford's Databases MOOC](https://cs.stanford.edu/people/widom/DB-mooc.html)
 
-### Mathematics
+### __Mathematics__
 Have a quick glance at [Curriculum in MATH is FUN](https://www.mathsisfun.com/links/index-curriculum.html) to be familiar with mathematical terminology and expression in English.
 
 - #### Calculus
@@ -27,19 +27,19 @@ Have a quick glance at [Curriculum in MATH is FUN](https://www.mathsisfun.com/li
 - #### Discrete Mathematics
 - #### Probability and Statistics
 
-### Computer Science
+### __Computer Science__
 - #### Algorithms
     [Algorithms (Coursera)](https://www.coursera.org/specializations/algorithms)
 
 Below things leaning more towards data science and deep learning.
     
-### Machine Learning
+### __Machine Learning__
 - #### Statistical Learning
     [Introduction to Statistical Learning](http://www-bcf.usc.edu/~gareth/ISL/index.html)
 - #### Deep Learning
     Deep Learning from Scratch
 
-### Programming
+### __Programming__
 - #### R
 - #### PyTorch
 - #### TensorFlow
