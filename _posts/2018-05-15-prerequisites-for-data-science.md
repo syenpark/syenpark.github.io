@@ -14,7 +14,7 @@ The following skills and theories are typical requirements in a bachelor of comp
     [Introduction to Computer Science and Programming using Python (MIT OCW)](https://www.edx.org/course/introduction-computer-science-mitx-6-00-1x-11?utm_source=OCW&utm_medium=CHP&utm_campaign=OCW)
     
 - #### SQL
-    [SQL Tutorial (W3Schools)](https://www.w3schools.com/sql/) and [Stanford's Databases MOOC](https://cs.stanford.edu/people/widom/DB-mooc.html)
+    [SQL for Data Analyst (Udacity)](https://www.udacity.com/course/sql-for-data-analysis--ud198), [SQL Tutorial (W3Schools)](https://www.w3schools.com/sql/), and [Stanford's Databases MOOC](https://cs.stanford.edu/people/widom/DB-mooc.html)
 
 ### __Mathematics__
 Have a quick glance at [Curriculum in MATH is FUN](https://www.mathsisfun.com/links/index-curriculum.html) to be familiar with mathematical terminology and expression in English.
