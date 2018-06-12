@@ -20,7 +20,7 @@ permalink: /about/
 - #### Lasting Relationships with Asian Future Leaders
 
 
-Seeing me posting my portrait on the Internet, my father worring about my privacy tried to stop me. Specifically, he worried someone could appropriate my face somewhere. I defended myself against his concern by saying this; I will be pretty famous in the future and end up in public, so that I should not be afraid of that. Of course, this excuse satisfied my father very much, and he never ask me to stop posting my portrait again. I am very delighted to make my excuse true. I highly recommend AFLSP to the young from Asia. Do not hesitate to apply for postgraduate studies and AFLSP in HKUST!
+Seeing me posting my portrait on the Internet, my father worring about my privacy tried to stop me. Specifically, he worried someone could appropriate my face somewhere. I defended myself against his concern by saying this; I will be pretty famous in the future and end up in public, so that I should not be afraid of that. Of course, this excuse satisfied my father very much, and he never asks me to stop posting my portrait again. I am very delighted to make my excuse true. I highly recommend AFLSP to the young from Asia. Do not hesitate to apply for postgraduate studies and AFLSP in HKUST!
 
 ### __Traveller__
 
