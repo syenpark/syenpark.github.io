@@ -16,13 +16,14 @@ I majored in computer science (CS), albeit a different name, and want to do revi
     Here is my GitHub repository: [Intro2OS](https://github.com/syenpark/Intro2OS)
 
 ### __Design and Analysis of Algorithms__
-- #### [Introduction to Computer Science and Programming Using Python(edX)](https://courses.edx.org/courses/course-v1:MITx+6.00.1x+2T2017_2/course/)
+- #### Introduction to Computer Science and Programming Using Python(edX)
     Blow topics are interesting ones in the lecture.
     Problem Set 01: Problem 03 - Longest substring in alphabetical order
     Bisection Search VS. Binary Search
 
     Here is my GitHub repository: [Intro2CSandPy](https://github.com/syenpark/Intro2CSandPy)
-- #### [Introduction to Algorithms (MIT)](https://courses.csail.mit.edu/6.006/fall11/notes.shtml).
+- #### Introduction to Algorithms (MIT)
+    [Intro2Algorithms](https://courses.csail.mit.edu/6.006/fall11/notes.shtml)
 
 ### __Theory of Computation__
 - #### [Automata, Computability, and Complexity (MIT OCW)](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-045j-automata-computability-and-complexity-spring-2011/) 
