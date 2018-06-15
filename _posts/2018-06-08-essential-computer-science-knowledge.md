@@ -4,7 +4,7 @@ title:  "Essential Computer Science Kowledge"
 author: Syen Park
 date:   2018-06-08
 categories: computer_science
-modified_date: 2018-06-11
+modified_date: 2018-06-15
 ---
 
 I majored in computer science (CS), albeit a different name, and want to do review my knowledge to pursue further studies in CS. [Q4 of FAQs for New Postgraduate Students in CSE HKUST](https://www.cse.ust.hk/pg/newStudents/#preparation) states core requirements for any postgraduate students in CS, and I would like to share MOOCs related with these topics and their solutions by me.
