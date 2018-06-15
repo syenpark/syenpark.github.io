@@ -22,7 +22,8 @@ I majored in computer science (CS), albeit a different name, and want to do revi
     Bisection Search VS. Binary Search
 
     Here is my GitHub repository: [Intro2CSandPy](https://github.com/syenpark/Intro2CSandPy)
-- #### [Introduction to Algorithms (MIT)](https://courses.csail.mit.edu/6.006/fall11/notes.shtml).
+- #### Introduction to Algorithms (MIT)
+    [Intro2Algorithms](https://courses.csail.mit.edu/6.006/fall11/notes.shtml)
 
 ### __Theory of Computation__
 - #### [Automata, Computability, and Complexity (MIT OCW)](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-045j-automata-computability-and-complexity-spring-2011/) 
