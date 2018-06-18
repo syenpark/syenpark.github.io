@@ -68,6 +68,7 @@ paginate_path: "/page:num"
 algolia:
   application_id: 'RVBYQ56LTS'
   index_name: syenpark
+  search_only_api_key: bccbd8cf3920d3bde82e4d8a639b8b7c
 
 # Build settings
 markdown: kramdown
