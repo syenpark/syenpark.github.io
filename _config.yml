@@ -60,7 +60,7 @@ google_analytics: UA-119695916-1
 
 show_excerpts: true
 
-paginate: 1
+paginate: 10
 paginate_path: "/page:num"
 
 # Build settings
