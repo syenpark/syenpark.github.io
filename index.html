@@ -8,8 +8,11 @@ layout: default
   {%- endif -%}
 
   {%- if site.posts.size > 0 -%}
-    <h2 class="post-list-heading">{{ page.list_title | default: "All Posts" }}</h2> 
-    
+    <span style='float: right'><div id="search-searchbar"></div></span>
+    <h2 class="post-list-heading">{{ page.list_title | default: "All Posts" }} </h2>
+  
+  </br>
+
   {%- if site.categories -%}
     <p class="home-categories" align="right">
 	{%- for category in site.categories -%}
@@ -22,51 +25,26 @@ layout: default
 		{%- endunless -%}
 	{%- endfor -%}
     </p>
-   {%- endif -%}
-    
-    <ul class="post-list">
-      {%- for post in paginator.posts -%}
-      <li>
-        {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
-	<span class="post-meta" style="display:inline">{{ post.date | date: date_format }}</span>
-        <h3>
-          <a class="post-link" href="{{ post.url | relative_url }}">
-            {{ post.title | escape }}
-          </a>
-        </h3>
-        {%- if site.show_excerpts -%}
-          {{ post.excerpt }}
-        {%- endif -%}
-      </li>
-      {%- endfor -%}
-    </ul>
+    {%- endif -%}
 
-    {% if paginator.total_pages > 1 %}
-        <div class="pagination">
-        {% if paginator.previous_page %}
-        <a href="{{ paginator.previous_page_path | prepend: site.baseurl | replace: '//', '/' }}">&laquo; Prev</a>
-    {% else %}
-        <span>&laquo; Prev</span>
-    {% endif %}
+    <div class="post-list" id="search-hits">
+      {% for post in paginator.posts %}
+        <div class="post-item">
+          {% assign date_format = site.minima.date_format | default: "%b %-d, %Y" %}
+          <span class="post-meta">{{ post.date | date: date_format }}</span>
 
-    {% for page in (1..paginator.total_pages) %}
-        {% if page == paginator.page %}
-            <em>{{ page }}</em>
-        {% elsif page == 1 %}
-            <a href="{{ paginator.previous_page_path | prepend: site.baseurl | replace: '//', '/' }}">{{ page }}</a>
-        {% else %}
-            <a href="{{ site.paginate_path | prepend: site.baseurl | replace: '//', '/' | replace: ':num', page }}">{{ page }}</a>
-        {% endif %}
-    {% endfor %}
+          <h2>
+            <a class="post-link" href="{{ post.url | relative_url }}">
+              {{ post.title | escape }}
+            </a>
+          </h2>
 
-    {% if paginator.next_page %}
-        <a href="{{ paginator.next_page_path | prepend: site.baseurl | replace: '//', '/' }}">Next &raquo;</a>
-    {% else %}
-        <span>Next &raquo;</span>
-    {% endif %}
+         <div class="post-snippet">{{ post.excerpt }}</div>
+        </div>
+      {% endfor %}
     </div>
-    </br>
-    {% endif %}
+
+ {% include algolia.html %}
     <p class="rss-subscribe">subscribe <a href="{{ "/feed.xml" | relative_url }}">via RSS</a></p>
   {%- endif -%}
 
