@@ -58,6 +58,8 @@ minima:
 # Google analytics
 google_analytics: UA-119695916-1
 
+show_excerpts: true
+
 # Build settings
 markdown: kramdown
 theme: minima
