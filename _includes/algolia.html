@@ -13,7 +13,7 @@ const search = instantsearch({
 const hitTemplate = function(hit) {
   let date = '';
   if (hit.date) {
-    date = moment.unix(hit.date).format('MMM D, YYYY');
+    date = moment.unix(hit.date).format('DD MMM YYYY');
   }
   <!-- Extract only posts not pages -->
   if (date) {
