@@ -61,7 +61,7 @@ google_analytics: UA-119695916-1
 show_excerpts: true
 
 # Pagination
-paginate: 10
+paginate: 2
 paginate_path: "/page:num"
 
 # Algoria for a search box
