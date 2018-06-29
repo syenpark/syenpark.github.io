@@ -10,7 +10,7 @@ modified_date: 2018-06-29
 I majored in computer science (CS), albeit a different name, and want to do review my knowledge to pursue further studies in CS. [Q4 of FAQs for New Postgraduate Students in CSE HKUST](https://www.cse.ust.hk/pg/newStudents/#preparation) states core requirements for any postgraduate students in CS, and I would like to share MOOCs related with these topics and their solutions by me.
 
 ### __Operating Systems__
-- Introduction to Operating Systems (Udacity)
+- #### Introduction to Operating Systems (Udacity)
     This requires students with C knowledge. Should you want to see C first, check this page: [Practical Programming in C (MIT OCW)](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-087-practical-programming-in-c-january-iap-2010/)
 
     Here is my GitHub repository: [Intro2OS](https://github.com/syenpark/Intro2OS)
