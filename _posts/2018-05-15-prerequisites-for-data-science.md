@@ -26,6 +26,7 @@ Have a quick glance at [Curriculum in MATH is FUN](https://www.mathsisfun.com/li
 - #### Discrete Mathematics
 - #### Probability and Statistics
     [Introduction to Computational Thinking and Data Science (MITx)](https://courses.edx.org/courses/course-v1:MITx+6.00.2x+3T2017/course/)
+    
     [Computational Probability and Inference (MITx)](https://courses.edx.org/courses/course-v1:MITx+6.008.1x+3T2016/course/)
 
 ### __Computer Science__
