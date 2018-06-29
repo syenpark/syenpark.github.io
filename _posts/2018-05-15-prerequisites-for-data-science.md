@@ -4,14 +4,14 @@ title:  "Prerequisites for Data Science"
 author: Syen Park
 date:   2018-05-15
 categories: data_science
-modified_date: 2018-06-08
+modified_date: 2018-06-29
 ---
 
 The following skills and theories are typical requirements in a bachelor of computer science degree and essential before you dive into data science.
 
 ### __Programming__
 - #### Python
-    [Introduction to Computer Science and Programming using Python (MIT OCW)](https://www.edx.org/course/introduction-computer-science-mitx-6-00-1x-11?utm_source=OCW&utm_medium=CHP&utm_campaign=OCW)
+    [Introduction to Computer Science and Programming using Python (MITx)](https://www.edx.org/course/introduction-computer-science-mitx-6-00-1x-11?utm_source=OCW&utm_medium=CHP&utm_campaign=OCW)
     
 - #### SQL
     [SQL for Data Analyst (Udacity)](https://www.udacity.com/course/sql-for-data-analysis--ud198), [SQL Tutorial (W3Schools)](https://www.w3schools.com/sql/), and [Stanford's Databases MOOC](https://cs.stanford.edu/people/widom/DB-mooc.html)
@@ -20,12 +20,13 @@ The following skills and theories are typical requirements in a bachelor of comp
 Have a quick glance at [Curriculum in MATH is FUN](https://www.mathsisfun.com/links/index-curriculum.html) to be familiar with mathematical terminology and expression in English.
 
 - #### Calculus
-    [Single Variable Calculus (MIT OWC)](https://ocw.mit.edu/courses/mathematics/18-01sc-single-variable-calculus-fall-2010/) and [Multivariable Calculus (MIT OWC)](https://ocw.mit.edu/courses/mathematics/18-02sc-multivariable-calculus-fall-2010/)
-
+    [Pre-University Calculus (DelftX)](https://www.edx.org/course/pre-university-calculus)
 - #### Linear Algebra
     [Linear Algebra (MIT OWC)](https://ocw.mit.edu/courses/mathematics/18-06sc-linear-algebra-fall-2011/)
 - #### Discrete Mathematics
 - #### Probability and Statistics
+    [Introduction to Computational Thinking and Data Science (MITx)](https://courses.edx.org/courses/course-v1:MITx+6.00.2x+3T2017/course/)
+    [Computational Probability and Inference (MITx)](https://courses.edx.org/courses/course-v1:MITx+6.008.1x+3T2016/course/)
 
 ### __Computer Science__
 - #### Algorithms
