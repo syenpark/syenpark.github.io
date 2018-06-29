@@ -13,13 +13,13 @@ I majored in computer science (CS), albeit a different name, and want to do revi
 - #### Introduction to Operating Systems (Udacity)
     This requires students with C knowledge. Should you want to see C first, check this page: [Practical Programming in C (MIT OCW)](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-087-practical-programming-in-c-january-iap-2010/)
 
-    Here is my GitHub repository: [Intro2OS](https://github.com/syenpark/Intro2OS)
+    *My repo: [Intro2OS](https://github.com/syenpark/Intro2OS)*
 
 ### __Design and Analysis of Algorithms__
 - #### Introduction to Computer Science and Programming Using Python(edX)
     This course deals with python basics and rudimentary algorithms like sorting. 
 
-    Here is my GitHub repository: [Intro2CSandPy](https://github.com/syenpark/Intro2CSandPy)
+    *My repo: [Intro2CSandPy](https://github.com/syenpark/Intro2CSandPy)*
 - #### Introduction to Algorithms (MIT)
     [Intro2Algorithms](https://courses.csail.mit.edu/6.006/fall11/notes.shtml)
 
