@@ -25,7 +25,8 @@ Have a quick glance at [Curriculum in MATH is FUN](https://www.mathsisfun.com/li
     [Linear Algebra (MIT OWC)](https://ocw.mit.edu/courses/mathematics/18-06sc-linear-algebra-fall-2011/)
 - #### Discrete Mathematics
 - #### Probability and Statistics
-    [Introduction to Computational Thinking and Data Science (MITx)](https://courses.edx.org/courses/course-v1:MITx+6.00.2x+3T2017/course/)
+    Introduction to Computational Thinking and Data Science (MITx)
+    [Intro2CTandDS](https://github.com/syenpark/Intro2CTandDS)
     
     [Computational Probability and Inference (MITx)](https://courses.edx.org/courses/course-v1:MITx+6.008.1x+3T2016/course/)
 
