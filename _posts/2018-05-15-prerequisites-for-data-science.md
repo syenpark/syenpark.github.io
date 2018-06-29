@@ -11,8 +11,13 @@ The following skills and theories are typical requirements in a bachelor of comp
 
 ### __Programming__
 - #### Python
-    [Introduction to Computer Science and Programming using Python (MITx)](https://www.edx.org/course/introduction-computer-science-mitx-6-00-1x-11?utm_source=OCW&utm_medium=CHP&utm_campaign=OCW)
+    Introduction to Computer Science and Programming using Python (MITx)
     
+    *My repo: [Intro2CSandPy](https://github.com/syenpark/Intro2CSandPy)*
+    
+    Introduction to Computational Thinking and Data Science (MITx)
+    
+    *My repo: [Intro2CTandDS](https://github.com/syenpark/Intro2CTandDS)*
 - #### SQL
     [SQL for Data Analyst (Udacity)](https://www.udacity.com/course/sql-for-data-analysis--ud198), [SQL Tutorial (W3Schools)](https://www.w3schools.com/sql/), and [Stanford's Databases MOOC](https://cs.stanford.edu/people/widom/DB-mooc.html)
 
@@ -25,9 +30,6 @@ Have a quick glance at [Curriculum in MATH is FUN](https://www.mathsisfun.com/li
     [Linear Algebra (MIT OWC)](https://ocw.mit.edu/courses/mathematics/18-06sc-linear-algebra-fall-2011/)
 - #### Discrete Mathematics
 - #### Probability and Statistics
-    Introduction to Computational Thinking and Data Science (MITx)
-    [Intro2CTandDS](https://github.com/syenpark/Intro2CTandDS)
-    
     [Computational Probability and Inference (MITx)](https://courses.edx.org/courses/course-v1:MITx+6.008.1x+3T2016/course/)
 
 ### __Computer Science__
