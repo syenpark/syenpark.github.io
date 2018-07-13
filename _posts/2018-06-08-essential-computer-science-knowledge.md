@@ -33,6 +33,8 @@ I majored in computer science (CS), albeit a different name, and want to do revi
     [Intro2Cpp](https://www.edx.org/course/introduction-to-c-0)
 - #### Intermediate C++
     [InterCpp](https://www.edx.org/course/intermediate-c-0)
+- #### Database Infrastructure Fundamentals (Microsoft)
+    [DBIfraFunda](https://courses.edx.org/courses/course-v1:Microsoft+DAT242x+2T2018/course/)
 
 Please feel free to share your any thoughts about my solusions and be willing to help me to improve them.
 
