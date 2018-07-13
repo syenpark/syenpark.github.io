@@ -1,13 +1,13 @@
 ---
 layout: post
-title:  "Essential Computer Science Kowledge"
+title:  "Essential Computer Science Knowledge"
 author: Syen Park
 date:   2018-06-08
 categories: computer_science
-modified_date: 2018-06-29
+modified_date: 2018-07-13
 ---
 
-I majored in computer science (CS), albeit a different name, and want to do review my knowledge to pursue further studies in CS. [Q4 of FAQs for New Postgraduate Students in CSE HKUST](https://www.cse.ust.hk/pg/newStudents/#preparation) states core requirements for any postgraduate students in CS, and I would like to share MOOCs related with these topics and their solutions by me.
+I had learnt computer science (CS) at undergraduate level and pursue further studies in data science and machine learning. This article is for those who are in the same boat with me to review CS knowledge aligned with data science and machine learning. I refer to [Q4 of FAQs for New Postgraduate Students in CSE HKUST](https://www.cse.ust.hk/pg/newStudents/#preparation) that states core requirements for all postgraduate students in CS and  would like to share MOOCs related with these topics and their solutions by me.
 
 ### __Operating Systems__
 - #### Introduction to Operating Systems (Udacity)
@@ -36,6 +36,6 @@ I majored in computer science (CS), albeit a different name, and want to do revi
 - #### Database Infrastructure Fundamentals (Microsoft)
     [DBIfraFunda](https://courses.edx.org/courses/course-v1:Microsoft+DAT242x+2T2018/course/)
 
-Please feel free to share your any thoughts about my solusions and be willing to help me to improve them.
+Please feel free to share your any thoughts about this article and my solusions. This will be very helpful to me to improve myself.
 
 I also recommend this: [List of Awesome University Courses for Learning Computer Science](https://github.com/prakhar1989/awesome-courses#introduction-to-cs)
