@@ -7,7 +7,7 @@ categories: computer_science
 modified_date: 2018-07-13
 ---
 
-I had learnt computer science (CS) at undergraduate level and pursue further studies in data science and machine learning. This article is for those who are in the same boat with me to review CS knowledge aligned with data science and machine learning. I refer to [Q4 of FAQs for New Postgraduate Students in CSE HKUST](https://www.cse.ust.hk/pg/newStudents/#preparation) that states core requirements for all postgraduate students in CS and  would like to share MOOCs related with these topics and their solutions by me.
+I had learnt computer science (CS) at undergraduate level and pursue further studies in data science and machine learning. This article is for those who are in the same boat with me to review CS knowledge aligned with data science and machine learning. I refer to [Q4 of FAQs for New Postgraduate Students in CSE HKUST](https://www.cse.ust.hk/pg/newStudents/#preparation) that states core requirements for all postgraduate students in CS and would like to share MOOCs related with these topics and their solutions by me.
 
 ### __Operating Systems__
 - #### Introduction to Operating Systems (Udacity)
@@ -16,10 +16,15 @@ I had learnt computer science (CS) at undergraduate level and pursue further stu
     *My repo: [Intro2OS](https://github.com/syenpark/Intro2OS)*
 
 ### __Design and Analysis of Algorithms__
-- #### Introduction to Computer Science and Programming Using Python(edX)
+- #### Introduction to Computer Science and Programming Using Python (MITx)
     This course deals with python basics and rudimentary algorithms like sorting. 
 
     *My repo: [Intro2CSandPy](https://github.com/syenpark/Intro2CSandPy)*
+
+- #### Introduction to Computational Thinking and Data Science (MITx)
+    
+    *My repo: [Intro2CTandDS](https://github.com/syenpark/Intro2CTandDS)*
+
 - #### Introduction to Algorithms (MIT)
     [Intro2Algorithms](https://courses.csail.mit.edu/6.006/fall11/notes.shtml)
 
@@ -29,10 +34,12 @@ I had learnt computer science (CS) at undergraduate level and pursue further stu
 - #### [Theory of Computation (MIT OCW)](https://ocw.mit.edu/courses/mathematics/18-404j-theory-of-computation-fall-2006/)
 
 ### __Others__
-- #### Introduction to C++
+- #### Introduction to C++ (Microsoft)
     [Intro2Cpp](https://www.edx.org/course/introduction-to-c-0)
-- #### Intermediate C++
+
+- #### Intermediate C++ (Microsoft)
     [InterCpp](https://www.edx.org/course/intermediate-c-0)
+
 - #### Database Infrastructure Fundamentals (Microsoft)
     [DBIfraFunda](https://courses.edx.org/courses/course-v1:Microsoft+DAT242x+2T2018/course/)
 
