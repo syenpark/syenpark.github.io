@@ -22,7 +22,8 @@ I had learnt computer science (CS) at undergraduate level and pursue further stu
     *My repo: [Intro2CSandPy](https://github.com/syenpark/Intro2CSandPy)*
 
 - #### Introduction to Computational Thinking and Data Science (MITx)
-    
+    This is the advanced course of above one. It handles graph theory, and basic data science, machine learning, and statistics with Python rather than Python itself.
+
     *My repo: [Intro2CTandDS](https://github.com/syenpark/Intro2CTandDS)*
 
 - #### Introduction to Algorithms (MIT)
