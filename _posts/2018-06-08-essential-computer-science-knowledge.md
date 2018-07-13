@@ -42,7 +42,7 @@ I had learnt computer science (CS) at undergraduate level and pursue further stu
     [InterCpp](https://www.edx.org/course/intermediate-c-0)
 
 - #### Database Infrastructure Fundamentals (Microsoft)
-    [DBIfraFunda](https://courses.edx.org/courses/course-v1:Microsoft+DAT242x+2T2018/course/)
+    Database knowledge is also necessary in data science. [DBIfraFunda](https://courses.edx.org/courses/course-v1:Microsoft+DAT242x+2T2018/course/) addresses not only its syntax but also its infrastructure fandamentals.
 
 Please feel free to share your any thoughts about this article and my solusions. This will be very helpful to me to improve myself.
 
