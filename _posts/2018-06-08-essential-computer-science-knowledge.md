@@ -17,7 +17,7 @@ I had learnt computer science (CS) at undergraduate level and pursue further stu
 
 ### __Design and Analysis of Algorithms__
 - #### Introduction to Computer Science and Programming Using Python (MITx)
-    This course deals with python basics and rudimentary algorithms like sorting. 
+    This course is good for Python beginners. It deals with Python basics, rudimentary algorithms with Python, and algorithmic complexity.
 
     *My repo: [Intro2CSandPy](https://github.com/syenpark/Intro2CSandPy)*
 
