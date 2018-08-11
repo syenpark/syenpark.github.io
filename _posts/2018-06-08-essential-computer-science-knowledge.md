@@ -44,6 +44,9 @@ This is the most important part. Please read them carefully; *Algorithms and Dat
 - #### Theory of Computation (MIT OCW)
     *My repository: [TheoryofComp](https://ocw.mit.edu/courses/mathematics/18-404j-theory-of-computation-fall-2006/)*
 
+### __Others__
+- #### C/C++
+- #### Java
 
 Please feel free to share your any thoughts about this article and my solusions. This will be very helpful to me to improve myself.
 
