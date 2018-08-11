@@ -26,6 +26,12 @@ I had learnt computer science (CS) at undergraduate level and pursue further stu
 
     *My repo: [Intro2CTandDS](https://github.com/syenpark/Intro2CTandDS)*
 
+- #### Algorithms and Data Structures (Microsoft)
+    *My repo: [AlgosNDS](https://www.edx.org/course/algorithms-and-data-structures-0)*
+
+- #### Graph Algorithms (UCSanDiegoX)
+    *My repo: [GraphAlgos](https://www.edx.org/course/graph-algorithms-uc-san-diegox-algs202x)
+
 - #### Introduction to Algorithms (MIT)
     [Intro2Algorithms](https://courses.csail.mit.edu/6.006/fall11/notes.shtml)
 
