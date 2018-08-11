@@ -4,45 +4,49 @@ title:  "Essential Computer Science Knowledge"
 author: Syen Park
 date:   2018-06-08
 categories: computer_science
-modified_date: 2018-07-13
+modified_date: 2018-08-11
 ---
 
-I had learnt computer science (CS) at undergraduate level and pursue further studies in data science and machine learning. This article is for those who are in the same boat with me to review CS knowledge aligned with data science and machine learning. I refer to [Q4 of FAQs for New Postgraduate Students in CSE HKUST](https://www.cse.ust.hk/pg/newStudents/#preparation) that states core requirements for all postgraduate students in CS and would like to share MOOCs related with these topics and their solutions by me.
+I had learned computer science (CS) at undergraduate level and pursue further studies in data science and machine learning. This post is for those who are in the same boat with me to review CS knowledge aligned with data science and machine learning. I refer to [Q4 of FAQs for New Postgraduate Students in CSE HKUST](https://www.cse.ust.hk/pg/newStudents/#preparation) that states core requirements for all postgraduate students in CS and share related MOOCs and their solutions by me.
 
 ### __Operating Systems__
 - #### Introduction to Operating Systems (Udacity)
     This requires students with C knowledge. Should you want to see C first, check this page: [Practical Programming in C (MIT OCW)](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-087-practical-programming-in-c-january-iap-2010/)
 
-    *My repo: [Intro2OS](https://github.com/syenpark/Intro2OS)*
+    *My repository: [Intro2OS](https://github.com/syenpark/Intro2OS)*
 
 ### __Design and Analysis of Algorithms__
+This is the most important part. Please read them carefully; *Algorithms and Data Structures* and *Graph Algorithms*.
+
 - #### Introduction to Computer Science and Programming Using Python (MITx)
     This course is good for Python beginners. It deals with Python basics, rudimentary algorithms with Python, and algorithmic complexity.
 
-    *My repo: [Intro2CSandPy](https://github.com/syenpark/Intro2CSandPy)*
+    *My repository: [Intro2CSandPy <span style="color:red; font-family: Babas;">__Click!__</span>](https://github.com/syenpark/Intro2CSandPy)*
 
 - #### Introduction to Computational Thinking and Data Science (MITx)
     This is the advanced course of above one. It handles graph theory, and basic data science, machine learning, and statistics with Python rather than Python itself.
 
-    *My repo: [Intro2CTandDS](https://github.com/syenpark/Intro2CTandDS)*
+    *My repository: [Intro2CTandDS <span style="color:red; font-family: Babas;">__Click!__</span>](https://github.com/syenpark/Intro2CTandDS)*
+
+- #### Algorithms and Data Structures (Microsoft)
+    *My repository: [AlgosNDS](https://www.edx.org/course/algorithms-and-data-structures-0)*
+
+- #### Graph Algorithms (UCSanDiegoX)
+    *My repository: [GraphAlgos](https://www.edx.org/course/graph-algorithms-uc-san-diegox-algs202x)*
 
 - #### Introduction to Algorithms (MIT)
-    [Intro2Algorithms](https://courses.csail.mit.edu/6.006/fall11/notes.shtml)
+    *My repository: [Intro2Algos](https://courses.csail.mit.edu/6.006/fall11/notes.shtml)*
 
 ### __Theory of Computation__
-- #### [Automata, Computability, and Complexity (MIT OCW)](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-045j-automata-computability-and-complexity-spring-2011/) 
+- #### Automata, Computability, and Complexity (MIT OCW)
+    *My repository: [ACC](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-045j-automata-computability-and-complexity-spring-2011/)*
 
-- #### [Theory of Computation (MIT OCW)](https://ocw.mit.edu/courses/mathematics/18-404j-theory-of-computation-fall-2006/)
+- #### Theory of Computation (MIT OCW)
+    *My repository: [TheoryofComp](https://ocw.mit.edu/courses/mathematics/18-404j-theory-of-computation-fall-2006/)*
 
 ### __Others__
-- #### Introduction to C++ (Microsoft)
-    [Intro2Cpp](https://www.edx.org/course/introduction-to-c-0)
-
-- #### Intermediate C++ (Microsoft)
-    [InterCpp](https://www.edx.org/course/intermediate-c-0)
-
-- #### Database Infrastructure Fundamentals (Microsoft)
-    Database knowledge is also necessary in data science. [DBIfraFunda](https://courses.edx.org/courses/course-v1:Microsoft+DAT242x+2T2018/course/) addresses not only its syntax but also its infrastructure fandamentals.
+- #### C/C++
+- #### Java
 
 Please feel free to share your any thoughts about this article and my solusions. This will be very helpful to me to improve myself.
 
