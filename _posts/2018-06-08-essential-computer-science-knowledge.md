@@ -45,8 +45,12 @@ This is the most important part. Please read them carefully; *Algorithms and Dat
     *My repository: [TheoryofComp](https://ocw.mit.edu/courses/mathematics/18-404j-theory-of-computation-fall-2006/)*
 
 ### __Others__
-- #### C/C++
+- #### C
+    *My repository:*
+- #### C++
+    *My repository: [Intro2Cpp](https://github.com/syenpark/Intro2Cpp)*
 - #### Java
+    *My repository: [Intro2Java](https://github.com/syenpark/Intro2Java)*
 
 Please feel free to share your any thoughts about this article and my solusions. This will be very helpful to me to improve myself.
 
