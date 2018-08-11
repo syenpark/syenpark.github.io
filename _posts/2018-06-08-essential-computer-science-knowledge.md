@@ -38,9 +38,11 @@ This is the most important part. Please read them carefully; *Algorithms and Dat
     *My repository: [Intro2Algos](https://courses.csail.mit.edu/6.006/fall11/notes.shtml)*
 
 ### __Theory of Computation__
-- #### [Automata, Computability, and Complexity (MIT OCW)](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-045j-automata-computability-and-complexity-spring-2011/) 
+- #### Automata, Computability, and Complexity (MIT OCW)
+    *My repository: [ACC](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-045j-automata-computability-and-complexity-spring-2011/)*
 
-- #### [Theory of Computation (MIT OCW)](https://ocw.mit.edu/courses/mathematics/18-404j-theory-of-computation-fall-2006/)
+- #### Theory of Computation (MIT OCW)
+    *My repository: [TheoryofComp](https://ocw.mit.edu/courses/mathematics/18-404j-theory-of-computation-fall-2006/)*
 
 
 Please feel free to share your any thoughts about this article and my solusions. This will be very helpful to me to improve myself.
