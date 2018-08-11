@@ -40,8 +40,6 @@ I had learnt computer science (CS) at undergraduate level and pursue further stu
 
 - #### [Theory of Computation (MIT OCW)](https://ocw.mit.edu/courses/mathematics/18-404j-theory-of-computation-fall-2006/)
 
-### __Others__
-
 
 Please feel free to share your any thoughts about this article and my solusions. This will be very helpful to me to improve myself.
 
