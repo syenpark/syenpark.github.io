@@ -7,4 +7,4 @@ categories: data_science
 modified_date: 2018-11-04
 ---
 
-Its implementation by me in Python will be updated.
+Binary classification task. Its implementation by me in Python will be updated.
