@@ -1,4 +1,4 @@
-# Personal website
+This is for my personal website.
 
 # [minima](https://github.com/jekyll/minima)
 
