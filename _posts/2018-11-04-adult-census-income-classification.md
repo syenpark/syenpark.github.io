@@ -3,7 +3,7 @@ layout: post
 title:  "Adult Census Income Classification"
 author: Syen Park
 date:   2018-11-04
-categories: data_science
+categories: uncategorized
 modified_date: 2018-11-04
 ---
 
