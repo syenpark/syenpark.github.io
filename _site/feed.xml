@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.4">Jekyll</generator><link href="https://syenpark.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://syenpark.github.io/" rel="alternate" type="text/html" /><updated>2019-01-10T17:33:40+08:00</updated><id>https://syenpark.github.io/feed.xml</id><title type="html">Syen Park</title><subtitle>A personal website to prove my personal statement, share thoughts, and build my brand.</subtitle><author><name>Syen Park</name></author><entry><title type="html">Adult Income Prediction</title><link href="https://syenpark.github.io/data_science/2018/11/04/adult-income-prediction.html" rel="alternate" type="text/html" title="Adult Income Prediction" /><published>2018-11-04T00:00:00+08:00</published><updated>2018-11-04T00:00:00+08:00</updated><id>https://syenpark.github.io/data_science/2018/11/04/adult-income-prediction</id><content type="html" xml:base="https://syenpark.github.io/data_science/2018/11/04/adult-income-prediction.html">&lt;h1 id=&quot;task-description&quot;&gt;Task Description&lt;/h1&gt;
+&lt;p&gt;The dataset come from 1994 Census database. Prediction task is to determine whether a person makes over 50K a year.&lt;/p&gt;</content><author><name>Syen Park</name></author><summary type="html">Task Description The dataset come from 1994 Census database. Prediction task is to determine whether a person makes over 50K a year.</summary></entry><entry><title type="html">Unsupervised Learning Clustering</title><link href="https://syenpark.github.io/data_science/2018/11/04/unsupervised-learning-clustering.html" rel="alternate" type="text/html" title="Unsupervised Learning Clustering" /><published>2018-11-04T00:00:00+08:00</published><updated>2018-11-04T00:00:00+08:00</updated><id>https://syenpark.github.io/data_science/2018/11/04/unsupervised-learning-clustering</id><content type="html" xml:base="https://syenpark.github.io/data_science/2018/11/04/unsupervised-learning-clustering.html">&lt;p&gt;Unsupervised learning example&lt;/p&gt;</content><author><name>Syen Park</name></author><summary type="html">Unsupervised learning example</summary></entry><entry><title type="html">Apriori Algorithm</title><link href="https://syenpark.github.io/data_science/2018/10/01/apriori-algorithm.html" rel="alternate" type="text/html" title="Apriori Algorithm" /><published>2018-10-01T00:00:00+08:00</published><updated>2018-10-01T00:00:00+08:00</updated><id>https://syenpark.github.io/data_science/2018/10/01/apriori-algorithm</id><content type="html" xml:base="https://syenpark.github.io/data_science/2018/10/01/apriori-algorithm.html">&lt;p&gt;&lt;a href=&quot;http://www.vldb.org/conf/1994/P487.PDF&quot;&gt;Fast Algorithms for Mning Association&lt;/a&gt; invented a new approach.&lt;/p&gt;
+
+&lt;p&gt;Its hash tree implementation by me in Python will be updated&lt;/p&gt;</content><author><name>Syen Park</name></author><summary type="html">Fast Algorithms for Mning Association invented a new approach.</summary></entry><entry><title type="html">Frequent Pattern Growth Algorithm</title><link href="https://syenpark.github.io/data_science/2018/10/01/frequent-pattern-growth-algorithm.html" rel="alternate" type="text/html" title="Frequent Pattern Growth Algorithm" /><published>2018-10-01T00:00:00+08:00</published><updated>2018-10-01T00:00:00+08:00</updated><id>https://syenpark.github.io/data_science/2018/10/01/frequent-pattern-growth-algorithm</id><content type="html" xml:base="https://syenpark.github.io/data_science/2018/10/01/frequent-pattern-growth-algorithm.html">&lt;p&gt;&lt;a href=&quot;https://www.cs.sfu.ca/~jpei/publications/sigmod00.pdf&quot;&gt;Mining Frequent Patterns without Candidate Generation&lt;/a&gt; created a new approach to.. . Unlike apriori algorithm, it does not make candidates&lt;/p&gt;
+
+&lt;p&gt;Its implementation about FP tree and FP growth algorithm by me in Python will be updated.&lt;/p&gt;</content><author><name>Syen Park</name></author><summary type="html">Mining Frequent Patterns without Candidate Generation created a new approach to.. . Unlike apriori algorithm, it does not make candidates</summary></entry><entry><title type="html">Essential Computer Science Knowledge</title><link href="https://syenpark.github.io/computer_science/2018/06/08/essential-computer-science-knowledge.html" rel="alternate" type="text/html" title="Essential Computer Science Knowledge" /><published>2018-06-08T00:00:00+08:00</published><updated>2018-06-08T00:00:00+08:00</updated><id>https://syenpark.github.io/computer_science/2018/06/08/essential-computer-science-knowledge</id><content type="html" xml:base="https://syenpark.github.io/computer_science/2018/06/08/essential-computer-science-knowledge.html">&lt;p&gt;I had learned computer science (CS) at undergraduate level and pursue further studies in data science and machine learning. This post is for those who are in the same boat with me to review CS knowledge aligned with data science and machine learning. I refer to &lt;a href=&quot;https://www.cse.ust.hk/pg/newStudents/#preparation&quot;&gt;Q4 of FAQs for New Postgraduate Students in CSE HKUST&lt;/a&gt; that states core requirements for all postgraduate students in CS and share related MOOCs and their solutions by me.&lt;/p&gt;
+
+&lt;h3 id=&quot;operating-systems&quot;&gt;&lt;strong&gt;Operating Systems&lt;/strong&gt;&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;introduction-to-operating-systems-udacity&quot;&gt;Introduction to Operating Systems (Udacity)&lt;/h4&gt;
+    &lt;p&gt;This requires students with C knowledge. Should you want to see C first, check this page: &lt;a href=&quot;https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-087-practical-programming-in-c-january-iap-2010/&quot;&gt;Practical Programming in C (MIT OCW)&lt;/a&gt;&lt;/p&gt;
+
+    &lt;p&gt;&lt;em&gt;My repository: &lt;a href=&quot;https://github.com/syenpark/Intro2OS&quot;&gt;Intro2OS&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;design-and-analysis-of-algorithms&quot;&gt;&lt;strong&gt;Design and Analysis of Algorithms&lt;/strong&gt;&lt;/h3&gt;
+&lt;p&gt;This is the most important part. Please read them carefully; &lt;em&gt;Algorithms and Data Structures&lt;/em&gt; and &lt;em&gt;Graph Algorithms&lt;/em&gt;.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;introduction-to-computer-science-and-programming-using-python-mitx&quot;&gt;Introduction to Computer Science and Programming Using Python (MITx)&lt;/h4&gt;
+    &lt;p&gt;This course is good for Python beginners. It deals with Python basics, rudimentary algorithms with Python, and algorithmic complexity.&lt;/p&gt;
+
+    &lt;p&gt;&lt;em&gt;My repository: &lt;a href=&quot;https://github.com/syenpark/Intro2CSandPy&quot;&gt;Intro2CSandPy &lt;span style=&quot;color:red; font-family: Babas;&quot;&gt;&lt;strong&gt;Click!&lt;/strong&gt;&lt;/span&gt;&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;introduction-to-computational-thinking-and-data-science-mitx&quot;&gt;Introduction to Computational Thinking and Data Science (MITx)&lt;/h4&gt;
+    &lt;p&gt;This is the advanced course of above one. It handles graph theory, and basic data science, machine learning, and statistics with Python rather than Python itself.&lt;/p&gt;
+
+    &lt;p&gt;&lt;em&gt;My repository: &lt;a href=&quot;https://github.com/syenpark/Intro2CTandDS&quot;&gt;Intro2CTandDS &lt;span style=&quot;color:red; font-family: Babas;&quot;&gt;&lt;strong&gt;Click!&lt;/strong&gt;&lt;/span&gt;&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;algorithms-and-data-structures-microsoft&quot;&gt;Algorithms and Data Structures (Microsoft)&lt;/h4&gt;
+    &lt;p&gt;&lt;em&gt;My repository: &lt;a href=&quot;https://www.edx.org/course/algorithms-and-data-structures-0&quot;&gt;AlgosNDS&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;graph-algorithms-ucsandiegox&quot;&gt;Graph Algorithms (UCSanDiegoX)&lt;/h4&gt;
+    &lt;p&gt;&lt;em&gt;My repository: &lt;a href=&quot;https://www.edx.org/course/graph-algorithms-uc-san-diegox-algs202x&quot;&gt;GraphAlgos&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;introduction-to-algorithms-mit&quot;&gt;Introduction to Algorithms (MIT)&lt;/h4&gt;
+    &lt;p&gt;&lt;em&gt;My repository: &lt;a href=&quot;https://courses.csail.mit.edu/6.006/fall11/notes.shtml&quot;&gt;Intro2Algos&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;theory-of-computation&quot;&gt;&lt;strong&gt;Theory of Computation&lt;/strong&gt;&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;automata-computability-and-complexity-mit-ocw&quot;&gt;Automata, Computability, and Complexity (MIT OCW)&lt;/h4&gt;
+    &lt;p&gt;&lt;em&gt;My repository: &lt;a href=&quot;https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-045j-automata-computability-and-complexity-spring-2011/&quot;&gt;ACC&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;theory-of-computation-mit-ocw&quot;&gt;Theory of Computation (MIT OCW)&lt;/h4&gt;
+    &lt;p&gt;&lt;em&gt;My repository: &lt;a href=&quot;https://ocw.mit.edu/courses/mathematics/18-404j-theory-of-computation-fall-2006/&quot;&gt;TheoryofComp&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;others&quot;&gt;&lt;strong&gt;Others&lt;/strong&gt;&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;c&quot;&gt;C&lt;/h4&gt;
+    &lt;p&gt;&lt;em&gt;My repository:&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;c-1&quot;&gt;C++&lt;/h4&gt;
+    &lt;p&gt;&lt;em&gt;My repository: &lt;a href=&quot;https://github.com/syenpark/Intro2Cpp&quot;&gt;Intro2Cpp&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;java&quot;&gt;Java&lt;/h4&gt;
+    &lt;p&gt;&lt;em&gt;My repository: &lt;a href=&quot;https://github.com/syenpark/Intro2Java&quot;&gt;Intro2Java&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Please feel free to share your any thoughts about this article and my solusions. This will be very helpful to me to improve myself.&lt;/p&gt;
+
+&lt;p&gt;I also recommend this: &lt;a href=&quot;https://github.com/prakhar1989/awesome-courses#introduction-to-cs&quot;&gt;List of Awesome University Courses for Learning Computer Science&lt;/a&gt;&lt;/p&gt;</content><author><name>Syen Park</name></author><summary type="html">I had learned computer science (CS) at undergraduate level and pursue further studies in data science and machine learning. This post is for those who are in the same boat with me to review CS knowledge aligned with data science and machine learning. I refer to Q4 of FAQs for New Postgraduate Students in CSE HKUST that states core requirements for all postgraduate students in CS and share related MOOCs and their solutions by me.</summary></entry><entry><title type="html">Prerequisites for Data Science</title><link href="https://syenpark.github.io/data_science/2018/05/15/prerequisites-for-data-science.html" rel="alternate" type="text/html" title="Prerequisites for Data Science" /><published>2018-05-15T00:00:00+08:00</published><updated>2018-05-15T00:00:00+08:00</updated><id>https://syenpark.github.io/data_science/2018/05/15/prerequisites-for-data-science</id><content type="html" xml:base="https://syenpark.github.io/data_science/2018/05/15/prerequisites-for-data-science.html">&lt;h3 id=&quot;programming&quot;&gt;&lt;strong&gt;Programming&lt;/strong&gt;&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;introduction-to-computer-science-and-programming-using-python-mitx&quot;&gt;Introduction to Computer Science and Programming Using Python (MITx)&lt;/h4&gt;
+    &lt;p&gt;This course is good for Python beginners. It deals with Python basics, rudimentary algorithms with Python, and algorithmic complexity.&lt;/p&gt;
+
+    &lt;p&gt;&lt;em&gt;My repository: &lt;a href=&quot;https://github.com/syenpark/Intro2CSandPy&quot;&gt;Intro2CSandPy &lt;span style=&quot;color:red; font-family: Babas;&quot;&gt;&lt;strong&gt;Click!&lt;/strong&gt;&lt;/span&gt;&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;introduction-to-computational-thinking-and-data-science-mitx&quot;&gt;Introduction to Computational Thinking and Data Science (MITx)&lt;/h4&gt;
+    &lt;p&gt;This is the advanced course of above one. It handles graph theory, and basic data science, machine learning, and statistics with Python rather than Python itself.&lt;/p&gt;
+
+    &lt;p&gt;&lt;em&gt;My repository: &lt;a href=&quot;https://github.com/syenpark/Intro2CTandDS&quot;&gt;Intro2CTandDS &lt;span style=&quot;color:red; font-family: Babas;&quot;&gt;&lt;strong&gt;Click!&lt;/strong&gt;&lt;/span&gt;&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;introduction-to-r-for-data-science&quot;&gt;Introduction to R for Data Science&lt;/h4&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;pytorch&quot;&gt;PyTorch&lt;/h4&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;tensorflow&quot;&gt;TensorFlow&lt;/h4&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;numpy&quot;&gt;Numpy&lt;/h4&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;pandas&quot;&gt;Pandas&lt;/h4&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;jupyter-notebook&quot;&gt;Jupyter Notebook&lt;/h4&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;database&quot;&gt;&lt;strong&gt;Database&lt;/strong&gt;&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;database-infrastructure-fundamentals-microsoft&quot;&gt;Database Infrastructure Fundamentals (Microsoft)&lt;/h4&gt;
+    &lt;p&gt;Database knowledge is also necessary in data science. This course addresses not only its syntax but also its infrastructure fandamentals.&lt;/p&gt;
+
+    &lt;p&gt;&lt;em&gt;My repository: &lt;a href=&quot;https://github.com/syenpark/DBInfraFunda&quot;&gt;DBINfraFunda&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;sql-for-data-analyst-udacity&quot;&gt;SQL for Data Analyst (Udacity)&lt;/h4&gt;
+    &lt;p&gt;&lt;a href=&quot;https://www.udacity.com/course/sql-for-data-analysis--ud198&quot;&gt;SQL for Data Analyst (Udacity)&lt;/a&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;database-moocs-stanford&quot;&gt;Database MOOCs (Stanford)&lt;/h4&gt;
+    &lt;p&gt;&lt;a href=&quot;https://cs.stanford.edu/people/widom/DB-mooc.html&quot;&gt;Database MOOCs (Stanford)&lt;/a&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;sql-tutorial-w3schools&quot;&gt;SQL Tutorial (W3Schools)&lt;/h4&gt;
+    &lt;p&gt;&lt;a href=&quot;https://www.w3schools.com/sql/&quot;&gt;SQL Tutorial (W3Schools)&lt;/a&gt;&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;mathematics&quot;&gt;&lt;strong&gt;Mathematics&lt;/strong&gt;&lt;/h3&gt;
+&lt;p&gt;Have a quick glance at &lt;a href=&quot;https://www.mathsisfun.com/links/index-curriculum.html&quot;&gt;Curriculum in MATH is FUN&lt;/a&gt; to be familiar with mathematical terminology and expression in English.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;calculus&quot;&gt;Calculus&lt;/h4&gt;
+    &lt;p&gt;&lt;a href=&quot;https://www.edx.org/course/pre-university-calculus&quot;&gt;Pre-University Calculus (DelftX)&lt;/a&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;linear-algebra&quot;&gt;Linear Algebra&lt;/h4&gt;
+    &lt;p&gt;&lt;a href=&quot;https://ocw.mit.edu/courses/mathematics/18-06sc-linear-algebra-fall-2011/&quot;&gt;Linear Algebra (MIT OWC)&lt;/a&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;discrete-mathematics&quot;&gt;Discrete Mathematics&lt;/h4&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;probability-and-statistics&quot;&gt;Probability and Statistics&lt;/h4&gt;
+    &lt;p&gt;&lt;a href=&quot;https://courses.edx.org/courses/course-v1:MITx+6.008.1x+3T2016/course/&quot;&gt;Computational Probability and Inference (MITx)&lt;/a&gt;&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;machine-learning&quot;&gt;&lt;strong&gt;Machine Learning&lt;/strong&gt;&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;statistical-learning&quot;&gt;Statistical Learning&lt;/h4&gt;
+    &lt;p&gt;&lt;a href=&quot;http://www-bcf.usc.edu/~gareth/ISL/index.html&quot;&gt;Introduction to Statistical Learning&lt;/a&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;h4 id=&quot;deep-learning&quot;&gt;Deep Learning&lt;/h4&gt;
+    &lt;p&gt;Deep Learning from Scratch&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;References:
+&lt;a href=&quot;https://www.quora.com/What-are-the-skills-required-for-big-data-jobs-such-as-a-data-analyst-data-engineer-or-data-developer/answer/Akash-Dugam&quot;&gt;Dugam’s answer in Quora&lt;/a&gt;, &lt;a href=&quot;https://blog.udacity.com/2014/11/data-science-job-skills.html&quot;&gt;8 Skills You Need to Be a Data Scientist&lt;/a&gt;, &lt;a href=&quot;https://www.quora.com/How-can-I-become-a-data-scientist-1/answers/4451343?share=e33a5067&amp;amp;srid=pQKQw&quot;&gt;William Chen’s answer in Quora&lt;/a&gt;&lt;/p&gt;</content><author><name>Syen Park</name></author><summary type="html">Programming Introduction to Computer Science and Programming Using Python (MITx) This course is good for Python beginners. It deals with Python basics, rudimentary algorithms with Python, and algorithmic complexity.</summary></entry><entry><title type="html">First Post</title><link href="https://syenpark.github.io/uncategorized/2018/05/14/first-post.html" rel="alternate" type="text/html" title="First Post" /><published>2018-05-14T00:00:00+08:00</published><updated>2018-05-14T00:00:00+08:00</updated><id>https://syenpark.github.io/uncategorized/2018/05/14/first-post</id><content type="html" xml:base="https://syenpark.github.io/uncategorized/2018/05/14/first-post.html">&lt;p&gt;To test.&lt;/p&gt;
+
+&lt;p&gt;Update!&lt;/p&gt;</content><author><name>Syen Park</name></author><summary type="html">To test.</summary></entry></feed>
