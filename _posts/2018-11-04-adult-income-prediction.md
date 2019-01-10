@@ -4,7 +4,7 @@ title:  "Adult Income Prediction"
 author: Syen Park
 date:   2018-11-04
 categories: data_science
-modified_date: 2019-01-09
+modified_date: 2019-01-10
 ---
 
 # Task Description  
