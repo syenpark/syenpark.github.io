@@ -1,5 +1,3 @@
-This is for my personal website.
-
 # [minima](https://github.com/jekyll/minima)
 
 *Minima is a one-size-fits-all Jekyll theme for writers*. It's Jekyll's default (and first) theme.
