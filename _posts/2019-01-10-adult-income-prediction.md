@@ -33,8 +33,8 @@ Marital status of the individual, involving Divorced,Married-AF- spouse, Married
 7) _**occupation**_  
 The occupation of the individual, involving Tech-support, Craft- repair, Other-service, Sales, Exec-managerial, Prof-specialty, Handlers- cleaners, Machine-op-inspct, Adm-clerical, Farming-fishing, Transport-moving, Priv-house-serv, Protective-serv, Armed-Forces; This attribute is nominal.  
 8) _**relationship**_  
-The family relationship of the individual, involving Wife, Own-child, Husband, Not-in-family, Other-relative, Unmarried; This attribute is nominal. 
-9) _**race**_
+The family relationship of the individual, involving Wife, Own-child, Husband, Not-in-family, Other-relative, Unmarried; This attribute is nominal.   
+9) _**race**_  
 The race of the individual, involving White, Asian-Pac-Islander, Amer- Indian-Eskimo, Other, Black; This attribute is nominal.  
 10) _**sex**_  
 Female, Male; This attribute is nominal.  
@@ -47,6 +47,6 @@ Hours worked per week; This attribute is continuous.
 14) _**native-country**_  
 label person’s country, involving United-States, Cambodia, England, Puerto-Rico, Canada, Germany, Outlying-US(Guam-USVI-etc), India, Japan, Greece, South, China, Cuba, Iran, Honduras, Philippines, Italy, Poland, Jamaica, Vietnam, Mexico, Portugal, Ireland, France, Dominican-Republic, Laos, Ecuador, Taiwan, Haiti, Columbia, Hungary, Guatemala, Nicaragua, Scotland, Thailand, Yugoslavia, El-Salvador, Trinadad&Tobago, Peru, Hong, Holand-Netherlands.
 
-3. _**trainLabels.csv**_  
+333. _**trainLabels.csv**_  
 0: means a person makes no more than 50K a year, i.e. <=50k  
 1: means a person makes over 50K a year, i.e. >50K
