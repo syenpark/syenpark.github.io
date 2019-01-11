@@ -60,6 +60,7 @@ google_analytics: UA-119695916-1
 show_excerpts: true
 
 # Algoria for a search box
+# https://github.com/algolia/jekyll-algolia-example
 algolia:
   application_id: 'RVBYQ56LTS'
   index_name: syenpark
@@ -71,4 +72,3 @@ theme: minima
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
-  - jekyll-paginate
