@@ -51,4 +51,18 @@ label person’s country, involving United-States, Cambodia, England, Puerto-Ric
 0: means a person makes no more than 50K a year, i.e. <=50k  
 1: means a person makes over 50K a year, i.e. >50K
 
+# Solution
+This solution is written by myself and in Python 3. There could be some mistakes or it would be not the best solution. 
+
+I use Pandas, XGBoost, and Scikit-Learn to solve this problem.
+
+Import following libraries first.
+{% highlight python %}import xgboost
+import pandas as pd
+from sklearn import tree
+from sklearn.model_selection import train_test_split
+{% endhighlight %}
+
 Feedback is very welcome.
+
+TBU...
