@@ -17,7 +17,7 @@ The dataset come from 1994 Census database. Prediction task is to determine whet
 4. **sampleSubmission.csv**: The sample submission file you may refer.  
 
 # Data Description
-**trainFeatures.csv** & 2. **testFeatures.csv**  
+**trainFeatures.csv** & **testFeatures.csv**  
 1. _**age**_  
 The age of the individual; this attribute is continuous.  
 2. _**work-class**_  
@@ -47,6 +47,8 @@ Hours worked per week; This attribute is continuous.
 14. _**native-country**_  
 label person’s country, involving United-States, Cambodia, England, Puerto-Rico, Canada, Germany, Outlying-US(Guam-USVI-etc), India, Japan, Greece, South, China, Cuba, Iran, Honduras, Philippines, Italy, Poland, Jamaica, Vietnam, Mexico, Portugal, Ireland, France, Dominican-Republic, Laos, Ecuador, Taiwan, Haiti, Columbia, Hungary, Guatemala, Nicaragua, Scotland, Thailand, Yugoslavia, El-Salvador, Trinadad&Tobago, Peru, Hong, Holand-Netherlands.
 
-_**trainLabels.csv**_  
+**trainLabels.csv**  
 0: means a person makes no more than 50K a year, i.e. <=50k  
 1: means a person makes over 50K a year, i.e. >50K
+
+Feedback is very welcome.
