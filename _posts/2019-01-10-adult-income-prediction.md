@@ -63,6 +63,16 @@ from sklearn import tree
 from sklearn.model_selection import train_test_split
 {% endhighlight %}
 
+Define delete_duplicated function to delete duplicated rows (objects) in dataset.
+{% highlight python %}def delete_duplicated(objects):
+    # delete duplicated
+    objects['duplicated'] = objects.duplicated()
+    filter_duplicated = objects['duplicated'] == False
+    objects = objects[filter_duplicated]
+
+    return objects
+{% endhighlight %}
+
 Feedback is very welcome.
 
 TBU...
