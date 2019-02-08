@@ -18,7 +18,7 @@ layout: default
 	{%- for category in site.categories -%}
         	{% capture category_name %}{{ category | first }}{% endcapture %}
 		<a href="{{ "/" | relative_url }}categories/{{category_name}}.html">
-            		{{category_name}}
+            		{{category_name | replace: "_", " " | capitalize_all}}
         	</a>
 		{%- unless forloop.last -%}
 			&nbsp
