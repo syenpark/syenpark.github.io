@@ -6,6 +6,8 @@ To add a new category and list of its posts, you need to creat a new html in /ca
 
 jekyll-algolia is included in this project for search, so that your updates like adding new post are reflected only when you apply your updates to algolia.
 
+Pagination is not available.
+
 ## License
 
 The theme is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
