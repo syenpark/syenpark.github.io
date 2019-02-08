@@ -18,7 +18,7 @@ layout: default
 	{%- for category in site.categories -%}
         	{% capture category_name %}{{ category | first }}{% endcapture %}
 		<a href="{{ "/" | relative_url }}categories/{{category_name}}.html">
-			{% assign words = category_name | split: ' ' %}
+			{% assign words = category_name | split: '_' %}
 			{% capture category_name %}{% for word in words %}{{ word | capitalize }} {% endfor %}{% endcapture %}
 			{{ category_name | replace: "_", " " }}
         	</a>
