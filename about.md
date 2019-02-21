@@ -5,7 +5,7 @@ permalink: /about/
 ---
 
 ### __Research Interests__
-
+Artificial Intelligence, Machine Learning, Data Science, Data Mining, Natural Language Processing, Text Mining.
 
 ### __AFLSP Scholar__
 [Asian Future Leaders Scholarship Program (AFLSP)](https://pg.ust.hk/aflsp) supported by [Bai Xian Asia Institute (BXAI)](https://www.bxai.org/) is definitely one of the most beneficial scholarship programs in the world. I ended up being one of AFLSP scholars at [The Hong Kong University of Science and Technology (HKUST)](https://www.ust.hk/) and want to inform prospective postgraduate students about the benefit of this program.
