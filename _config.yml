@@ -32,7 +32,7 @@ header_pages:
   - about.md
   - portfolio.md
   - aflsp.md
-  - english.md
+  - publications.md
 
 disqus:
   shortname: syen
