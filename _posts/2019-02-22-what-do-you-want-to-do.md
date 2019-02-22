@@ -6,7 +6,7 @@ date:   2019-02-22
 categories: uncategorized
 modified_date: 2019-02-22
 ---
-First of all, thanks to many brilliant friends and top notch professors in HKUST to make me elaborate what I want to do what do you want to do in life.
+First of all, thanks to my brilliant friends and professors in HKUST to help me elaborate what I want to do in the new era of big data and artificial intelligence.
 
 
 Resources:
