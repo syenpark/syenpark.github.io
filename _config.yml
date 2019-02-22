@@ -31,8 +31,8 @@ github_username:  syenpark
 header_pages:
   - about.md
   - portfolio.md
-  - aflsp.md
   - publications.md
+  - media.md
 
 disqus:
   shortname: syen
