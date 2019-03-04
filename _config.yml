@@ -24,6 +24,7 @@ baseurl: "" # the subpath of your site, e.g. /blog
 url: https://syenpark.github.io
 
 # https://blog.r3bl.me/en/simple-social-media-links-jekyll/
+twitter_username: syenpark
 facebook_username: syenpark
 github_username:  syenpark
 
