@@ -2,9 +2,9 @@
 layout: post
 title:  "Parallel Programming"
 author: Syen Park
-date:   2019-06-24
+date:   2019-06-23
 categories: computer_science
-modified_date: 2019-06-24
+modified_date: 2019-06-23
 ---
 
 All assignments are to make a serial push-relabel algorithm parallelised with MPI, Pthreads, CUDA.
