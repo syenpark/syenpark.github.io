@@ -18,7 +18,6 @@ PySpark and Google Colab.
 4. [Quiz 4. Graph](https://github.com/syenpark/Big-Data-Computing/blob/master/quiz/q04/graph.ipynb)
 
 # Group Project: Age and Sentiment Based E-Commerce Clothing Recommendation System
-## Presentation
 [Group Presentation Slide](https://drive.google.com/open?id=1-14cJtsehJJwaJQzTM-VVzEUqNL9G8uzesS0rBoa-r0)
 
 
