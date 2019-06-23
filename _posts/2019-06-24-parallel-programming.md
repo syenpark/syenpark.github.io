@@ -2,8 +2,8 @@
 layout: post
 title:  "Parallel Programming"
 author: Syen Park
-date:   2018-06-24
-categories: uncategorized
+date:   2019-06-24
+categories: computer_science
 modified_date: 2019-06-24
 ---
 
