@@ -6,7 +6,7 @@ date:   2019-07-15
 categories: data_science
 modified_date: 2019-07-15
 ---
-# improved-adventure
+# [GitHub Repository](https://github.com/syenpark/improved-adventure)
 
 This repository contains general interview preparation materials mostly provided by Udacity for data scientist positoion and is written in PyThon.
 
