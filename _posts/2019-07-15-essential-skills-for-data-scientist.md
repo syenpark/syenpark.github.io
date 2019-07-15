@@ -14,7 +14,7 @@ This repository contains general interview preparation materials mostly provided
 
 ![alt text](https://i2.wp.com/blog.udacity.com/wp-content/uploads/2014/11/Data-Science-Skills-Udacity-Matrix.png?zoom=2&resize=640%2C521&ssl=1 "Table 1 to compare jobs related data")
 
-## Computer Science Fundamentals and Programming Topics  
+### Computer Science Fundamentals and Programming Topics  
 
 This section is useful to pass technical interviews for IT giant companies and to work for big data computing positions. 
 
@@ -50,7 +50,7 @@ This section is useful to pass technical interviews for IT giant companies and t
   * Threads & Processes
   * Deadlocks
 
-## _Probability and Statistics Topics_
+### __Probability and Statistics Topics__
 
 These topics are important to understand machine learning theories.
 
@@ -89,7 +89,7 @@ These topics are important to understand machine learning theories.
   * Hypothesis Testing
   * Factor Analysis
 
-## _Data Modeling and Evaluation Topics_
+### __Data Modeling and Evaluation Topics__
 - Data Preprocessing 
   * Munging/Wrangling
   * Transforming
@@ -114,7 +114,7 @@ These topics are important to understand machine learning theories.
   * Training Testing Split
   * Cross Validation
 
-## _Applying Machine Learning Algorithms and Libraries Topics_
+### __Applying Machine Learning Algorithms and Libraries Topics__
 - Models
   * Parametric VS. Nonparametric
   * Decision Tree
@@ -137,7 +137,7 @@ These topics are important to understand machine learning theories.
   * Overfitting and Underfitting
   * Vanishing/Exploding Gradients
 
-## Software Engineering and System Design Topics
+### Software Engineering and System Design Topics
 - Software Interface
   * Database
 
