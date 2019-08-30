@@ -6,7 +6,9 @@ To add a new category and list of its posts, you need to creat a new html in /ca
 
 jekyll-algolia is included in this project for search, so that your updates like adding new post are reflected only when you apply your updates to algolia.
 
-Pagination is not available.
+Pagination is not available.  
+
+PDF embedding is from [this post](https://jamesonzimmer.com/simple-pdf-embed-for-jekyll/)
 
 ## License
 
