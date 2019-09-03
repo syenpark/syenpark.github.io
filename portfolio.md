@@ -4,14 +4,25 @@ title: Portfolio
 permalink: /portfolio/
 ---
 
-Data Analytics
+###__Data Analytics__
 
-Data Mining
+###__Data Mining__
 
-Big Data Computing
+Apriori Algorithm
 
-Data Visualisation
+Frequent Pattern Growth Algorithm
 
-Machine Learning
+Adult Income Prediction
 
-Artificial Intelligence
+Unsupervised Learning - Image Clustering
+
+###__Big Data Computing__
+
+###__Data Visualisation__
+
+###__Machine Learning__
+
+###__Artificial Intelligence__
+
+### __Personal Projects__
+
