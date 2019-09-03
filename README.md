@@ -10,6 +10,8 @@ Pagination is not available.
 
 PDF embedding is from [this post](https://jamesonzimmer.com/simple-pdf-embed-for-jekyll/)
 
+Centering images in post is from [this post](https://thornelabs.net/posts/centering-images-with-jekyll-and-markdown.html) and my iternal CSS is defined on default.html
+
 ## License
 
 The theme is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).

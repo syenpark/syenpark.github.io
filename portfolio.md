@@ -4,15 +4,25 @@ title: Portfolio
 permalink: /portfolio/
 ---
 
-This is the base Jekyll theme. You can find out more info about customizing your Jekyll theme, as well as basic Jekyll usage documentation at [jekyllrb.com](https://jekyllrb.com/)
+### __Data Analytics__
 
-You can find the source code for Minima at GitHub:
-[jekyll][jekyll-organization] /
-[minima](https://github.com/jekyll/minima)
+### __Data Mining__
 
-You can find the source code for Jekyll at GitHub:
-[jekyll][jekyll-organization] /
-[jekyll](https://github.com/jekyll/jekyll)
+Apriori Algorithm
 
+Frequent Pattern Growth Algorithm
 
-[jekyll-organization]: https://github.com/jekyll
+Adult Income Prediction
+
+[Unsupervised Learning - Image Clustering](https://syenpark.github.io/machine_learning/2019/09/03/image-clustering.html)
+
+### __Big Data Computing__
+
+### __Data Visualisation__
+
+### __Machine Learning__
+
+### __Artificial Intelligence__
+
+### __Personal Projects__
+

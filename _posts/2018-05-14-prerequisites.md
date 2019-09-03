@@ -115,7 +115,7 @@ I also recommend this: [List of Awesome University Courses for Learning Computer
 
 This repository contains general interview preparation materials mostly provided by Udacity for data scientist positoion and is written in Python.
 
-![alt text](http://nirvacana.com/thoughts/wp-content/uploads/2013/07/RoadToDataScientist1.png "Image 1 to road to data scientist")
+![Image 1 to road to data scientist](http://nirvacana.com/thoughts/wp-content/uploads/2013/07/RoadToDataScientist1.png "Image 1 to road to data scientist"){: .center-image}
 
 ### Computer Science Fundamentals and Programming Topics  
 
@@ -245,7 +245,7 @@ These topics are important to understand machine learning theories.
   * Database
 
 - User Interface
-  * Data Visualization
+  * Data Visualisation
 
 - Scalability
   * Map-reduce
@@ -254,7 +254,7 @@ These topics are important to understand machine learning theories.
 - Deployment
   * Cloud Hosting  
 
-![alt text](https://i2.wp.com/blog.udacity.com/wp-content/uploads/2014/11/Data-Science-Skills-Udacity-Matrix.png?zoom=2&resize=640%2C521&ssl=1 "Table 1 to compare jobs related data")
+![Table 1 to compare jobs related data](https://i2.wp.com/blog.udacity.com/wp-content/uploads/2014/11/Data-Science-Skills-Udacity-Matrix.png?zoom=2&resize=640%2C521&ssl=1 "Table 1 to compare jobs related data"){: .center-image}
 
 
 References: [What is Data Science? 8 Skills That Will Get You Hired in Data](https://blog.udacity.com/2014/11/data-science-job-skills.html)
