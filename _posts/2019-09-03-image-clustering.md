@@ -7,15 +7,15 @@ categories: machine_learning
 modified_date: 2019-09-03
 ---
 
-### Problem
+### __Problem__
 
 Do image clustering, which is an unsupervised learning task.
 
-### Solution
+### __Solution__
 
 I use K-means clustering algorithm for this problem.
 
-#### Feature Engineering
+#### __Feature engineering__
 
 I use Scikit Learn and a pretrained model, ResNet-152, to extract features from images with reference
 and improvement by myself on [a GitHub repository](https://github.com/christiansafka/img2vec) which provides only RseNet-18 and AlexNet
@@ -30,7 +30,18 @@ models with following steps.
    chose 200 is that it keeps around 90% information of original features using sum of variance
    ratios. The below graph accounts for its detail.
 
-   ![PCA plot](/assets/K-means_PCA.png){:class="img-responsive"}
+   ![PCA plot](/assets/K-means_PCA.png){: .center-image}
 
+#### __K-means clustering altorighm with silhouette analysis__
 
-[3] https://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html
+K-means clustering in Scikit Learn is used with the number of clusters 11 chosen with [silhouette
+analysis](https://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html). The reasons as follows. Firstly, n_clusters 2, 3, 4, 5, 6, 7, and 11 are good choices for K in
+that others have so many negative values that many samples of them would be assigned to the
+incorrect cluster. Secondly, 11 has the most similar thickness of the silhouette plot that indicates
+it has the most similar clusters size.
+
+![PCA plot](/assets/sil_03.png){: .center-image}
+
+![PCA plot](/assets/sil_08.png){: .center-image}
+
+![PCA plot](/assets/sil_11.png){: .center-image}
