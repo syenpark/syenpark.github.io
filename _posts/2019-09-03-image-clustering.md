@@ -9,7 +9,9 @@ modified_date: 2019-09-03
 
 ### __Problem__
 
-Do image clustering, which is an unsupervised learning task.
+Do image clustering, which is an unsupervised learning task. Unsupervised learning is a branch of machine learning that learns from test data  that  has  not  been  labeled,  classified  or  categorized.  Instead  of responding to feedback, unsupervised learning identifies commonalities in the data and reacts based on the presence or absence of such commonalities in each new piece of data.  In this task, you need to cluster a certain amount of image data. In other words, you  need  to  find  the  most  appropriate  number  of clusters by yourself.
+
+[Image data link](https://www.dropbox.com/sh/gr2istwq2qrnjy8/AAD2dP8T57hQnDvh1UW-3wZUa?dl=0)
 
 ### __Solution__
 
@@ -45,3 +47,18 @@ it has the most similar clusters size.
 ![PCA plot](/assets/sil_08.png){: .center-image}
 
 ![PCA plot](/assets/sil_11.png){: .center-image}
+
+As the result, each cluster accounts for those following objects:  
+Cluster 1: Pet (Cat + Dog)  
+Cluster 2: Car  
+Cluster 3: Water Scenery  
+Cluster 4: Indoor Scenery  
+Cluster 5: Bus  
+Cluster 6: Train  
+Cluster 7: Birds  
+Cluster 8: Airplane  
+Cluster 9: Bicycle (including autocycle)  
+Cluster 10: People  
+Cluster 11: Livestock  
+
+You can check all code here [Google Colab link](https://colab.research.google.com/drive/1PRfXoQzhmd71uWYso4M4SBqtQ2ikk5Pe) and the result [Prediction.csv link](https://drive.google.com/open?id=13aBm-IyWi9tWm5_VQ6q6eEyNNM4adzBd).
