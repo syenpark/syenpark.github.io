@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Regression"
+title:  "Multivariable Regression"
 author: Syen Park
 date:   2019-09-07
 categories: data_science
@@ -11,11 +11,23 @@ modified_date: 2019-09-07
 
 Do modeling the performance of computer programs. The dataset provided describes a few examples of running SGDClassifier in Python. The features of the dataset describes the SGDClassifier as well as the features used to generate the synthetic training data. The data to be analyzed is the training time of the SGDClassifier.
 
-[Image data link](https://www.dropbox.com/sh/gr2istwq2qrnjy8/AAD2dP8T57hQnDvh1UW-3wZUa?dl=0)
+[Data link](https://www.kaggle.com/c/msbd5001-fall2018/data)
 
 ### __Solution__
 
-I use Feed Forward Neural Network.
+I analyse the relation between features in training data and do feature engineering for the better prediction. A feed forward neural network is used to predict running time.
+
+#### __Data Analysis__
+
+I use Numpy and Pandas for data analysis.
+
+{% highlight python %}
+train = pd.read_csv('../data/train.csv')
+print('Shape of the train data with all features:', train.shape)
+
+test = pd.read_csv('../data/test.csv')
+print('Shape of the test data with all features:', test.shape)
+{% endhighlight %}
 
 #### __Feature engineering__
 
