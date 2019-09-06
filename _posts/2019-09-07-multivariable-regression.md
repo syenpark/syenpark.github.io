@@ -130,7 +130,7 @@ penalty_elasticnet.corr()
 |__complexity__|0.011534     |1.00000   |0.976314 |
 |__time__      |0.025684     |0.976314  |1.000000 |
 
-You can check all code here [Google Colab Data Analysis link  <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://drive.google.com/file/d/1p56e0b8xkZcX2IjRiu4-FxYXR_GBVeLx/view?usp=sharing) 
+You can check all code here [Google Colab Data Analysis link  <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://colab.research.google.com/drive/1p56e0b8xkZcX2IjRiu4-FxYXR_GBVeLx) 
 
 #### __2.2 Feature engineering and Prediction__
 
