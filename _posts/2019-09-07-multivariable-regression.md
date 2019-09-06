@@ -1,11 +1,9 @@
----
 layout: post
 title:  "Multivariable Regression"
 author: Syen Park
 date:   2019-09-07
 categories: data_science
 modified_date: 2019-09-07
----
 
 ### __Problem__
 
@@ -28,6 +26,15 @@ print('Shape of the train data with all features:', train.shape)
 test = pd.read_csv('../data/test.csv')
 print('Shape of the test data with all features:', test.shape)
 {% endhighlight %}
+
+> Shape of the train data with all features: (400, 15)  
+> Shape of the test data with all features: (100, 14)
+
+'code()'
+
+```
+- `code()` 
+```
 
 #### __Feature engineering__
 

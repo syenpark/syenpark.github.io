@@ -6,7 +6,7 @@ permalink: /portfolio/
 
 ### __Data Analytics__
 
-[Supervised Learning - Regression <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/data_science/2019/09/07/regression.html)
+[Supervised Learning - Multivariable Regression <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/data_science/2019/09/07/regression.html)
 
 ### __Data Mining__
 
