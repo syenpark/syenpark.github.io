@@ -1,4 +1,5 @@
 ---
+youtubeId: pDsPSxkE-X4
 layout: page
 title: About
 permalink: /about/
@@ -16,34 +17,6 @@ Artificial intelligence, machine learning, data Science, data mining especially 
 - #### Enrichment Programs by HKUST for AFLSP Scholars
     Activities such as leadership training, clutural exploration offered by HKUST.
 
-    Mooncake making workshop
-    
-    Transforming Power and Global Trends of Science and Technology
-    
-    Tram night
-    
-    Lunch meeting with president and other members of BXAI
-    
-    Asian language course
-    
-    Festive lunch gathering
-    
-    Cultural visit/workshop
-    
-    Distinguished lecture
-    
-    Year-end lunch gathering
-    
-    18 October 2018
-    
-    29 October 2018
-    
-    7 Novemebr 2018
-    
-    Winter 2019
-    
-    
-    
 - #### A 3-Week BXAI summer program
     It is mandatory to participate in [The BXAI Summer Program](https://www.bxai.org/aflsp/education-program/bxai-summer-program/overview/) fully supported by BXAI.
 
@@ -51,7 +24,7 @@ Artificial intelligence, machine learning, data Science, data mining especially 
 
 Seeing me posting my portrait on the Internet, my father worring about my privacy tried to stop me. Specifically, he worried someone could appropriate my face somewhere. I defended myself against his concern by saying this; I will be pretty famous in the future and end up in public, so that I should not be afraid of that. Of course, this excuse satisfied my father very much, and he never asks me to stop posting my portrait again. I am very delighted to make my excuse true. I highly recommend AFLSP to the young from Asia. Do not hesitate to apply for postgraduate studies and AFLSP in HKUST.
 
-
+{% include youtubePlayer.html id=page.youtubeId %}
 
 ### __Traveller__
 
