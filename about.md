@@ -1,5 +1,5 @@
 ---
-youtubeId: pDsPSxkE-X4
+youtubeId: K_a5bfkiRSc
 layout: page
 title: About
 permalink: /about/
@@ -9,6 +9,9 @@ permalink: /about/
 Artificial intelligence, machine learning, data Science, data mining especially for big data pre-processing.
 
 ### __AFLSP Scholar__
+
+{% include youtubePlayer.html id=page.youtubeId %}
+
 [Asian Future Leaders Scholarship Program (AFLSP)](https://pg.ust.hk/aflsp) supported by [Bai Xian Asia Institute (BXAI)](https://www.bxai.org/) is definitely one of the most beneficial scholarship programs in the world. I ended up being one of AFLSP scholars at [The Hong Kong University of Science and Technology (HKUST)](https://www.ust.hk/) and want to inform prospective postgraduate students about the benefit of this program.
 
 - #### A full scholarship
@@ -24,7 +27,6 @@ Artificial intelligence, machine learning, data Science, data mining especially 
 
 Seeing me posting my portrait on the Internet, my father worring about my privacy tried to stop me. Specifically, he worried someone could appropriate my face somewhere. I defended myself against his concern by saying this; I will be pretty famous in the future and end up in public, so that I should not be afraid of that. Of course, this excuse satisfied my father very much, and he never asks me to stop posting my portrait again. I am very delighted to make my excuse true. I highly recommend AFLSP to the young from Asia. Do not hesitate to apply for postgraduate studies and AFLSP in HKUST.
 
-{% include youtubePlayer.html id=page.youtubeId %}
 
 ### __Traveller__
 
