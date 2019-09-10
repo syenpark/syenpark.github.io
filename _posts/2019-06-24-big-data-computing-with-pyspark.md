@@ -8,7 +8,7 @@ modified_date: 2019-09-07
 ---
 PySpark and Google Colab.
 
-
+### Practices
 
 
 
@@ -22,6 +22,10 @@ PySpark and Google Colab.
 ### Group Project: Age and Sentiment Based E-Commerce Clothing Recommendation System
 
 [Group Presentation Slide](https://drive.google.com/open?id=1-14cJtsehJJwaJQzTM-VVzEUqNL9G8uzesS0rBoa-r0)
+
+### Final
+
+
 
 
 TBU...
