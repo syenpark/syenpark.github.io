@@ -14,7 +14,7 @@ permalink: /portfolio/
 
 [Apriori Algorithm <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/data_science/2018/10/01/apriori-algorithm.html)
 
-[Frequent Pattern Growth Algorithm <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/data_science/2018/10/01/frequent-pattern-growth-algorithm.html)
+Frequent Pattern Growth Algorithm
 
 [Adult Income Prediction <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/data_science/2019/01/10/adult-income-prediction.html)
 
@@ -39,6 +39,8 @@ permalink: /portfolio/
 
 
 ### __Artificial Intelligence__
+
+Perceptron
 
 
 
