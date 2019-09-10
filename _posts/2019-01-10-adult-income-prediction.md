@@ -54,6 +54,8 @@ def delete_features(objects, features):
 
 {% endhighlight %}
 
+I use decision tree to impute missing data. 
+
 {% highlight python %}
 
 def decision_tree(objects, feature):
@@ -89,6 +91,60 @@ def decision_tree(objects, feature):
 
 {% highlight python %}
 
+import xgboost
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+# road file
+people = pd.read_csv(path + my_path + '/data/trainFeatures.csv',  sep=',')
+label = pd.read_csv(path + my_path + '/data/trainLabels.csv', names = [">50K"])
+
+# change columns name to acceptable format
+people.columns = ['age', 'workclass', 'fnlwgt', 'education', 'education-num',
+                  'Marital-status', 'occupation', 'relationship', 'race', 'sex',
+                  'capital-gain', 'capital-loss', 'hours-per-week', 'country']
+
+# add label
+people['income'] = label
+
+# delete duplicated objects
+people = delete_duplicated(people)
+
+# combine capital
+people['capital'] = people['capital-gain'] - people['capital-loss']
+
+# delete features
+people = delete_features(people, ['education', 'capital-gain', 'capital-loss', 'duplicated'])
+
+# delete outliers
+people = people[people.country != ' Holand-Netherlands']
+
+# apply weight with n range normalization
+people = give_weight(people, 'fnlwgt', 100)
+
+# delete features
+people = delete_features(people, ['fnlwgt'])
+
+# split features and label
+l = people['income']
+p = people.drop('income', axis=1)
+
+# impute missing data
+p = decision_tree(p, 'occupation')
+p = decision_tree(p, 'workclass')
+p = decision_tree(p, 'country')
+
+data_dummies = pd.get_dummies(p)
+
+X = data_dummies.values
+y = l.values
+
+X_train, X_test, y_train, y_test = train_test_split(X, y.ravel(), random_state=0)
+
+{% endhighlight %}
+
+{% highlight python %}
+
 clf = xgboost.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.5).fit(X_train, y_train)
 print(clf.score(X_test, y_test))
 
@@ -96,4 +152,8 @@ print(clf.score(X_test, y_test))
 
 <span style="font-family: Courier New;"> 0.9702109043554343 </span>
 
-Feedback is very welcomed.
+### __3. Future work__
+- 
+- 
+
+TBU...
