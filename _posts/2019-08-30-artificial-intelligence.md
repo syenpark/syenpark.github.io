@@ -4,7 +4,7 @@ title:  "Artificial Intelligence"
 author: Syen Park
 date:   2019-08-30
 categories: artificial_intelligence
-modified_date: 2019-08-30
+modified_date: 2019-09-03
 ---
 
 ### Assignment 1
@@ -37,10 +37,10 @@ def desired_output(X):
     :return: What or gate should returns with X
     """
     d = []
-
+    
     for x in X:
         d.append(x[1] or x[2])
-
+    
     return d
 
 def train(X, W, d, full_X):
@@ -57,10 +57,10 @@ def train(X, W, d, full_X):
     """
     print('Training instances: ', X)
     print('Initial weights', W)
-
+    
     while not (f(X, W) == d).all():
         W = W + np.matmul(X.T, d - f(X, W))
-
+    
         print('Weights are updated: ', W)
     else:
         if (f(full_X, W) == desired_output(full_X)).all():
@@ -77,17 +77,17 @@ def power_set(elements):
     """
     subsets = []
     n = len(elements)
-
+    
     for i in range(1 << n):
         subset = []
-
+    
         for j in range(n):
-
+    
             if (i >> j) & 1:
                 subset.append(elements[j])
-
+    
         subsets.append(subset)
-
+    
     return subsets
 
 full_X = np.array([[1, 0, 0],
@@ -106,7 +106,7 @@ for X in power_set_of_training_instances:
     if train(X, W, d, full_X):
         print('I end up finding minimal instances to make OR gate!')
         print('Minimal training instances are', X)
-
+    
         break
     else:
         print('This training instances cannot make OR gate. \n')
@@ -116,7 +116,7 @@ for X in power_set_of_training_instances:
 
 1. What's your fitness function?
 2. What's your crossover operator?
- 
+
 
 
 
