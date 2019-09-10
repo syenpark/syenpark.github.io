@@ -205,5 +205,5 @@ You can check all code here [Google Colab Prediction with PyTorch link  <span st
 
 ### __3. Future Work__
 
-- Replacing n_jobs = -1 should be more sophisticated, not just 16, which requires another data anaysis task.
-- Using scikit-learn to split train validation dataset, which is fancy, instead of Numpy array slicing.
+- Replace n_jobs = -1 should be more sophisticated, not just 16, which requires another data anaysis task.
+- Use scikit-learn to split train validation dataset, which is fancy, instead of Numpy array slicing.
