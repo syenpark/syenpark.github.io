@@ -87,4 +87,13 @@ def decision_tree(objects, feature):
 
 {% endhighlight %}
 
+{% highlight python %}
+
+clf = xgboost.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.5).fit(X_train, y_train)
+print(clf.score(X_test, y_test))
+
+{% endhighlight %}
+
+<span style="font-family: Courier New;"> 0.9702109043554343 </span>
+
 Feedback is very welcomed.
