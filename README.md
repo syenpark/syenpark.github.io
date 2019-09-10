@@ -1,11 +1,14 @@
-# [minima](https://github.com/jekyll/minima) + Algolia
+# Customised [Minima](https://github.com/jekyll/minima)
 
 *Minima is a one-size-fits-all Jekyll theme for writers*. It's Jekyll's default (and first) theme.  
 
+## Functions
+### Category
+
 To add a new category and list of its posts, you need to creat a new html in /categories/[New category].html manually. -> This will be improved next time.
 
-## Functions
 ### Alolia
+
 jekyll-algolia is included in this project for search, so that your updates like adding new post are reflected only when you apply your updates to algolia.
 
 ### Pagination 
@@ -18,7 +21,7 @@ PDF embedding is from [this post](https://jamesonzimmer.com/simple-pdf-embed-for
 This is from [this post](https://thornelabs.net/posts/centering-images-with-jekyll-and-markdown.html) and my iternal CSS is defined on default.html
 
 ### Youtube embedding
-This is from [this post](https://github.com/nathancy/jekyll-embed-video#embed-youtube)
+This is from [this post](https://github.com/nathancy/jekyll-embed-video#embed-youtube). 
 
 ## License
 
