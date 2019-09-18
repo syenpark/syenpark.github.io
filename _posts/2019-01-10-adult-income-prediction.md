@@ -291,8 +291,76 @@ Name: native-country, dtype: int64 </span>
 </details>
 <br/>
 
+#### __2.4 Impute missing value__
+
+I use random forest, which is ensemble, to impute the missing value.
+
+{% highlight python %}
+
+def decision_tree(objects, target, features):
+  for feature in features:
+    train = objects.copy()
+    test = target.copy()
+    
+    y = train[feature]
+
+    del train[feature]
+    del test[feature]
+
+    train_dummies = pd.get_dummies(train)
+    test_dummies = pd.get_dummies(test)
+
+    # in case for having different subset of features 
+    for c in train_dummies.columns.difference(test_dummies.columns):
+        test_dummies[c] = 0
+
+    for c in test_dummies.columns.difference(train_dummies.columns):
+        train_dummies[c] = 0
+
+    #clf = tree.DecisionTreeClassifier()
+    #clf = ensemble.ExtraTreesClassifier(n_estimators=10)
+    clf = ensemble.RandomForestClassifier(n_estimators=32)
+    
+    X_train, X_test, y_train, y_test = train_test_split(train_dummies.values, y.values, random_state=123)
+    
+    #tree.plot_tree(clf1.fit(X_train, y_train))
+    
+    clf.fit(X_train, y_train)
+    print(clf.score(X_test, y_test))
+
+    # predict
+    for c in train.columns.difference(test_dummies.columns):
+        test[c] = 0
+
+    # impute missing values
+    b = clf.predict(test_dummies.values)
+    new_df = pd.DataFrame({feature: b})
+
+    # combine
+    imputed_df = target.drop([feature], axis=1)
+    imputed_df[feature] = new_df.values
+  
+  return imputed_df
+{% endhighlight %}
+
+With random forest, the result of imputing missing value for `native-country` is about 92%, `workclass` is around 73%, but `occupation` is only 28% approximately.
+
+<span style="font-family: Courier New;"> 
+['native-country'] <br/>
+0.9215611974232664 Accuracy <br/><br/>
+['occupation'] <br/>
+0.2865984590122521 Accuracy <br/><br/>
+['workclass', 'occupation'] <br/>
+0.7327270430718706 Accuracy <br/>
+0.2839459391183529 Accuracy <br/><br/>
+['workclass', 'occupation', 'native-country'] <br/>
+0.7307060755336617 Accuracy <br/>
+0.28419856006062905 Accuracy <br/>
+0.9218138183655425 Accuracy <br/><br/>
+</span>
+
 ### __3. Future work__
 - 
 - 
 
-TBU...
+To be updated...
