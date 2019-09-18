@@ -4,7 +4,7 @@ title:  "Adult Income Prediction"
 author: Syen Park
 date:   2019-01-10
 categories: data_science
-modified_date: 2019-09-11
+modified_date: 2019-09-19
 ---
 
 ### __1. Problem__
@@ -14,6 +14,8 @@ The dataset come from 1994 Census database. Prediction task is to determine whet
 <iframe src="https://drive.google.com/file/d/1sFn1lvb3o7P4vggFRRi9rCRA5xl4UN33/preview" 
         width="100%" height="100%">
 </iframe>
+
+[Data link](https://drive.google.com/drive/folders/1nXYyUmTi7zrVDdsrySDdRLULvR11aADq?usp=sharing)
 
 ### __2. Solution__
 
