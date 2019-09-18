@@ -22,18 +22,42 @@ Please show the details of your work inlcuding the converging sequence of the we
 ### __2. Solution__
 I use Numpy and [power set](https://en.wikipedia.org/wiki/Power_set) to find a minimal set of training instance that will train the OR TLU correctly according to the error-correction procedure.
 
-#### __2.1 OR TLU__
+#### __2.1 Create power set of training instances for OR TLU__
 
-According to the problem description, I should add one more input whose value is always 1 into two inputs. This one can be represented as like the following input matrix, full_X. The first column which contains only 1 to follow the description, and other following columns' combinations are maximum training set to train the OR gate considering the OR gate's truth table.
+![OR gate.gif](/assets/190830-threshold-logic/190830-OR.gif){: .center-image}
+
+According to the problem description, I should add one more input whose value is always 1 into two inputs. This one can be represented as like the following input matrix, `full_X`. The first column which contains only 1 to follow the description, and other following columns' combinations are maximum training set to train the OR gate considering the above OR gate's truth table. To be specific, second and third columns show A, B respectively.  
+Using power set, I create all possible training instances to train the OR gate except for the empty set, which is in `power_set_of_training_instances`.
 
 {% highlight python %}
 
 full_X = np.array([[1, 0, 0],
-               [1, 0, 1],
-               [1, 1, 0],
-               [1, 1, 1]])
+                   [1, 0, 1],
+                   [1, 1, 0],
+                   [1, 1, 1]])
+
+# except for the empty set, sort by the # of training instances
+power_set_of_training_instances = sorted(power_set(full_X), key=(len))[1:]
 
 {% endhighlight %}
+
+<span style="font-family: Courier New;"> 
+[[array([1, 0, 0])], <br/>
+ [array([1, 0, 1])], <br/>
+ [array([1, 1, 0])], <br/>
+ [array([1, 1, 1])], <br/>
+ [array([1, 0, 0]), array([1, 0, 1])], <br/>
+ [array([1, 0, 0]), array([1, 1, 0])], <br/>
+ [array([1, 0, 1]), array([1, 1, 0])], <br/>
+ [array([1, 0, 0]), array([1, 1, 1])], <br/>
+ [array([1, 0, 1]), array([1, 1, 1])], <br/>
+ [array([1, 1, 0]), array([1, 1, 1])], <br/>
+ [array([1, 0, 0]), array([1, 0, 1]), array([1, 1, 0])], <br/>
+ [array([1, 0, 0]), array([1, 0, 1]), array([1, 1, 1])], <br/>
+ [array([1, 0, 0]), array([1, 1, 0]), array([1, 1, 1])], <br/>
+ [array([1, 0, 1]), array([1, 1, 0]), array([1, 1, 1])], <br/>
+ [array([1, 0, 0]), array([1, 0, 1]), array([1, 1, 0]), array([1, 1, 1])]] 
+</span>
 
 
 {% highlight python %}
@@ -127,11 +151,6 @@ for X in power_set_of_training_instances:
     else:
         print('This training instances cannot make OR gate. \n')
 {% endhighlight %}
-
-#### Problem 4
-
-1. What's your fitness function?
-2. What's your crossover operator?
 
 
 
