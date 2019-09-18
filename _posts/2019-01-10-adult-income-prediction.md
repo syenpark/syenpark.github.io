@@ -21,16 +21,6 @@ The dataset come from 1994 Census database. Prediction task is to determine whet
 
 I use Pandas, XGBoost, Scikit-Learn, and Seaborn on Python to solve this problem.
 
-## collapsible markdown?
-
-<details><summary>CLICK ME</summary>
-<p>
-
-ah
-
-</p>
-</details>
-
 #### __2.1 Baseline model__
 
 I check the basic data validity first to build its baseline model.
@@ -41,6 +31,8 @@ data.info()
 
 {% endhighlight %}
 
+<details><summary>Click here if you want to see the result</summary>
+<p>
 
 <span style="font-family: Courier New;"> 
 <class 'pandas.core.frame.DataFrame'> <br/>
@@ -63,11 +55,18 @@ native-country    34189 non-null object <br/>
 dtypes: int64(6), object(8) <br/>
 memory usage: 3.7+ MB </span>
 
+</p>
+</details>
+<br/>
+
 {% highlight python %}
 
 label.info()
 
 {% endhighlight %}
+
+<details><summary>Click here if you want to see the result</summary>
+<p>
 
 <span style="font-family: Courier New;"> 
 <class 'pandas.core.frame.DataFrame'> <br/>
@@ -76,6 +75,10 @@ Data columns (total 1 columns): <br/>
 \>50K    34189 non-null int64 <br/>
 dtypes: int64(1) <br/>
 memory usage: 267.2 KB </span>
+
+</p>
+</details>
+<br/>
 
 Both have no null values and because of that, the baseline model can be built without any data processing.
 
