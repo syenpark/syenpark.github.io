@@ -40,7 +40,7 @@ Frequent Pattern Growth Algorithm
 
 ### __Artificial Intelligence__
 
-Perceptron
+[Artificial Neuron - Threshold Logic Unit <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/artificial_intelligence/2019/08/30/threshold-logic-unit)
 
 
 
