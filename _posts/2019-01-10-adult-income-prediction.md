@@ -19,140 +19,82 @@ The dataset come from 1994 Census database. Prediction task is to determine whet
 
 ### __2. Solution__
 
-I use Pandas, XGBoost, and Scikit-Learn on Python to solve this problem.
+I use Pandas, XGBoost, Scikit-Learn, and Seaborn on Python to solve this problem.
 
-I define delete_duplicated function to delete duplicated rows (objects) in dataset.
+## collapsible markdown?
+
+<details><summary>CLICK ME</summary>
+<p>
+
+ah
+
+</p>
+</details>
+
+#### __2.1 Baseline model__
+
+I check the basic data validity first to build its baseline model.
 
 {% highlight python %}
 
-def delete_duplicated(objects):
-    # delete duplicated
-    objects['duplicated'] = objects.duplicated()
-    filter_duplicated = objects['duplicated'] == False
-    objects = objects[filter_duplicated]
-
-    return objects
+data.info()
 
 {% endhighlight %}
 
+
+<span style="font-family: Courier New;"> 
+<class 'pandas.core.frame.DataFrame'> <br/>
+RangeIndex: 34189 entries, 0 to 34188 <br/>
+Data columns (total 14 columns): <br/>
+age               34189 non-null int64 <br/>
+workclass         34189 non-null object <br/>
+fnlwgt            34189 non-null int64 <br/>
+education         34189 non-null object <br/>
+education-num     34189 non-null int64 <br/>
+Marital-status    34189 non-null object <br/>
+occupation        34189 non-null object <br/>
+relationship      34189 non-null object <br/>
+race              34189 non-null object <br/>
+sex               34189 non-null object <br/>
+capital-gain      34189 non-null int64 <br/>
+capital-loss      34189 non-null int64 <br/>
+hours-per-week    34189 non-null int64 <br/>
+native-country    34189 non-null object <br/>
+dtypes: int64(6), object(8) <br/>
+memory usage: 3.7+ MB </span>
+
 {% highlight python %}
 
-def give_weight(objects, feature, n):
-    min = objects[feature].min()
-    max = objects[feature].max()
-    denominator = max - min
-
-    return objects.loc[objects.index.repeat((n * ((objects[feature] - min) / denominator)).astype(int))]
+label.info()
 
 {% endhighlight %}
 
-{% highlight python %}
+<span style="font-family: Courier New;"> 
+<class 'pandas.core.frame.DataFrame'> <br/>
+RangeIndex: 34189 entries, 0 to 34188 <br/>
+Data columns (total 1 columns): <br/>
+\>50K    34189 non-null int64 <br/>
+dtypes: int64(1) <br/>
+memory usage: 267.2 KB </span>
 
-def delete_features(objects, features):
-    for f in features:
-        del objects[f]
+Both have no null values and because of that, the baseline model can be built without any data processing.
 
-    return objects
-
-{% endhighlight %}
-
-I use decision tree to impute missing data. 
-
-{% highlight python %}
-
-def decision_tree(objects, feature):
-    t_x = objects.loc[objects[feature] != " ?"]
-    t_x2 = objects.loc[objects[feature] == " ?"]
-
-    t_l = t_x[feature]
-    del t_x[feature]
-    del t_x2[feature]
-
-    t_x = pd.get_dummies(t_x)
-    t_x2 = pd.get_dummies(t_x2)
-
-    for c in t_x2.columns.difference(t_x.columns):
-        t_x[c] = 0
-
-    clf = tree.DecisionTreeClassifier()
-    #clf = ensemble.ExtraTreesClassifier(n_estimators=10)
-    clf = clf.fit(t_x.values, t_l.values)
-
-    # predict
-    for c in t_x.columns.difference(t_x2.columns):
-        t_x2[c] = 0
-
-    # impute missing values
-    b = clf.predict(t_x2.values)
-    new_df = pd.DataFrame({feature: b})
-    objects.loc[objects[feature] == " ?", [feature]] = new_df
-
-    return objects
-
-{% endhighlight %}
 
 {% highlight python %}
 
-import xgboost
-import pandas as pd
-from sklearn.model_selection import train_test_split
-
-# road file
-people = pd.read_csv(path + my_path + '/data/trainFeatures.csv',  sep=',')
-label = pd.read_csv(path + my_path + '/data/trainLabels.csv', names = [">50K"])
-
-# change columns name to acceptable format
-people.columns = ['age', 'workclass', 'fnlwgt', 'education', 'education-num',
-                  'Marital-status', 'occupation', 'relationship', 'race', 'sex',
-                  'capital-gain', 'capital-loss', 'hours-per-week', 'country']
-
-# add label
-people['income'] = label
-
-# delete duplicated objects
-people = delete_duplicated(people)
-
-# combine capital
-people['capital'] = people['capital-gain'] - people['capital-loss']
-
-# delete features
-people = delete_features(people, ['education', 'capital-gain', 'capital-loss', 'duplicated'])
-
-# delete outliers
-people = people[people.country != ' Holand-Netherlands']
-
-# apply weight with n range normalization
-people = give_weight(people, 'fnlwgt', 100)
-
-# delete features
-people = delete_features(people, ['fnlwgt'])
-
-# split features and label
-l = people['income']
-p = people.drop('income', axis=1)
-
-# impute missing data
-p = decision_tree(p, 'occupation')
-p = decision_tree(p, 'workclass')
-p = decision_tree(p, 'country')
-
-data_dummies = pd.get_dummies(p)
+# One-hot encoding for categorial features
+data_dummies = pd.get_dummies(data)
 
 X = data_dummies.values
-y = l.values
+y = label.values
 
 X_train, X_test, y_train, y_test = train_test_split(X, y.ravel(), random_state=0)
-
-{% endhighlight %}
-
-{% highlight python %}
 
 clf = xgboost.XGBClassifier(max_depth=8, n_estimators=300, learning_rate=0.5).fit(X_train, y_train)
 print(clf.score(X_test, y_test))
 
 {% endhighlight %}
 
-<span style="font-family: Courier New;"> 0.9702109043554343 </span>
 
 ### __3. Future work__
 - 
