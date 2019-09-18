@@ -7,17 +7,36 @@ categories: artificial_intelligence
 modified_date: 2019-09-18
 ---
 
-### 1. Problem
+### __1. Problem__
 
-<iframe src="https://drive.google.com/file/d/1esT5JTXloMBB9LpOxxBAf731cwwx9jJJ/preview" 
-        width="100%" height="100%">
-</iframe>
+Do find *__a minimal set of training instance__* that will train *__the OR Threshold Logic Unit (TLU)__*  correctly according to *__the error-correction procedure__*.  
+In other words, consider the problem of training a TLU to do logical disjunction
+(logical “or”) using the error-correction procedure. Notice
+that *__this operator takes two inputs__*, but to apply the procedure, you need to *__add one more
+input whose value is always 1__*, and *__use 0 as the threshold__*. Suppose that we start with
+the initial weights all equal to 0, and learning rate c = 1. Find a minimal set of training
+instances that will correctly train the TLU according to the procedure. Here a training set
+is minimal if removing any instance in it will not produce a TLU for the logical disjunction.
+Please show the details of your work inlcuding the converging sequence of the weights.
 
-#### 1.1 Problem 3
-I use [power set](https://en.wikipedia.org/wiki/Power_set) to find a minimal set of training instance that will train the OR Threshold Logic Unit (TLU)  correctly according to the error-correction procedure.
+### __2. Solution__
+I use Numpy and [power set](https://en.wikipedia.org/wiki/Power_set) to find a minimal set of training instance that will train the OR TLU correctly according to the error-correction procedure.
+
+#### __2.1 OR TLU__
+
+According to the problem description, I should add one more input whose value is always 1 into two inputs. This one can be represented as like the following input matrix, full_X. The first column which contains only 1 to follow the description, and other following columns' combinations are maximum training set to train the OR gate considering the OR gate's truth table.
 
 {% highlight python %}
-import numpy as np
+
+full_X = np.array([[1, 0, 0],
+               [1, 0, 1],
+               [1, 1, 0],
+               [1, 1, 1]])
+
+{% endhighlight %}
+
+
+{% highlight python %}
 
 def f(X, W):
     """
@@ -90,10 +109,7 @@ def power_set(elements):
     
     return subsets
 
-full_X = np.array([[1, 0, 0],
-               [1, 0, 1],
-               [1, 1, 0],
-               [1, 1, 1]])
+
 
 # except for the empty set, sort by the # of training instances
 power_set_of_training_instances = sorted(power_set(full_X), key=(len))[1:]
