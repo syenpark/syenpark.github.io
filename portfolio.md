@@ -8,7 +8,7 @@ permalink: /portfolio/
 
 [Supervised Learning - Multivariable Regression <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/data_science/2019/09/07/multivariable-regression.html)  
 
-
+Supervised Learning - Multivariable Regression with Timestamp Data
 
 ### __Data Mining__
 
@@ -18,7 +18,9 @@ Frequent Pattern Growth Algorithm
 
 [Adult Income Prediction <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/data_science/2019/01/10/adult-income-prediction.html)
 
-[Unsupervised Learning - Image Clustering <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/machine_learning/2019/09/03/image-clustering.html)    
+[Unsupervised Learning - Image Clustering <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/machine_learning/2019/09/03/image-clustering.html)
+
+Time Series Analysis - Beijing Air Quality Forecast 
 
 
 
@@ -57,6 +59,8 @@ Berkeley AI Project1 Pacman game with the A* algorithm
 ### __Personal Projects__
 
 Deepfake
+
+Chatbot with BERT
 
 <br/>
 

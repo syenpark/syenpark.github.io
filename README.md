@@ -23,6 +23,10 @@ This is from [this post](https://thornelabs.net/posts/centering-images-with-jeky
 ### Youtube embedding
 This is from [this post](https://github.com/nathancy/jekyll-embed-video#embed-youtube). 
 
+### __Collapsible markdown__
+
+[This post](https://gist.github.com/joyrexus/16041f2426450e73f5df9391f7f7ae5f) helps me.
+
 ## License
 
 The theme is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
