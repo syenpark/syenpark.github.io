@@ -9,15 +9,25 @@ modified_date: 2019-09-18
 
 ### __1. Problem__
 
-Do find *__a minimal set of training instance__* that will train *__the OR Threshold Logic Unit (TLU)__*  correctly according to *__the error-correction procedure__*.  
-In other words, consider the problem of training a TLU to do logical disjunction
-(logical “or”) using the error-correction procedure. Notice
-that *__this operator takes two inputs__*, but to apply the procedure, you need to *__add one more
-input whose value is always 1__*, and *__use 0 as the threshold__*. Suppose that we start with
-*__the initial weights all equal to 0__*, and *__learning rate c = 1__*. Find a minimal set of training
-instances that will correctly train the TLU according to the procedure. Here a training set
-is minimal if removing any instance in it will not produce a TLU for the logical disjunction.
-Please show the details of your work inlcuding the converging sequence of the weights.
+Design and implement *__a genetic programming system__* to *__evolve some perceptrons__* that match well with a given training set. A training set is a collection of tuples of the form (x1, ..., xn, l), where xi’s are real numbers and l is either 1 (positive example) or 0 (negative example). So for your genetic programming system, a 'program' is just a tuple (w1, ... , wn, θ) of numbers (weights and the threshold). Answer the following questions:
+
+- What’s your fitness function?
+
+- What’s your crossover operator?
+
+- What’s your copy operator?
+
+- What’s your mutation operator, if you use any?
+
+- What’s the size of the initial generation, and how are programs generated?  
+
+- When do you stop the evolution? Evolve it up to a fixed iteration, when it satisfies a condition on the fitness function, or a combination of the two?
+
+- What’s the output of your system for the training set of the below one?  Its [training-set.csv link](https://drive.google.com/file/d/1KCycVKj2cIFJIilVlWr4DNgqbzxXgBrS/view?usp=sharing)   
+
+  <iframe src="https://drive.google.com/file/d/1lGy_V9UWyO4CCHlvMVrr_FLzD1JhCoSv/preview" 
+          width="100%" height="100%">
+  </iframe>
 
 ### __2. Solution__
 I use Numpy and [power set](https://en.wikipedia.org/wiki/Power_set) to find a minimal set of training instance that will train the OR TLU correctly according to the error-correction procedure.
