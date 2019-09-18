@@ -144,7 +144,8 @@ Minimal training instances are [[1 0 0]
  [1 1 1]]
 </span>
 
-You can check all code here [OR.py link <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://drive.google.com/file/d/1YGvby1NAhRDMJS8Ljcn1oHNGtskf_H9X/view?usp=sharing).
+For the format of training instance, it is added one more
+input whose value is always 1 into the first column. This means the real training instances should be [[0 0] [1 1]] without the first column. You can check all code here [OR.py link <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://drive.google.com/file/d/1YGvby1NAhRDMJS8Ljcn1oHNGtskf_H9X/view?usp=sharing).
 
 
 
