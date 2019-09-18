@@ -50,7 +50,7 @@ Supervised Learning - Image Classification
 
 Berkeley AI Project1 Pacman game with the A* algorithm
 
-[Mechanical Theorem - The Lady or The Tiger Problem and The Ranking Problem <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://drive.google.com/file/d/1CIOnAFIFGffdfdbETMUoMr-pbM6jnK4d/view?usp=sharing)
+[Mechanical Theorem - The Lady or The Tiger Problem and The Ranking Problem <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://colab.research.google.com/drive/1CIOnAFIFGffdfdbETMUoMr-pbM6jnK4d)
 
 
 
