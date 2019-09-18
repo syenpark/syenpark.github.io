@@ -59,6 +59,26 @@ power_set_of_training_instances = sorted(power_set(full_X), key=(len))[1:]
  [array([1, 0, 0]), array([1, 0, 1]), array([1, 1, 0]), array([1, 1, 1])]] 
 </span>
 
+#### __2.2 Train the sorted power set of training instances according to the error-correction procedure__
+
+The reason I sort the power set by the number of training instances is my task is to find the minimum training instance set for OR TLU. If I start to verify that each training instances set in the sorted power set satisfies OR TLU, my program will stop as soon as possible when it meets the suitable set, which is the minimum number of set like the blow steps.
+
+{% highlight python %}
+
+for X in power_set_of_training_instances:
+    X = np.array(X)
+    W = np.array([0, 0, 0])
+    d = desired_output(X)
+
+    if train(X, W, d, full_X):
+        print('I end up finding minimal instances to make OR gate!')
+        print('Minimal training instances are', X)
+    
+        break
+    else:
+        print('This training instances cannot make OR gate. \n')
+{% endhighlight %}
+
 
 {% highlight python %}
 
