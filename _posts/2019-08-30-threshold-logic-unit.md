@@ -1,20 +1,20 @@
 ---
 layout: post
-title:  "Artificial Intelligence"
+title:  "Threshold Logic Unit"
 author: Syen Park
 date:   2019-08-30
 categories: artificial_intelligence
-modified_date: 2019-09-03
+modified_date: 2019-09-18
 ---
 
-### Assignment 1
+### 1. Problem
 
 <iframe src="https://drive.google.com/file/d/1esT5JTXloMBB9LpOxxBAf731cwwx9jJJ/preview" 
         width="100%" height="100%">
 </iframe>
 
-#### Problem 3
-I use [power set](https://en.wikipedia.org/wiki/Power_set) to find a minimal set of training instance that will train the OR TLU correctly according to the error-correction procedure.
+#### 1.1 Problem 3
+I use [power set](https://en.wikipedia.org/wiki/Power_set) to find a minimal set of training instance that will train the OR Threshold Logic Unit (TLU)  correctly according to the error-correction procedure.
 
 {% highlight python %}
 import numpy as np
