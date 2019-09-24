@@ -16,7 +16,7 @@ Supervised Learning - Multivariable Regression with Timestamp Data
 
 Frequent Pattern Growth Algorithm
 
-[Adult Income Prediction <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/data_science/2019/01/10/adult-income-prediction.html)
+[Supervised Learning - Adult Income Prediction <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/data_science/2019/01/10/adult-income-prediction.html)
 
 [Unsupervised Learning - Image Clustering <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/machine_learning/2019/09/03/image-clustering.html)
 
@@ -41,6 +41,8 @@ Hong Kong Housing Price Visualisation Group Project [primary dashboard <span sty
 ### __Machine Learning__
 
 Supervised Learning - Image Classification
+
+Supervised Learning - Video Classification
 
 
 
