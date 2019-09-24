@@ -6,7 +6,9 @@ permalink: /about/
 ---
 
 ### __Interests__
-Artificial intelligence, machine learning, data Science, data mining especially for big data pre-processing.
+Artificial intelligence, machine learning, data Science, data mining especially for big data collecting, processing and modeling.
+
+I am interested in making ues of data science skills to reproduce human beings for robots, chatbots, and fake people in argument reality or to create a media platform for mutual understanding in terms of press or to contribute to tackling climate change.
 
 ### __AFLSP Scholar__
 
