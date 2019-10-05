@@ -60,9 +60,11 @@ Berkeley AI Project1 Pacman game with the A* algorithm
 
 ### __Personal Projects__
 
-Deepfake
+Computer Vision - Deepfake
 
-Chatbot with BERT
+Natural Language Processing - Chatbot with BERT
+
+Data Wrangling
 
 <br/>
 
