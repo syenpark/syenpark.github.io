@@ -10,6 +10,10 @@ Artificial intelligence, machine learning, data science; Data mining especially 
 
 I am interested in making ues of data science skills to reproduce human beings for robots, chatbots, and fake people in argument reality or to create an objective media platform bridging gaps in the world for mutual understanding and harmony or to contribute to tackling climate change.
 
+### Plum Profile
+
+![Plum profile](/assets/about/plum.png){: .center-image}
+
 ### __AFLSP Scholar__
 
 {% include youtubePlayer.html id=page.youtubeId %}
