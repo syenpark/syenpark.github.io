@@ -10,9 +10,15 @@ Artificial intelligence, machine learning, data science; Data mining especially 
 
 I am interested in making ues of data science skills to reproduce human beings for robots, chatbots, and fake people in argument reality or to create an objective media platform bridging gaps in the world for mutual understanding and harmony or to contribute to tackling climate change.
 
-### Plum Profile
+### __Plum Profile__
+
+The **Plum** Assessment uses questions developed by Industrial/Organizational Psychologists (super smart people who study the psychology of the workplace) to gauge your personality, social intelligence, and problem solving ability - by Plum.io
+
+The following is about my Plum profile and career.
 
 ![Plum profile](/assets/about/plum.png){: .center-image}
+
+![Plum career](/assets/about/career.png){: .center-image}
 
 ### __AFLSP Scholar__
 
