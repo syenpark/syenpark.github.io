@@ -12,7 +12,7 @@ I am interested in making ues of data science skills to reproduce human beings f
 
 ### Plum Profile
 
-
+![Plum profile](/assets/about/plum.png){: .center-image}
 
 ### __AFLSP Scholar__
 
