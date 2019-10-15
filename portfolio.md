@@ -40,7 +40,7 @@ Hong Kong Housing Price Visualisation Group Project [primary dashboard <span sty
 
 ### __Machine Learning__
 
-Supervised Learning - Image Classification
+[Supervised Learning - Image Classification](https://www.youtube.com/watch?v=XP0J1kF9sBw)
 
 Supervised Learning - Video Classification
 
