@@ -9,10 +9,10 @@ To add a new category and list of its posts, you need to creat a new html in /ca
 
 ### 1.2 Alolia
 
-jekyll-algolia is included in this project for search, so that your updates like adding new post are reflected only when you apply your updates to algolia.
+jekyll-algolia is included in this project for search, so that **your updates like adding new post are reflected only when you apply your updates to algolia**.
 
-### 1.3 Pagination 
-Currently, it is not available.  
+~~### 1.3 Pagination 
+Currently, it is not available.~~  
 
 ### 1.4 Centering images in post 
 This is from [this post](https://thornelabs.net/posts/centering-images-with-jekyll-and-markdown.html) and my iternal CSS is defined on default.html
