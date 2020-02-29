@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Tackling Fake News with Machine Learning"
+title:  "Tackling Fake News with Data Science"
 author: Syen Park
 date:   2019-10-05
 categories: data_science
@@ -18,6 +18,7 @@ BeautifulSoup
 MongoDB
 
 [Stanford CS276: Information Retrieval and Web Search](http://web.stanford.edu/class/cs276/)
+[Introduction to Information Retrieval](https://nlp.stanford.edu/IR-book/)
 
 ### **2. Data processing**
 [Stanford CS224n: Natural Language Processing with Deep Learning](http://web.stanford.edu/class/cs224n/)
