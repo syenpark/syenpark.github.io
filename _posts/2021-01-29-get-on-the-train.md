@@ -15,3 +15,5 @@ Seoul
 Tokyo
 
 To be updated...
+
+References: [JavaScript animations](https://javascript.info/js-animation)

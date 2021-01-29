@@ -10,7 +10,7 @@ modified_date: 2019-09-19
 ### __1. Problem__
 
 The dataset come from 1994 Census database. Prediction task is to determine whether a person makes over 50K a year. Overall data is described in the following frame.
- 
+
 <iframe src="https://drive.google.com/file/d/1sFn1lvb3o7P4vggFRRi9rCRA5xl4UN33/preview" 
         width="100%" height="100%">
 </iframe>
@@ -112,11 +112,11 @@ adult_income = pd.concat([data, label], axis=1)
 
 This following the correlation heatmap and the correlation matrix show no strong correlation without any pre-processing. I can see `education-num` is the most related with income in raw data.
 
-![A hitmap.png](/assets/190110-adult-income-prediction/hitmap.png){: .center-image} 
+![A hitmap.png](/assets/images/190110-adult-income-prediction/hitmap.png){: .center-image} 
 
 I check the overall data distribution for numerical features and label. This shows there is no data fault in label as there are only 0 or 1, binary data.
 
-![A dist.png](/assets/190110-adult-income-prediction/dist.png){: .center-image} 
+![A dist.png](/assets/images/190110-adult-income-prediction/dist.png){: .center-image} 
 
 #### __2.3 Data Reliability__
 
@@ -303,20 +303,20 @@ def decision_tree(objects, target, features):
     test = target.copy()
     
     y = train[feature]
-
+    
     del train[feature]
     del test[feature]
-
+    
     train_dummies = pd.get_dummies(train)
     test_dummies = pd.get_dummies(test)
-
+    
     # in case for having different subset of features 
     for c in train_dummies.columns.difference(test_dummies.columns):
         test_dummies[c] = 0
-
+    
     for c in test_dummies.columns.difference(train_dummies.columns):
         train_dummies[c] = 0
-
+    
     #clf = tree.DecisionTreeClassifier()
     #clf = ensemble.ExtraTreesClassifier(n_estimators=10)
     clf = ensemble.RandomForestClassifier(n_estimators=32)
@@ -327,19 +327,19 @@ def decision_tree(objects, target, features):
     
     clf.fit(X_train, y_train)
     print(clf.score(X_test, y_test))
-
+    
     # predict
     for c in train.columns.difference(test_dummies.columns):
         test[c] = 0
-
+    
     # impute missing values
     b = clf.predict(test_dummies.values)
     new_df = pd.DataFrame({feature: b})
-
+    
     # combine
     imputed_df = target.drop([feature], axis=1)
     imputed_df[feature] = new_df.values
-  
+
   return imputed_df
 {% endhighlight %}
 

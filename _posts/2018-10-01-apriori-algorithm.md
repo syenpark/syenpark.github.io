@@ -19,10 +19,10 @@ Suppose there are 35 candidate item sets of length 3:
 Do write a program to generate a hash tree according to [Fast Algorithms for Mning Association](http://www.vldb.org/conf/1994/P487.PDF), Apriori algorithm, with max leaf size 2 and output the nested list (or nested dict) of the hash tree hierarchically.
 
 For example, the nested list is  
-![A nested list example.png](/assets/181001-apriori-algorithm/181001-nested.png) 
+![A nested list example.png](/assets/images/181001-apriori-algorithm/181001-nested.png) 
 
 and its corresponding hash tree is  
-![A hash tree example.png](/assets/181001-apriori-algorithm/181001-hash_tree.png) 
+![A hash tree example.png](/assets/images/181001-apriori-algorithm/181001-hash_tree.png) 
 
 ### __2. Solution__
 

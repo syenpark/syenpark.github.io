@@ -220,7 +220,7 @@ Final accuracy, [Weights, -Theta]<br/>
 
 Thus, the final set trains the following perceptron with 100% accuracy.
 
-![loss plot](/assets/190918-genetic-programming/190918-perceptron.png){: .center-image}
+![loss plot](/assets/images/190918-genetic-programming/190918-perceptron.png){: .center-image}
 
 [w0, w1, w2, w3, w4, w5, w6, w7, w8, w9] =  
 [-0.84338978 -0.46205443 1.18068324 -0.33115215 3.94876468 1.75438933 -3.70812714 -2.44350959 0.73136723 0.50576898]  
