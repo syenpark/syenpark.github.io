@@ -10,8 +10,10 @@ function animate(options) {
 
     // текущее состояние анимации
     var progress = options.timing(timeFraction)
+    var progress2 = options.timing2(timeFraction)
+    var year = time - start;
 
-    options.draw(progress);
+    options.draw(progress, progress2, year);
 
     if (timeFraction < 1) {
       requestAnimationFrame(animate);
@@ -30,8 +32,13 @@ function trainHKG() {
         }
       }
     },
-    draw: function(progress) {
+    timing2: function quad(timeFraction) {
+        return Math.pow(timeFraction, 2)
+    },
+    draw: function(progress, progress2, year) {
       document.getElementById("trainHKG").style.left = progress * 570 + 'px';
+      document.getElementById("HKG").style.left = progress2 * 60 + 'px';
+      document.getElementById("year").innerHTML = 'Year ' + (1980 + Math.round(year/200)); // tentative way
     }
   });
 }
