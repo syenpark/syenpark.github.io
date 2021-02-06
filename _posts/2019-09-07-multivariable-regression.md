@@ -37,7 +37,7 @@ print('Shape of the test data with all features:', test.shape)
 train[:400].plot(x='id', y='time')
 {% endhighlight %}
 
-![data plot](/assets/190907-multivariable-regression/190907-data.png){: .center-image}
+![data plot](/assets/images/190907-multivariable-regression/190907-data.png){: .center-image}
 
 {% highlight python %}
 train.corr()
@@ -195,11 +195,11 @@ model = nn.Sequential(nn.Linear(len(train_features[0]), 100),
 
 The following plot is about training loss and validation loss per epoch.
 
-![loss plot](/assets/190907-multivariable-regression/190907-ff-loss.png){: .center-image}
+![loss plot](/assets/images/190907-multivariable-regression/190907-ff-loss.png){: .center-image}
 
 My prediction result with validation data is like that:
 
-![prediction plot](/assets/190907-multivariable-regression/190907-ff-prediction.png){: .center-image}
+![prediction plot](/assets/images/190907-multivariable-regression/190907-ff-prediction.png){: .center-image}
 
 You can check all code here [Google Colab Prediction with PyTorch link  <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://colab.research.google.com/drive/1iXiliebv8yTG5taXpi4yuy_pn6bpMwtX)
 

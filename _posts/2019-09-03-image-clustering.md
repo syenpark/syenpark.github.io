@@ -32,7 +32,7 @@ models with following steps.
    chose 200 is that it keeps around 90% information of original features using sum of variance
    ratios. The below graph accounts for its detail.
 
-   ![PCA plot](/assets/190903-image-clustering/190903-K-means_PCA.png){: .center-image}
+   ![PCA plot](/assets/images/190903-image-clustering/190903-K-means_PCA.png){: .center-image}
 
 #### __2.2 K-means clustering altorighm with silhouette analysis__
 
@@ -42,11 +42,11 @@ that others have so many negative values that many samples of them would be assi
 incorrect cluster. Secondly, 11 has the most similar thickness of the silhouette plot that indicates
 it has the most similar clusters size.
 
-![PCA plot](/assets/190903-image-clustering/190903-sil_03.png){: .center-image}
+![PCA plot](/assets/images/190903-image-clustering/190903-sil_03.png){: .center-image}
 
-![PCA plot](/assets/190903-image-clustering/190903-sil_08.png){: .center-image}
+![PCA plot](/assets/images/190903-image-clustering/190903-sil_08.png){: .center-image}
 
-![PCA plot](/assets/190903-image-clustering/190903-sil_11.png){: .center-image}
+![PCA plot](/assets/images/190903-image-clustering/190903-sil_11.png){: .center-image}
 
 As the result, each cluster accounts for those following objects:  
 Cluster 1: Pet (Cat + Dog)  

@@ -16,9 +16,9 @@ The **Plum** Assessment uses questions developed by Industrial/Organizational Ps
 
 The following is about my Plum profile and career.
 
-![Plum profile](/assets/about/plum.png){: .center-image}
+![Plum profile](/assets/images/about/plum.png){: .center-image}
 
-![Plum career](/assets/about/career.png){: .center-image}
+![Plum career](/assets/images/about/career.png){: .center-image}
 
 ### __AFLSP Scholar__
 

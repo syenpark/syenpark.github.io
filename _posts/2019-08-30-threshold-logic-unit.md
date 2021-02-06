@@ -24,7 +24,7 @@ I use Numpy and [power set](https://en.wikipedia.org/wiki/Power_set) to find a m
 
 #### __2.1 Create power set of training instances for OR TLU__
 
-![OR gate.gif](/assets/190830-threshold-logic/190830-OR.gif){: .center-image}
+![OR gate.gif](/assets/images/190830-threshold-logic/190830-OR.gif){: .center-image}
 
 According to the problem description, I should add one more input whose value is always 1 into two inputs. This one can be represented as like the following input matrix, `full_X`. The first column which contains only 1 to follow the description, and other following columns' combinations are maximum training set to train the OR gate considering the above OR gate's truth table. To be specific, second and third columns show A, B respectively.  
 Using power set, I create all possible training instances to train the OR gate except for the empty set, which is in `power_set_of_training_instances`.

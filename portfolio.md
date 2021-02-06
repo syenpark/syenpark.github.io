@@ -36,7 +36,7 @@ Time Series Analysis - Beijing Air Quality Forecast
 
 Hong Kong Housing Price Visualisation Group Project [primary dashboard <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://public.tableau.com/profile/kenneth.sze#!/vizhome/DashtBoard1/Dashboard1?publish=yes) and [secondary dashboard <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://public.tableau.com/profile/kenneth.sze#!/vizhome/SecondaryDashboard/Dashboard1?publish=yes).   
 
-
+JavaScript - [Get on the Train <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://syenpark.github.io/data_science/2021/01/29/get-on-the-train.html)
 
 ### __Machine Learning__
 
@@ -55,16 +55,6 @@ Supervised Learning - Video Classification
 Berkeley AI Project1 Pacman game with the A* algorithm
 
 [Mechanical Theorem - The Lady or The Tiger Problem and The Ranking Problem <span style="color:red; font-family: Babas;">__*Click!*__</span>](https://colab.research.google.com/drive/1CIOnAFIFGffdfdbETMUoMr-pbM6jnK4d)
-
-
-
-### __Personal Projects__
-
-Computer Vision - Deepfake
-
-Natural Language Processing - Chatbot with BERT
-
-Data Wrangling
 
 <br/>
 
