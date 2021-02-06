@@ -52,7 +52,7 @@ Hong Kong is notorious as the most unaffordable housing market in the world.
       </div>
     </div>
     <br/><br/>
-    <script src="{{ site.baseurl }}{% link assets/js/2021-01-29-get-on-the-train.js %}"></script>
+    <script src="{{ site.baseurl }}/assets/js/2021-01-29-get-on-the-train.js" type="text/javascript"></script>
   </body>
 </html>
 
@@ -73,7 +73,7 @@ My hometown.
     <br/><br/>
     <button type="button" onclick="trainSEL()">Try it</button>
     <br/><br/>
-    <script src="{{ site.baseurl }}{% link assets/js/2021-01-29-get-on-the-train.js %}"></script>
+    <script src="{{ site.baseurl }}/assets/js/2021-01-29-get-on-the-train.js" type="text/javascript"></script>
   </body>
 </html>
 
@@ -95,7 +95,7 @@ The unprecedented rise in house prices and market crash.
     <br/><br/>
     <button type="button" onclick="trainTYO()">Try it</button>
     <br/><br/>
-    <script src="{{ site.baseurl }}{% link assets/js/2021-01-29-get-on-the-train.js %}"></script>
+    <script src="{{ site.baseurl }}/assets/js/2021-01-29-get-on-the-train.js"></script>
   </body>
 </html>
 
