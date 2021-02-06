@@ -6,7 +6,10 @@ date:   2021-01-29
 categories: data_science
 modified_date: 2021-02-06
 ---
-A simple data visualisation for housing prices rise for X years in three cities; Hong Kong, Seoul and Tokyo. This post is not completed yet and currently uses dummy data for test.
+A simple data visualisation for housing prices rise for X years in three cities; Hong Kong, Seoul and Tokyo. This post is not yet completed and currently uses dummy data for test.  
+
+<span style="color:blue">**Train**</span>: average housing prices  
+<span style="color:blue">**Human**</span>: average annual household income
 
 ### __1. Hong Kong__
 Hong Kong is notorious as the most unaffordable housing market in the world.

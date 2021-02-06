@@ -53,7 +53,10 @@ function trainSEL() {
         }
       }
     },
-    draw: function(progress) {
+    timing2: function quad(timeFraction) {
+        return Math.pow(timeFraction, 2)
+    },
+    draw: function(progress, progress2, year) {
       document.getElementById("trainSEL").style.left = progress * 570 + 'px';
     }
   });
@@ -69,7 +72,10 @@ function trainTYO() {
         }
       }
     },
-    draw: function(progress) {
+    timing2: function quad(timeFraction) {
+        return Math.pow(timeFraction, 2)
+    },
+    draw: function(progress, progress2, year) {
       document.getElementById("trainTYO").style.left = progress * 570 + 'px';
     }
   });
