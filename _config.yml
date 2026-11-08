@@ -73,3 +73,8 @@ theme: minima
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
+
+# Silence deprecation warnings coming from the minima theme
+sass:
+  quiet_deps: true
+  silence_deprecations: [import]
