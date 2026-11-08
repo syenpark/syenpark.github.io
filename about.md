@@ -124,6 +124,10 @@ Seeing me posting my portrait on the Internet, my father worring about my privac
 	{
 		"id": "KR",
 		"showAsSelected": true
+	},
+	{
+		"id": "TH",
+		"showAsSelected": true
 	}
         ]
     },
