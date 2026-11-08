@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ML Platform Interactive Labs</title>
+<meta name="description" content="Step-through animations: DataLoader loop, DistributedSampler, persistent_workers, Deployment + Service.">
+<style>
+  :root{
+    --bg:#f6f5f2; --card:#ffffff; --fg:#1d1d1f; --muted:#6b6b70; --line:#d9d7d1;
+    --accent:#2f6fde; --accent-soft:#e7f0fd; --good:#2e8b57; --good-soft:#e3f3ea; --warn:#c77c11; --bad:#c2453a; --bad-soft:#f8e5e3;
+    --chip:#ecebe7; --shadow:0 1px 2px rgba(0,0,0,.06),0 6px 24px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#141416; --card:#1e1e22; --fg:#ececef; --muted:#9a9aa3; --line:#34343a;
+      --accent:#7aa7ff; --accent-soft:#1f2b44; --good:#5fc48a; --good-soft:#1c3327; --warn:#e2a64a; --bad:#ef7b70; --bad-soft:#3a2120;
+      --chip:#2a2a30; --shadow:none;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#141416; --card:#1e1e22; --fg:#ececef; --muted:#9a9aa3; --line:#34343a;
+    --accent:#7aa7ff; --accent-soft:#1f2b44; --good:#5fc48a; --good-soft:#1c3327; --warn:#e2a64a; --bad:#ef7b70; --bad-soft:#3a2120;
+    --chip:#2a2a30; --shadow:none;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg)}
+  body{font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%;padding:0 16px 40px}
+  header,main{max-width:680px;margin:0 auto}
+  header{padding:18px 0 4px}
+  h1{font-size:20px;margin:0 0 2px}
+  .sub{color:var(--muted);font-size:13.5px;margin:0}
+  .sub a{color:var(--accent)}
+  .toc{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
+  .toc a{background:var(--chip);color:var(--fg);text-decoration:none;padding:6px 12px;border-radius:999px;font-size:13.5px}
+  section{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:18px 16px 16px;margin:16px 0}
+  .tag{display:inline-block;font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:3px 9px;border-radius:999px}
+  h2{font-size:18px;margin:8px 0 4px;line-height:1.35}
+  .why{color:var(--muted);font-size:14px;margin:0 0 10px}
+  svg{width:100%;height:auto;display:block;margin:6px 0}
+  svg text{fill:var(--fg);font:12px -apple-system,"Segoe UI",sans-serif}
+  svg .m{fill:var(--muted)} svg .a{fill:var(--accent)} svg .g{fill:var(--good)} svg .r{fill:var(--bad)} svg .b{font-weight:700}
+  .box{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+  .boxA{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+  .hot{fill:var(--accent);stroke:var(--accent)} .hot+text,.hotT{fill:#fff}
+  .done{fill:var(--good-soft);stroke:var(--good);stroke-width:1.5}
+  .dead{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.5;stroke-dasharray:4 3}
+  .ln{stroke:var(--muted);stroke-width:1.6;fill:none}
+  .lnA{stroke:var(--accent);stroke-width:2.2;fill:none}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  button{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:10px;padding:9px 13px;font-size:14.5px;cursor:pointer}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+  .say{background:var(--chip);border-radius:10px;padding:10px 12px;font-size:15px;margin-top:10px;min-height:3.2em}
+  .say b{color:var(--accent)}
+  .so{font-size:14px;margin-top:10px;color:var(--muted)}
+  .so b{color:var(--fg)}
+  .meter{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .meter div{background:var(--chip);border-radius:10px;padding:8px 10px;font-size:13px;color:var(--muted)}
+  .meter strong{display:block;font-size:18px;color:var(--fg)}
+  .dot{transition:transform .6s ease}
+  @media (prefers-reduced-motion: reduce){.dot{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>ML Platform Interactive Labs</h1>
+  <p class="sub">Press the buttons and watch what each component does. <a href="flashcards.html">← Flashcards</a></p>
+  <nav class="toc">
+    <a href="#lab1">1 · DataLoader loop</a><a href="#lab2">2 · Sampler on/off</a>
+    <a href="#lab3">3 · persistent_workers</a><a href="#lab4">4 · Deployment + Service</a>
+  </nav>
+</header>
+<main>
+
+<!-- ============ LAB 1 ============ -->
+<section id="lab1">
+  <span class="tag">DDP · DL1</span>
+  <h2>Who drives <code>for xb, yb in loader</code>?</h2>
+  <p class="why">Step through one rank (rank 0 of 2, batch_size = 3). Watch who asks whom.</p>
+  <svg id="l1" viewBox="0 0 340 250" aria-label="DataLoader loop"></svg>
+  <div class="controls">
+    <button class="primary" id="l1next">Next step ▶</button>
+    <button id="l1reset">Reset</button>
+  </div>
+  <div class="say" id="l1say"></div>
+  <p class="so"><b>So what:</b> the Dataset only answers "give me sample i". Picking indices is the sampler's job; collecting and stacking is the DataLoader's job.</p>
+</section>
+
+<!-- ============ LAB 2 ============ -->
+<section id="lab2">
+  <span class="tag">DDP · D1 / D2</span>
+  <h2>What changes when you remove the DistributedSampler?</h2>
+  <p class="why">Two ranks, a dataset of 8 samples. Toggle the sampler and run one epoch.</p>
+  <div class="controls">
+    <button id="l2on" aria-pressed="true">With sampler</button>
+    <button id="l2off" aria-pressed="false">Without sampler</button>
+    <button class="primary" id="l2run">Run epoch ▶</button>
+  </div>
+  <svg id="l2" viewBox="0 0 340 230" aria-label="sampler on off"></svg>
+  <div class="meter">
+    <div>Steps per rank<strong id="l2steps">–</strong></div>
+    <div>Gradients across ranks<strong id="l2grad">–</strong></div>
+  </div>
+  <div class="say" id="l2say">Pick a mode, then run.</div>
+  <p class="so"><b>So what:</b> without a sampler there's no error — every rank computes <b>identical gradients</b>, so averaging changes nothing: same model as one GPU, no speedup.</p>
+</section>
+
+<!-- ============ LAB 3 ============ -->
+<section id="lab3">
+  <span class="tag">DDP · U2 / M1</span>
+  <h2>Where did the 24 seconds go?</h2>
+  <p class="why">Proportions from my <code>dataloader_benchmark.py</code> run (2 epochs, 2 workers). Toggle the setting and play.</p>
+  <div class="controls">
+    <button id="l3f" aria-pressed="true">persistent_workers=False</button>
+    <button id="l3t" aria-pressed="false">=True</button>
+    <button class="primary" id="l3play">Play ▶</button>
+  </div>
+  <svg id="l3" viewBox="0 0 340 120" aria-label="timeline"></svg>
+  <div class="meter">
+    <div>Time in real training steps<strong id="l3steps">–</strong></div>
+    <div>Time in worker start / stop<strong id="l3over">–</strong></div>
+  </div>
+  <div class="say" id="l3say">Press Play.</div>
+  <p class="so"><b>So what:</b> True = workers <b>persist</b>, so the restart blocks disappear. Always check <b>sum(step times) ≈ total</b> before trusting a throughput number.</p>
+</section>
+
+<!-- ============ LAB 4 ============ -->
+<section id="lab4">
+  <span class="tag">K8s · K2a / K2b / K2d</span>
+  <h2>Delete a Pod, crash a container, send a request</h2>
+  <p class="why">A Deployment (replicas: 3) behind a ClusterIP Service. Try each button.</p>
+  <svg id="l4" viewBox="0 0 340 250" aria-label="deployment and service"></svg>
+  <div class="controls">
+    <button class="primary" id="l4req">Send request</button>
+    <button id="l4del">Delete a Pod</button>
+    <button id="l4crash">Crash a container</button>
+  </div>
+  <div class="say" id="l4say">The client only knows the name <b>web</b>.</div>
+  <p class="so"><b>So what:</b> deleted Pod → the <b>Deployment controller</b> creates a new Pod (new name, same label) · crashed process → the <b>kubelet</b> restarts the container (same name, RESTARTS +1) · the Service routes by <b>label</b>, so the client never notices.</p>
+</section>
+
+</main>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs = {}, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; };
+const arrowDefs = svg => { const d = el("defs"); const m = el("marker", {id: svg.id + "ah", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto"}); m.appendChild(el("path", {d: "M0,0L10,5L0,10z", fill: "var(--muted)"})); d.appendChild(m); svg.appendChild(d); return `url(#${svg.id}ah)`; };
+const box = (svg, x, y, w, h, cls, label, sub) => { svg.appendChild(el("rect", {x, y, width: w, height: h, rx: 8, class: cls})); if (label) svg.appendChild(el("text", {x: x + 10, y: y + (sub ? h / 2 - 2 : h / 2 + 4), class: cls === "hot" ? "hotT b" : "b"}, label)); if (sub) svg.appendChild(el("text", {x: x + 10, y: y + h / 2 + 14, class: cls === "hot" ? "hotT" : "m"}, sub)); };
+const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls, "marker-end": marker || ""}));
+
+/* ===================== LAB 1 ===================== */
+(() => {
+  const svg = document.getElementById("l1"), say = document.getElementById("l1say");
+  const idx = [0, 2, 4, 6, 8, 10], B = 3;
+  // phases per index: 0 = ask sampler, 1 = call dataset[i], 2 = got sample ; after B samples: collate, model
+  let steps = [];
+  idx.forEach((v, k) => {
+    steps.push({k, v, ph: "ask"}); steps.push({k, v, ph: "call"}); steps.push({k, v, ph: "got"});
+    if ((k + 1) % B === 0) { steps.push({k, v, ph: "collate"}); steps.push({k, v, ph: "model"}); }
+  });
+  let s = -1;
+  function draw() {
+    svg.innerHTML = ""; const ah = arrowDefs(svg);
+    const st = steps[s] || {};
+    // sampler index list
+    svg.appendChild(el("text", {x: 6, y: 16, class: "m"}, "sampler → index list for rank 0"));
+    idx.forEach((v, k) => {
+      const used = s >= 0 && (k < st.k || (k === st.k && st.ph !== "ask"));
+      const cur = k === st.k && (st.ph === "ask");
+      box(svg, 6 + k * 40, 22, 34, 26, cur ? "hot" : used ? "done" : "box", String(v));
+    });
+    // DataLoader
+    const dlHot = ["ask", "call", "collate"].includes(st.ph);
+    box(svg, 110, 92, 120, 46, dlHot ? "hot" : "boxA", "DataLoader", "drives the loop");
+    // Dataset
+    const dsHot = st.ph === "call";
+    box(svg, 248, 92, 88, 46, dsHot ? "hot" : "box", "Dataset", "1 sample");
+    // model
+    box(svg, 248, 196, 88, 40, st.ph === "model" ? "hot" : "box", "model", "fwd / bwd");
+    // arrows
+    if (st.ph === "ask") line(svg, `M${23 + st.k * 40} 48 L150 92`, "lnA", ah);
+    if (st.ph === "call") line(svg, "M230 108 H246", "lnA", ah);
+    if (st.ph === "got") line(svg, "M248 128 L232 128", "lnA", ah);
+    if (st.ph === "model") line(svg, "M230 216 H246", "lnA", ah);
+    // batch tray
+    svg.appendChild(el("text", {x: 6, y: 186, class: "m"}, "batch tray (batch_size = 3)"));
+    const inBatch = [];
+    if (s >= 0) {
+      const start = Math.floor(st.k / B) * B;
+      for (let k = start; k <= st.k; k++) if (k < st.k || st.ph !== "ask" && st.ph !== "call") inBatch.push(idx[k]);
+    }
+    for (let j = 0; j < B; j++) {
+      const v = inBatch[j];
+      box(svg, 6 + j * 64, 194, 58, 42, v != null ? (st.ph === "collate" || st.ph === "model" ? "hot" : "done") : "box", v != null ? `x${v}` : "", v != null ? "sample" : "");
+    }
+    if (st.ph === "collate" || st.ph === "model") svg.appendChild(el("text", {x: 196, y: 210, class: "a b"}, "→ batch"));
+    if (st.ph === "collate" || st.ph === "model") svg.appendChild(el("text", {x: 196, y: 226, class: "a"}, "[3, 1]"));
+    const msg = {
+      undefined: "Press <b>Next step</b>. Rank 0's sampler has already made its index list: 0, 2, 4, …",
+      ask: `The <b>DataLoader</b> takes the next index from the sampler's list: <b>${st.v}</b>.`,
+      call: `The DataLoader calls <b>dataset[${st.v}]</b>. The Dataset doesn't choose indices — it just answers.`,
+      got: `The Dataset returns <b>one sample</b> (x${st.v}, y${st.v}). The DataLoader puts it in the batch tray.`,
+      collate: `The tray has batch_size = 3 samples → the DataLoader <b>stacks</b> them into one batch of shape [3, 1].`,
+      model: `That batch is what <code>xb, yb</code> receives in one turn of the for loop → forward, backward, step.`
+    };
+    say.innerHTML = msg[st.ph] || msg.undefined;
+    if (s === steps.length - 1) say.innerHTML += " <b>Epoch done</b> for rank 0 (6 samples = 2 batches).";
+  }
+  document.getElementById("l1next").onclick = () => { s = Math.min(s + 1, steps.length - 1); draw(); };
+  document.getElementById("l1reset").onclick = () => { s = -1; draw(); };
+  draw();
+})();
+
+/* ===================== LAB 2 ===================== */
+(() => {
+  const svg = document.getElementById("l2"), say = document.getElementById("l2say");
+  let on = true, timer = null;
+  const btnOn = document.getElementById("l2on"), btnOff = document.getElementById("l2off");
+  function idxFor(r) { return on ? [0, 1, 2, 3, 4, 5, 6, 7].filter(i => i % 2 === r) : [0, 1, 2, 3, 4, 5, 6, 7]; }
+  function draw(progress) {
+    svg.innerHTML = "";
+    [0, 1].forEach(r => {
+      const y0 = 8 + r * 96, list = idxFor(r);
+      svg.appendChild(el("text", {x: 6, y: y0 + 12, class: "b"}, `rank ${r}`));
+      list.forEach((v, k) => box(svg, 6 + k * 40, y0 + 20, 34, 28, k < progress ? "done" : "box", String(v)));
+      const g = on ? (r === 0 ? "grad A (even samples)" : "grad B (odd samples)") : "grad (all 8 samples)";
+      box(svg, 6, y0 + 56, 200, 28, progress >= list.length ? "boxA" : "box", g);
+    });
+    if (progress >= 8 || (on && progress >= 4)) {
+      svg.appendChild(el("text", {x: 216, y: 82, class: "a b"}, "all-reduce"));
+      svg.appendChild(el("text", {x: 216, y: 98, class: "a"}, on ? "(A + B) / 2" : "(g + g) / 2 = g"));
+      svg.appendChild(el("text", {x: 216, y: 114, class: on ? "g" : "r"}, on ? "new info from both" : "nothing changes"));
+    }
+  }
+  function setMode(v) { on = v; btnOn.setAttribute("aria-pressed", v); btnOff.setAttribute("aria-pressed", !v); clearInterval(timer); draw(0);
+    document.getElementById("l2steps").textContent = "–"; document.getElementById("l2grad").textContent = "–"; say.textContent = "Now press Run epoch."; }
+  btnOn.onclick = () => setMode(true); btnOff.onclick = () => setMode(false);
+  document.getElementById("l2run").onclick = () => {
+    clearInterval(timer); let p = 0; const n = idxFor(0).length; draw(0);
+    timer = setInterval(() => { p++; draw(p); if (p >= n) { clearInterval(timer);
+      document.getElementById("l2steps").textContent = on ? "4 (half each)" : "8 (all, duplicated)";
+      document.getElementById("l2grad").textContent = on ? "different → averaged" : "identical";
+      say.innerHTML = on ? "Each rank processed a <b>disjoint half</b> → twice as fast, and the averaged gradient covers all 8 samples."
+                         : "Both ranks processed <b>all 8</b> samples → <b>identical gradients</b>. No error, no speedup, 2× wasted compute."; } }, 350);
+  };
+  draw(0);
+})();
+
+/* ===================== LAB 3 ===================== */
+(() => {
+  const svg = document.getElementById("l3"), say = document.getElementById("l3say");
+  // seconds (from the run): startup 1.8, epoch steps ~0.55 each, restart 11, final shutdown 10
+  const segFalse = [["start", 1.8, "bad"], ["epoch 0", 0.55, "good"], ["restart", 11, "bad"], ["epoch 1", 0.55, "good"], ["shutdown", 10, "bad"]];
+  const segTrue = [["start", 1.8, "bad"], ["epoch 0", 0.55, "good"], ["epoch 1", 0.55, "good"], ["shutdown", 10, "bad"]];
+  let persist = false, raf = null;
+  const bF = document.getElementById("l3f"), bT = document.getElementById("l3t");
+  function draw(frac) {
+    svg.innerHTML = "";
+    const segs = persist ? segTrue : segFalse, total = segs.reduce((a, s) => a + s[1], 0), maxT = 23.9;
+    let x = 6; const W = 328;
+    svg.appendChild(el("text", {x: 6, y: 14, class: "m"}, persist ? "True: workers persist" : "False (default): respawn every epoch"));
+    let shown = frac * total, acc = 0;
+    segs.forEach(([name, t, kind]) => {
+      const w = Math.max(3, (t / maxT) * W), vis = Math.max(0, Math.min(t, shown - acc)) / t;
+      svg.appendChild(el("rect", {x, y: 24, width: w, height: 34, rx: 5, class: "box"}));
+      svg.appendChild(el("rect", {x, y: 24, width: w * vis, height: 34, rx: 5, fill: kind === "good" ? "var(--good)" : "var(--bad)", opacity: kind === "good" ? 1 : .35}));
+      if (w > 44) svg.appendChild(el("text", {x: x + 6, y: 46, class: kind === "good" ? "b" : "r b"}, name));
+      acc += t; x += w + 2;
+    });
+    svg.appendChild(el("rect", {x: 6, y: 72, width: 12, height: 12, fill: "var(--good)"})); svg.appendChild(el("text", {x: 24, y: 82}, "real training steps (~1.1 s total)"));
+    svg.appendChild(el("rect", {x: 6, y: 92, width: 12, height: 12, fill: "var(--bad)", opacity: .35})); svg.appendChild(el("text", {x: 24, y: 102}, "worker start / restart / shutdown"));
+    if (frac >= 1) {
+      const steps = segs.filter(s => s[2] === "good").reduce((a, s) => a + s[1], 0);
+      document.getElementById("l3steps").textContent = `${Math.round(steps / total * 100)}% of the run`;
+      document.getElementById("l3over").textContent = `${Math.round((total - steps) / total * 100)}% of the run`;
+      say.innerHTML = persist
+        ? "The epoch-boundary restart is gone → the run is about <b>half as long</b>. The remaining overhead is one start and one final shutdown."
+        : "The <b>restart at the epoch boundary</b> is the single longest \"step\" (#79 in my log). Real training is only a few percent of the run.";
+    }
+  }
+  function setMode(v) { persist = v; bF.setAttribute("aria-pressed", !v); bT.setAttribute("aria-pressed", v); cancelAnimationFrame(raf); draw(0);
+    document.getElementById("l3steps").textContent = "–"; document.getElementById("l3over").textContent = "–"; say.textContent = "Press Play."; }
+  bF.onclick = () => setMode(false); bT.onclick = () => setMode(true);
+  document.getElementById("l3play").onclick = () => {
+    cancelAnimationFrame(raf); const t0 = performance.now(), dur = 2600;
+    const tick = now => { const f = Math.min(1, (now - t0) / dur); draw(f); if (f < 1) raf = requestAnimationFrame(tick); };
+    raf = requestAnimationFrame(tick);
+  };
+  draw(0);
+})();
+
+/* ===================== LAB 4 ===================== */
+(() => {
+  const svg = document.getElementById("l4"), say = document.getElementById("l4say");
+  const rid = () => Math.random().toString(36).slice(2, 7);
+  let pods = [{name: "web-" + rid(), restarts: 0, state: "ok"}, {name: "web-" + rid(), restarts: 0, state: "ok"}, {name: "web-" + rid(), restarts: 0, state: "ok"}];
+  let busy = false, reqTarget = -1, ctrl = "";
+  function draw() {
+    svg.innerHTML = ""; const ah = arrowDefs(svg);
+    svg.appendChild(el("rect", {x: 2, y: 2, width: 336, height: 200, rx: 10, fill: "none", stroke: "var(--line)", "stroke-dasharray": "5 4"}));
+    svg.appendChild(el("text", {x: 10, y: 18, class: "m"}, "cluster"));
+    box(svg, 10, 84, 60, 36, "box", "client");
+    box(svg, 84, 74, 92, 56, "boxA", "Service web", "sel: app=web");
+    box(svg, 10, 150, 170, 40, ctrl ? "hot" : "box", "Deployment", ctrl || "want 3");
+    const ready = pods.filter(p => p.state === "ok").length;
+    svg.appendChild(el("text", {x: 84, y: 144, class: "m"}, `Endpoints: ${ready} ready`));
+    pods.forEach((p, k) => {
+      const y = 22 + k * 58, cls = p.state === "dead" ? "dead" : p.state === "new" || p.state === "restarting" ? "boxA" : k === reqTarget ? "hot" : "box";
+      box(svg, 196, y, 140, 46, cls, p.state === "dead" ? "deleted" : p.name, p.state === "restarting" ? "container restarting…" : `app=web · restarts ${p.restarts}`);
+      if (p.state === "ok") line(svg, `M176 102 L194 ${y + 23}`, k === reqTarget ? "lnA" : "ln", ah);
+    });
+    line(svg, "M70 102 H82", reqTarget >= 0 ? "lnA" : "ln", ah);
+    svg.appendChild(el("text", {x: 6, y: 222, class: "r"}, "✗ outside the cluster: ClusterIP not reachable"));
+    svg.appendChild(el("text", {x: 6, y: 240, class: "m"}, "client = sends requests · Pods = servers that answer"));
+  }
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  document.getElementById("l4req").onclick = async () => {
+    if (busy) return; const ok = pods.map((p, k) => p.state === "ok" ? k : -1).filter(k => k >= 0);
+    if (!ok.length) { say.textContent = "No ready Pods right now — the Service has no Endpoints."; return; }
+    busy = true; reqTarget = ok[Math.floor(Math.random() * ok.length)]; draw();
+    say.innerHTML = `client → <b>web</b> (DNS → ClusterIP) → Service picks a Pod with label <b>app=web</b> → <b>${pods[reqTarget].name}</b> answers. The client never sees the Pod name.`;
+    await wait(1100); reqTarget = -1; draw(); busy = false;
+  };
+  document.getElementById("l4del").onclick = async () => {
+    if (busy) return; busy = true; const k = Math.floor(Math.random() * 3); const old = pods[k].name;
+    pods[k].state = "dead"; draw(); say.innerHTML = `Deleted <b>${old}</b>. Endpoints drop to 2 — the Service sends only to the 2 ready Pods meanwhile.`;
+    await wait(1100); ctrl = "want 3, have 2 → +1"; draw();
+    say.innerHTML = "The <b>Deployment controller</b> compares desired (3) with actual (2) and creates one Pod.";
+    await wait(1100); pods[k] = {name: "web-" + rid(), restarts: 0, state: "new"}; ctrl = ""; draw();
+    say.innerHTML = `New Pod <b>${pods[k].name}</b>: <b>new name</b>, same label app=web → the Service picks it up automatically.`;
+    await wait(900); pods[k].state = "ok"; draw(); busy = false;
+  };
+  document.getElementById("l4crash").onclick = async () => {
+    if (busy) return; busy = true; const k = Math.floor(Math.random() * 3);
+    pods[k].state = "restarting"; draw(); say.innerHTML = `The process in <b>${pods[k].name}</b> crashed. The Pod object stays — the <b>kubelet</b> restarts its container.`;
+    await wait(1400); pods[k].state = "ok"; pods[k].restarts++; draw();
+    say.innerHTML = `Same Pod name, <b>RESTARTS ${pods[k].restarts}</b>. The Deployment controller did nothing (count never dropped). Repeated crashes → CrashLoopBackOff.`;
+    busy = false;
+  };
+  draw();
+})();
+</script>
+</body>
+</html>

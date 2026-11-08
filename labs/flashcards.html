@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ML Platform Flashcards</title>
+<meta name="description" content="Tap-to-reveal review cards: DDP, DataLoader, Kubernetes, system design.">
+<style>
+  :root{
+    --bg:#f6f5f2; --card:#ffffff; --fg:#1d1d1f; --muted:#6b6b70; --line:#d9d7d1;
+    --accent:#2f6fde; --accent-soft:#e7f0fd; --good:#2e8b57; --warn:#c77c11; --bad:#c2453a;
+    --chip:#ecebe7; --shadow:0 1px 2px rgba(0,0,0,.06),0 6px 24px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#141416; --card:#1e1e22; --fg:#ececef; --muted:#9a9aa3; --line:#34343a;
+      --accent:#7aa7ff; --accent-soft:#1f2b44; --good:#5fc48a; --warn:#e2a64a; --bad:#ef7b70;
+      --chip:#2a2a30; --shadow:none;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#141416; --card:#1e1e22; --fg:#ececef; --muted:#9a9aa3; --line:#34343a;
+    --accent:#7aa7ff; --accent-soft:#1f2b44; --good:#5fc48a; --warn:#e2a64a; --bad:#ef7b70;
+    --chip:#2a2a30; --shadow:none;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg)}
+  body{font:16px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Segoe UI",sans-serif;
+       -webkit-text-size-adjust:100%; padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+  header{max-width:640px;margin:0 auto;padding:18px 0 8px}
+  h1{font-size:19px;margin:0 0 2px;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:13px;margin:0}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px}
+  .chip{border:0;background:var(--chip);color:var(--fg);padding:7px 13px;border-radius:999px;font-size:14px;cursor:pointer}
+  .chip[aria-pressed="true"]{background:var(--accent);color:#fff}
+  main{max-width:640px;margin:0 auto}
+  .progress{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin:10px 2px 8px}
+  .bar{height:4px;background:var(--chip);border-radius:4px;overflow:hidden;margin-bottom:12px}
+  .bar>i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+        padding:20px 18px 18px;min-height:52vh;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+  .tag{display:inline-block;font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);
+       padding:3px 9px;border-radius:999px;margin-bottom:10px}
+  .q{font-size:20px;font-weight:650;line-height:1.4;margin:0 0 6px;letter-spacing:-.01em}
+  .hint{color:var(--muted);font-size:14px;margin-top:18px;text-align:center}
+  .ans{display:none;margin-top:14px;border-top:1px dashed var(--line);padding-top:14px}
+  .card.open .ans{display:block}
+  .card.open .hint{display:none}
+  .row{display:grid;grid-template-columns:70px 1fr;gap:6px 10px;margin:0 0 10px;font-size:16px}
+  .k{font-size:12px;font-weight:700;color:var(--muted);padding-top:3px;text-transform:uppercase;letter-spacing:.04em}
+  .row b{color:var(--accent);font-weight:700}
+  .en{background:var(--chip);border-radius:10px;padding:10px 12px;font-size:14.5px;margin-top:10px}
+  .en::before{content:"In one sentence";display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px}
+  .trap{font-size:14px;color:var(--bad);margin-top:10px}
+  .trap::before{content:"⚠ Common slip  "; font-weight:700}
+  figure{margin:14px 0 4px}
+  svg{width:100%;height:auto;display:block}
+  svg text{fill:var(--fg);font:12.5px -apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+  svg .m{fill:var(--muted)} svg .a{fill:var(--accent)} svg .g{fill:var(--good)} svg .r{fill:var(--bad)}
+  svg .box{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+  svg .boxA{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+  svg .ln{stroke:var(--muted);stroke-width:1.6;fill:none}
+  svg .lnA{stroke:var(--accent);stroke-width:2;fill:none}
+  svg .lnR{stroke:var(--bad);stroke-width:2;fill:none;stroke-dasharray:4 4}
+  svg .flow{stroke-dasharray:6 6;animation:flow 1.2s linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-12}}
+  @media (prefers-reduced-motion: reduce){svg .flow{animation:none}}
+  nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);
+      padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+  .navin{max-width:640px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
+  .btn{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:12px;padding:12px 6px;font-size:15px;cursor:pointer}
+  .btn.ok{border-color:var(--good);color:var(--good)} .btn.no{border-color:var(--warn);color:var(--warn)}
+  .mark{font-size:12px;margin-left:6px}
+  .mark.ok{color:var(--good)} .mark.no{color:var(--warn)}
+  .empty{color:var(--muted);text-align:center;padding:40px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>ML Platform Flashcards</h1>
+  <p class="sub">Tap a card to reveal · swipe to move · What / How / So what · <a href="ml-platform.html" style="color:var(--accent)">Interactive labs →</a></p>
+  <div class="chips" role="group" aria-label="filter">
+    <button class="chip" data-f="all" aria-pressed="true">All</button>
+    <button class="chip" data-f="DDP">DDP</button>
+    <button class="chip" data-f="K8s">K8s</button>
+    <button class="chip" data-f="Design">Design</button>
+    <button class="chip" data-f="shaky">Shaky only</button>
+  </div>
+</header>
+<main>
+  <div class="progress"><span id="pos"></span><span id="stat"></span></div>
+  <div class="bar"><i id="barfill"></i></div>
+  <article class="card" id="card" aria-live="polite"></article>
+</main>
+<nav><div class="navin">
+  <button class="btn" id="prev">← Prev</button>
+  <button class="btn no" id="markNo">Shaky</button>
+  <button class="btn ok" id="markOk">Got it</button>
+  <button class="btn" id="next">Next →</button>
+</div></nav>
+
+<script>
+const AR = '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="currentColor"/></marker></defs>';
+
+const CARDS = [
+/* ---------------- DDP ---------------- */
+{ id:"D1", t:"DDP", q:"What do DistributedSampler and DDP each do?",
+  what:"Sampler = <b>splits the data (indices)</b>. DDP = <b>keeps the model in sync</b>.",
+  how:"The sampler computes a disjoint 1/N set of indices from the rank number — no communication. DDP <b>all-reduces (averages) gradients</b> during backward.",
+  so:"The only rank-to-rank traffic is the gradient all-reduce → every rank keeps identical weights.",
+  en:"The sampler splits indices so each rank sees a disjoint 1/N with no communication; DDP averages gradients with all-reduce during backward, so every rank keeps identical weights.",
+  trap:"\"the sampler assigns indices to the dataset\" — no, it only builds an index list",
+  svg:`<svg viewBox="0 0 320 150" style="color:var(--muted)">${AR}
+   <rect class="box" x="6" y="10" width="140" height="56" rx="8"/><text x="16" y="30">rank 0</text><text class="a" x="16" y="52">idx 0,2,4,…</text>
+   <rect class="box" x="174" y="10" width="140" height="56" rx="8"/><text x="184" y="30">rank 1</text><text class="a" x="184" y="52">idx 1,3,5,…</text>
+   <rect class="boxA" x="6" y="92" width="140" height="44" rx="8"/><text x="16" y="118">grad A</text>
+   <rect class="boxA" x="174" y="92" width="140" height="44" rx="8"/><text x="184" y="118">grad B</text>
+   <path class="lnA flow" d="M146 114 H174"/><text class="a" x="118" y="86" >all-reduce = (A+B)/2</text></svg>`},
+
+{ id:"D2", t:"DDP", q:"What happens if you run DDP on 4 ranks without a sampler?",
+  what:"<b>No error</b>, the model is <b>the same as 1 GPU</b>, <b>no speedup</b>.",
+  how:"Every rank gets the same data → <b>identical gradients</b> → averaging identical gradients changes nothing.",
+  so:"4× wasted compute; only the SUM throughput looks 4× bigger.",
+  en:"No error: every rank gets identical batches, so identical gradients; averaging them changes nothing — same model as one GPU, no speedup, 4× wasted compute.",
+  trap:"\"weights get averaged\" — no, GRADIENTS are averaged"},
+
+{ id:"D3", t:"DDP", q:"2,000 samples, 4 ranks, batch_size=32, with a sampler. Steps per rank and global batch?",
+  what:"<b>16 steps</b> per rank per epoch; global batch <b>128</b>.",
+  how:"2000 / 4 = 500 per rank → ceil(500 / 32) = 16. Global = 32 × 4.",
+  so:"Without a sampler each rank sees all 2,000 → 63 steps (4× the work, same model).",
+  en:"Each rank gets 500 samples, so ceil(500/32) = 16 steps per epoch; the global batch per optimizer step is 32 × 4 = 128."},
+
+{ id:"D4", t:"DDP", q:"What does torchrun do — and not do?",
+  what:"Launches N copies of the same script, sets env vars, and monitors them.",
+  how:"<b>RANK, WORLD_SIZE, LOCAL_RANK, MASTER_ADDR, MASTER_PORT</b> → processes find each other at that address (<b>rendezvous</b>).",
+  so:"It does NOT split data (sampler), average gradients (DDP), or move the model to the GPU (your code).",
+  en:"torchrun is a launcher: it starts N copies of the script, sets RANK/WORLD_SIZE/MASTER_ADDR/PORT so they can rendezvous, and monitors them — it doesn't split data or average gradients."},
+
+{ id:"DL1", t:"DDP", q:"During one pass of for xb, yb in loader: — who does what?",
+  what:"<b>The DataLoader drives the loop</b>; the sampler and the Dataset are its parts.",
+  how:"① ask the sampler for indices → ② call dataset[i] per index → <b>one sample</b> each → ③ stack batch_size samples into a batch.",
+  so:"Creating the Dataset first in code is just build order; at run time the DataLoader is in charge.",
+  en:"The DataLoader drives the loop: it takes indices from its sampler, calls dataset[i] for each to get one sample, and collates batch_size samples into a batch.",
+  trap:"\"the Dataset returns a batch\" — no, one sample",
+  svg:`<svg viewBox="0 0 320 170" style="color:var(--muted)">${AR}
+   <rect class="box" x="6" y="8" width="96" height="40" rx="8"/><text x="18" y="33">sampler</text>
+   <rect class="box" x="218" y="8" width="96" height="40" rx="8"/><text x="232" y="33">Dataset</text>
+   <rect class="boxA" x="100" y="70" width="120" height="44" rx="10"/><text x="116" y="97" font-weight="700">DataLoader</text>
+   <rect class="box" x="112" y="132" width="96" height="34" rx="8"/><text x="126" y="154">batch [B, 1]</text>
+   <path class="ln" d="M54 48 L112 72" marker-end="url(#ah)"/><text class="m" x="4" y="72">① index list</text>
+   <path class="lnA" d="M196 70 L238 50" marker-end="url(#ah)"/><text class="a" x="150" y="60">② dataset[i]</text>
+   <path class="ln" d="M282 48 L222 90" marker-end="url(#ah)"/><text class="m" x="250" y="82">1 sample</text>
+   <path class="lnA" d="M160 114 V130" marker-end="url(#ah)"/><text class="a" x="168" y="127">③ ×B</text></svg>`},
+
+{ id:"W1", t:"DDP", q:"What is a worker in num_workers=2?",
+  what:"2 helper CPU processes <b>inside each rank</b> (not ranks).",
+  how:"While the GPU works, they run dataset[i] + collate <b>ahead of time</b>.",
+  so:"If workers are slow, the loop waits for the next batch → the GPU idles.",
+  en:"Workers are helper CPU processes inside each rank that run dataset[i] and collate batches ahead of time, so the training loop doesn't wait."},
+
+{ id:"W2", t:"DDP", q:"Why zero_grad() every step? What does set_epoch do?",
+  what:"zero_grad clears .grad; set_epoch gives a new shuffle seed each epoch.",
+  how:"backward <b>adds (+=)</b> into .grad; all ranks shuffle with the <b>same seed</b>.",
+  so:"Without clearing, old gradients pile up → wrong update. Shuffled shards still don't overlap (only matters with shuffle=True).",
+  en:"backward() adds into .grad, so zero_grad clears it each step; set_epoch gives the sampler a new shuffle seed per epoch, the same on all ranks, so shards stay disjoint."},
+
+{ id:"AG1", t:"DDP", q:"In one step, what do autograd, DDP, and the optimizer each do?",
+  what:"Autograd <b>computes</b> · DDP <b>averages</b> · optimizer <b>updates</b>.",
+  how:"In backward(), autograd computes the gradient (= which way to nudge) → DDP's hook averages it across ranks → step() applies w = w − lr × grad.",
+  so:"Autograd always runs, even on 1 GPU. DDP is a wrapper that hooks into it.",
+  en:"Autograd computes gradients in backward(); DDP hooks into autograd to all-reduce them across ranks; the optimizer only applies the update w −= lr·grad.",
+  trap:"\"the optimizer computes where to nudge\" — no, the gradient is the nudge"},
+
+{ id:"U2", t:"DDP", q:"persistent_workers=True vs False?",
+  what:"True = workers <b>persist</b>. False (default) = killed and respawned every epoch.",
+  how:"Every respawn pays the worker start/stop cost.",
+  so:"In my run ~90% of 24 s was worker restarts → True removes most of it. Keep False if the Dataset changes per epoch.",
+  en:"With persistent_workers=True the workers persist across epochs, so there's no restart cost — in my run ~90% of the time was worker restarts. Keep False only if the Dataset changes per epoch.",
+  trap:"Easy to flip — anchor on the word \"persist\"",
+  svg:`<svg viewBox="0 0 320 120" style="color:var(--muted)">
+   <text class="m" x="4" y="16">False (default)</text>
+   <rect class="box" x="4" y="22" width="90" height="22" rx="5"/><text x="12" y="38">epoch 0</text>
+   <rect fill="var(--bad)" opacity=".25" x="96" y="22" width="44" height="22" rx="5"/><text class="r" x="100" y="38">restart</text>
+   <rect class="box" x="142" y="22" width="90" height="22" rx="5"/><text x="150" y="38">epoch 1</text>
+   <rect fill="var(--bad)" opacity=".25" x="234" y="22" width="44" height="22" rx="5"/><text class="r" x="238" y="38">restart</text>
+   <text class="a" x="4" y="74">True (persist)</text>
+   <rect class="boxA" x="4" y="80" width="90" height="22" rx="5"/><text x="12" y="96">epoch 0</text>
+   <rect class="boxA" x="96" y="80" width="90" height="22" rx="5"/><text x="104" y="96">epoch 1</text>
+   <rect class="boxA" x="188" y="80" width="90" height="22" rx="5"/><text x="196" y="96">epoch 2</text></svg>`},
+
+{ id:"M1", t:"DDP", q:"What do you check before trusting a throughput number?",
+  what:"That <b>the sum of step times ≈ total time</b>.",
+  how:"Time every step → drop the first (warmup) → look at median, max, and sum.",
+  so:"If the sum doesn't match, there's a hidden cost (mine: worker restart at the epoch boundary, ~11 s).",
+  en:"I check that the sum of per-step times matches the total; if not, there's a hidden cost — in my benchmark it was DataLoader worker restarts at epoch boundaries."},
+
+/* ---------------- K8s ---------------- */
+{ id:"K-a", t:"K8s", q:"What is an object? What is a namespace?",
+  what:"Object = one <b>instance</b> of a kind (e.g. Pod \"web\"). Namespace = a <b>name scope</b>.",
+  how:"Kind is the class, object is the instance. Names are unique only inside a namespace.",
+  so:"A namespace is independent of nodes (doesn't decide where Pods run) and limits no resources by itself.",
+  en:"An object is one instance of a kind stored in the cluster; a namespace is a logical name scope — names are unique only inside it, and it's independent of nodes."},
+
+{ id:"K1b", t:"K8s", q:"Typo in the image name — what happens? describe or logs?",
+  what:"<b>The Pod object exists</b>; its <b>container</b> never starts.",
+  how:"The API server doesn't validate the image → object created → image pull fails.",
+  so:"Check <b>describe</b> Events (ErrImagePull). logs only help once the app runs.",
+  en:"The Pod object exists because the API server doesn't validate the image; the container never starts, so I check describe Events for ErrImagePull — logs only help once the app runs."},
+
+{ id:"K2a", t:"K8s", q:"replicas: 3 — you delete one Pod. What happens?",
+  what:"A new Pod appears with a <b>new name</b> (the deleted one is not revived).",
+  how:"The controller compares <b>desired 3 vs actual 2</b> → creates one.",
+  so:"A bare Pod has no owner, so it stays gone.",
+  en:"The Deployment controller compares desired (3) with actual (2) and creates a new Pod with a new name; a bare Pod has no owner, so it stays gone.",
+  svg:`<svg viewBox="0 0 320 132" style="color:var(--muted)">${AR}
+   <rect class="boxA" x="4" y="36" width="96" height="40" rx="8"/><text x="12" y="54" font-weight="700">Deployment</text><text class="m" x="12" y="70">want 3</text>
+   <rect class="box" x="140" y="6" width="80" height="26" rx="6"/><text x="150" y="24">web-59fdh</text>
+   <rect class="box" x="140" y="42" width="80" height="26" rx="6"/><text x="150" y="60">web-b2jhh</text>
+   <rect fill="none" stroke="var(--bad)" stroke-dasharray="4 3" x="140" y="78" width="80" height="26" rx="6"/><text class="r" x="150" y="96">mz6bb ✗</text>
+   <rect class="boxA" x="236" y="78" width="80" height="26" rx="6"/><text class="a" x="246" y="96">fv57v new</text>
+   <path class="lnA flow" d="M100 64 C 130 130, 230 128, 270 106" marker-end="url(#ah)"/></svg>`},
+
+{ id:"K2b", t:"K8s", q:"How does a Service decide which Pods to send traffic to?",
+  what:"A <b>label selector</b> (e.g. app=web).",
+  how:"The Deployment stamps the same label on every Pod → the Service selects by that label and updates its Endpoints.",
+  so:"Pod names and IPs change, but clients keep using one Service name.",
+  en:"A Service selects Pods by label; replacements get a new name and IP but the same label, so the Service picks them up and clients keep using one stable name.",
+  svg:`<svg viewBox="0 0 320 168" style="color:var(--muted)">${AR}
+   <rect fill="none" stroke="var(--line)" stroke-dasharray="5 4" x="2" y="2" width="316" height="122" rx="10"/>
+   <text class="m" x="10" y="18">cluster</text>
+   <rect class="box" x="8" y="52" width="70" height="34" rx="8"/><text x="16" y="73">client</text>
+   <rect class="boxA" x="102" y="44" width="96" height="50" rx="8"/><text x="110" y="64" font-weight="700">Service web</text><text class="m" x="110" y="82">sel: app=web</text>
+   <rect class="box" x="226" y="22" width="86" height="24" rx="5"/><text x="234" y="38">Pod app=web</text>
+   <rect class="box" x="226" y="57" width="86" height="24" rx="5"/><text x="234" y="73">Pod app=web</text>
+   <rect class="box" x="226" y="92" width="86" height="24" rx="5"/><text x="234" y="108">Pod app=web</text>
+   <path class="lnA flow" d="M78 69 H100" marker-end="url(#ah)"/>
+   <path class="ln" d="M198 62 L224 36" marker-end="url(#ah)"/><path class="ln" d="M198 69 H224" marker-end="url(#ah)"/><path class="ln" d="M198 76 L224 102" marker-end="url(#ah)"/>
+   <text class="r" x="6" y="144">✗ From outside the cluster, a ClusterIP is unreachable</text>
+   <text class="m" x="6" y="162">→ needs NodePort / LoadBalancer / Ingress</text></svg>`},
+
+{ id:"K2c", t:"K8s", q:"Who is the client, who is the server? How far does ClusterIP reach?",
+  what:"Client = whoever <b>sends</b> requests. Server = whoever <b>answers</b> (the inference Pods).",
+  how:"A ClusterIP Service is reachable <b>only inside the cluster</b>.",
+  so:"So its clients must be Pods in the same cluster; outside access needs another Service type.",
+  en:"Inference Pods are servers; clients are whatever sends requests. A ClusterIP Service is reachable only inside the cluster, so its clients must be Pods in that cluster.",
+  trap:"\"reachable from outside\" — not for ClusterIP"},
+
+{ id:"K2d", t:"K8s", q:"Who restarts what, for each kind of failure?",
+  what:"Process crash · node failure · hang.",
+  how:"Crash → the <b>kubelet</b> restarts the container (same Pod name, RESTARTS↑). Node lost / Pod deleted → the <b>Deployment controller</b> creates a new Pod. Hang → a failing <b>liveness probe</b> triggers a restart.",
+  so:"Kubernetes can't see a hang on its own → you need a throughput-based health check.",
+  en:"A crash restarts the container via the kubelet; a lost node or deleted Pod is replaced by the Deployment controller; a hang needs a liveness probe, otherwise Kubernetes thinks it's healthy."},
+
+/* ---------------- Design ---------------- */
+{ id:"X1", t:"Design", q:"Six steps for designing a system?",
+  what:"requirements → <b>numbers</b> → high-level → deep dive → <b>trade-offs</b> → <b>failures</b>.",
+  how:"Numbers = back-of-envelope that drives the design: 2,000 requests/s → 1000 / 2000 = <b>0.5 ms per request</b> → compare with per-item processing time.",
+  so:"Batching, number of GPUs, and drop policy all follow from that number.",
+  en:"Requirements, then back-of-envelope numbers that drive the design, then the high-level picture, a deep dive, trade-offs, and failure modes.",
+  trap:"\"1 ms / 2000\" — it's 1000 ms / 2000"},
+
+{ id:"F1", t:"Design", q:"A frame for handling failures?",
+  what:"<b>Prevent / contain / recover</b>.",
+  how:"Prevent: try/catch at the thread boundary, sanitizers. Contain: a process boundary so one crash can't take everything down. Recover: supervised restart + metrics/alerts + backoff.",
+  so:"A C++ segfault kills the whole process, because threads share memory.",
+  en:"I'd prevent it with exception handling and sanitizers, contain it with a process boundary so one crash can't take everything down, and recover with a supervised restart plus metrics and alerts."},
+];
+
+/* ---------- state ---------- */
+const KEY = "review-cards-v1";
+let marks = {};
+try { marks = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch(e) { marks = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(marks)); } catch(e) {} };
+
+let filter = "all", list = CARDS.slice(), i = 0;
+const $ = s => document.querySelector(s);
+
+function applyFilter(){
+  list = CARDS.filter(c => filter === "all" ? true : filter === "shaky" ? marks[c.id] === "no" : c.t === filter);
+  i = Math.min(i, Math.max(0, list.length - 1));
+  render();
+}
+function render(){
+  const card = $("#card");
+  card.classList.remove("open");
+  if (!list.length){
+    card.innerHTML = '<div class="empty">No cards here yet.<br>Cards you mark "Shaky" collect here.</div>';
+    $("#pos").textContent = ""; $("#stat").textContent = ""; $("#barfill").style.width = "0"; return;
+  }
+  const c = list[i], m = marks[c.id];
+  const markTxt = m === "ok" ? '<span class="mark ok">✓ got it</span>' : m === "no" ? '<span class="mark no">● shaky</span>' : "";
+  card.innerHTML = `
+    <span class="tag">${c.t} · ${c.id}</span>${markTxt}
+    <p class="q">${c.q}</p>
+    <p class="hint">Tap to reveal</p>
+    <div class="ans">
+      <div class="row"><span class="k">What</span><span>${c.what}</span></div>
+      <div class="row"><span class="k">How</span><span>${c.how}</span></div>
+      <div class="row"><span class="k">So what</span><span>${c.so}</span></div>
+      ${c.svg ? `<figure>${c.svg}</figure>` : ""}
+      ${c.trap ? `<div class="trap">${c.trap}</div>` : ""}
+      <div class="en">${c.en}</div>
+    </div>`;
+  $("#pos").textContent = `${i + 1} / ${list.length}`;
+  const ok = CARDS.filter(x => marks[x.id] === "ok").length, no = CARDS.filter(x => marks[x.id] === "no").length;
+  $("#stat").textContent = `got it ${ok} · shaky ${no}`;
+  $("#barfill").style.width = `${((i + 1) / list.length) * 100}%`;
+}
+const go = d => { if (!list.length) return; i = (i + d + list.length) % list.length; render(); window.scrollTo({top:0}); };
+const mark = v => { if (!list.length) return; marks[list[i].id] = v; save(); if (filter === "shaky" && v === "ok") { applyFilter(); } else { go(1); } };
+
+$("#card").addEventListener("click", () => $("#card").classList.toggle("open"));
+$("#prev").onclick = () => go(-1);
+$("#next").onclick = () => go(1);
+$("#markOk").onclick = () => mark("ok");
+$("#markNo").onclick = () => mark("no");
+document.querySelectorAll(".chip").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", x === b));
+  filter = b.dataset.f; i = 0; applyFilter();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") go(1); else if (e.key === "ArrowLeft") go(-1);
+  else if (e.key === " ") { e.preventDefault(); $("#card").classList.toggle("open"); }
+});
+let x0 = null;
+$("#card").addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, {passive:true});
+$("#card").addEventListener("touchend", e => {
+  if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
+  if (Math.abs(dx) > 50) { e.preventDefault(); go(dx < 0 ? 1 : -1); }
+});
+applyFilter();
+</script>
+</body>
+</html>
+

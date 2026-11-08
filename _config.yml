@@ -31,7 +31,7 @@ github_username:  syenpark
 header_pages:
   - about.md
   - portfolio.md
-  - publications.md
+  - labs.md
   - media.md
 
 disqus:
