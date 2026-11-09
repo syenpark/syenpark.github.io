@@ -16,4 +16,4 @@ Hands-on notes from building an ML training and serving platform: distributed tr
 
 ### Code
 
-[cpp_refresh on GitHub](https://github.com/syenpark/cpp_refresh): the experiments behind these pages (DDP benchmarks, Kubernetes labs, C++).
+[ml-systems-lab on GitHub](https://github.com/syenpark/ml-systems-lab): the experiments behind these pages (DDP benchmarks, Kubernetes labs, C++).
