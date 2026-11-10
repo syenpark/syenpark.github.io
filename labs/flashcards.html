@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ML Platform Flashcards</title>
-<meta name="description" content="Tap-to-reveal review cards: DDP, DataLoader, Kubernetes, system design.">
+<meta name="description" content="Tap-to-reveal review cards: DDP, DataLoader, Kubernetes, Linux troubleshooting, system design.">
 <style>
   :root{
     --bg:#f6f5f2; --card:#ffffff; --fg:#1d1d1f; --muted:#6b6b70; --line:#d9d7d1;
@@ -83,6 +83,7 @@
     <button class="chip" data-f="all" aria-pressed="true">All</button>
     <button class="chip" data-f="DDP">DDP</button>
     <button class="chip" data-f="K8s">K8s</button>
+    <button class="chip" data-f="Linux">Linux</button>
     <button class="chip" data-f="Design">Design</button>
     <button class="chip" data-f="shaky">Shaky only</button>
   </div>
@@ -250,6 +251,44 @@ const CARDS = [
   how:"Crash → the <b>kubelet</b> restarts the container (same Pod name, RESTARTS↑). Node lost / Pod deleted → the <b>Deployment controller</b> creates a new Pod. Hang → a failing <b>liveness probe</b> triggers a restart.",
   so:"Kubernetes can't see a hang on its own → you need a throughput-based health check.",
   en:"A crash restarts the container via the kubelet; a lost node or deleted Pod is replaced by the Deployment controller; a hang needs a liveness probe, otherwise Kubernetes thinks it's healthy."},
+
+/* ---------------- Linux ---------------- */
+{ id:"L1", t:"Linux", q:"Process states R, S, D — and what does the run queue r tell you?",
+  what:"R = running or <b>runnable</b> (could run if a CPU were free). S = interruptible sleep (waiting for an event). D = <b>uninterruptible</b> sleep (usually I/O).",
+  how:"vmstat r counts R tasks. Compare with the <b>number of cores</b>: r = 12 on 8 cores → more runnable work than CPUs.",
+  so:"Sustained r > cores with low idle → CPU contention. One sample isn't proof.",
+  en:"R means runnable, S is a normal sleep, D is an uninterruptible wait, usually on I/O; a run queue consistently above the core count with near-zero idle points to CPU contention."},
+
+{ id:"L2", t:"Linux", q:"Read one vmstat line: r, b, us/sy/id/wa, cs, si/so?",
+  what:"r runnable · b blocked (D) · us/sy user/kernel CPU · id idle · wa I/O wait · cs context switches · si/so swap in/out.",
+  how:"r high + id low → CPU pressure. b high + wa high → blocked I/O. si/so > 0 → memory pressure. cs very high → a clue, not a root cause.",
+  so:"vmstat says WHICH resource; top / pidstat say WHICH process / thread.",
+  en:"vmstat gives the system-level picture — runnable vs blocked tasks, CPU split, I/O wait, swap — and then I narrow down to the process and thread with top and pidstat.",
+  trap:"\"wa is CPU busy\" — no, wa is idle time while I/O is outstanding"},
+
+{ id:"L3", t:"Linux", q:"Symptom → cause: CPU-bound vs I/O-bound vs lock contention?",
+  what:"Three different fingerprints in the same tools.",
+  how:"CPU-bound: us high, id ≈ 0, r > cores. I/O-bound: b high, wa high, tasks in D. Lock / GIL contention: r and cs high but CPU use LOW — many threads ready, few making progress.",
+  so:"Low CPU + many runnable threads → look at synchronization, not at adding cores.",
+  en:"If many threads are runnable and context switches are high but CPU utilisation stays low, the threads are fighting over a lock — for Python, the GIL — rather than lacking CPUs."},
+
+{ id:"L4", t:"Linux", q:"Memory: free vs available, swap, OOM, PSI?",
+  what:"<b>available</b> = memory new work can use without swapping (better than free). buff/cache is reclaimable.",
+  how:"si/so > 0 = pages moving to/from disk. OOM killer kills a process when nothing can be reclaimed (dmesg | grep -i oom). PSI (/proc/pressure/memory) shows stalls before swap or OOM appear.",
+  so:"In Kubernetes, a container over its memory limit is OOMKilled — same mechanism, per cgroup.",
+  en:"I look at available rather than free, treat swap activity as a symptom, check dmesg for OOM kills, and use PSI to catch memory stalls early; in Kubernetes the same limit shows up as OOMKilled."},
+
+{ id:"L5", t:"Linux", q:"Network: ss vs sar?",
+  what:"<b>ss</b> = connection level (TCP states, queues). <b>sar -n DEV</b> = interface level (throughput). sar -n TCP = retransmissions/errors.",
+  how:"Slow transfer: is the link saturated (sar) or are connections stuck / retransmitting (ss, sar -n TCP)?",
+  so:"Pick the tool by the question: the pipe vs the conversations in it.",
+  en:"sar tells me whether the interface itself is saturated; ss and TCP counters tell me whether individual connections are stuck or retransmitting."},
+
+{ id:"L6", t:"Linux", q:"The troubleshooting path from symptom to root cause?",
+  what:"System → resource → process → thread → syscall → application.",
+  how:"vmstat / iostat / sar (which resource?) → top / ps / ss (which process?) → top -H / pidstat -t (which thread?) → strace / lsof (which syscall, what's open?) → app-level timing.",
+  so:"Each signal is a clue; confirm with the next tool, fix, and measure again.",
+  en:"I start broad with vmstat, find the resource, then the process and thread, drop to strace if needed, and always re-measure after a fix."},
 
 /* ---------------- Design ---------------- */
 { id:"K3", t:"K8s", q:"A Pod isn't running. Who said no — the API server or the scheduler?",

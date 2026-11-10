@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ML Platform Interactive Labs</title>
-<meta name="description" content="Step-through animations: DataLoader loop, DistributedSampler, persistent_workers, Deployment + Service, zero_grad, set_epoch, DataLoader workers, admission vs scheduling.">
+<meta name="description" content="Step-through animations: DataLoader loop, DistributedSampler, persistent_workers, Deployment + Service, zero_grad, set_epoch, DataLoader workers, admission vs scheduling, reading vmstat.">
 <style>
   :root{
     --bg:#f6f5f2; --card:#ffffff; --fg:#1d1d1f; --muted:#6b6b70; --line:#d9d7d1;
@@ -69,7 +69,7 @@
   <nav class="toc">
     <a href="#lab1">1 · DataLoader loop</a><a href="#lab2">2 · Sampler on/off</a>
     <a href="#lab3">3 · persistent_workers</a><a href="#lab4">4 · Deployment + Service</a>
-    <a href="#lab5">5 · zero_grad</a><a href="#lab6">6 · set_epoch</a><a href="#lab7">7 · workers</a><a href="#lab8">8 · who said no?</a>
+    <a href="#lab5">5 · zero_grad</a><a href="#lab6">6 · set_epoch</a><a href="#lab7">7 · workers</a><a href="#lab8">8 · who said no?</a><a href="#lab9">9 · read vmstat</a>
   </nav>
 </header>
 <main>
@@ -207,6 +207,22 @@
   <svg id="l8" viewBox="0 0 340 170" aria-label="admission vs scheduling"></svg>
   <div class="say" id="l8say">Pick a CPU request.</div>
   <p class="so"><b>So what:</b> over the quota → the <b>API server</b> rejects it (Forbidden) and the Pod is <b>never created</b>. Fits the quota but no node has room → the Pod exists and stays <b>Pending</b>; <code>kubectl describe pod</code> shows FailedScheduling.</p>
+</section>
+
+<!-- ============ LAB 9 ============ -->
+<section id="lab9">
+  <span class="tag">Linux · L1–L3</span>
+  <h2>Read a <code>vmstat 1</code> line — what's the bottleneck?</h2>
+  <p class="why">An 8-core machine. Pick a scenario, guess the bottleneck from the numbers, then reveal.</p>
+  <div class="controls">
+    <button data-s="ok" aria-pressed="true">A</button><button data-s="cpu" aria-pressed="false">B</button>
+    <button data-s="io" aria-pressed="false">C</button><button data-s="lock" aria-pressed="false">D</button>
+    <button data-s="mem" aria-pressed="false">E</button>
+  </div>
+  <svg id="l9" viewBox="0 0 340 196" aria-label="vmstat"></svg>
+  <div class="controls"><button class="primary" id="l9rev">Reveal ▶</button></div>
+  <div class="say" id="l9say">Scenario A. What's limiting progress — CPU, I/O, memory, or synchronization?</div>
+  <p class="so"><b>So what:</b> vmstat says <b>which resource</b>; then <code>top</code> / <code>pidstat -u -t</code> say <b>which process and thread</b>, and <code>strace</code> says <b>which syscall</b>. Confirm, fix, measure again.</p>
 </section>
 
 </main>
@@ -575,6 +591,51 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   }
   qb.onclick = () => { quota = !quota; qb.setAttribute("aria-pressed", quota); qb.textContent = quota ? "quota: on" : "quota: off"; req = null; stage = 0; draw(); say.textContent = "Pick a CPU request."; };
   document.querySelectorAll("#lab8 [data-c]").forEach(b => b.onclick = () => run(parseFloat(b.dataset.c)));
+  draw();
+})();
+
+/* ===================== LAB 9 ===================== */
+(() => {
+  const svg = document.getElementById("l9"), say = document.getElementById("l9say");
+  const cols = ["r", "b", "si", "so", "in", "cs", "us", "sy", "id", "wa"];
+  const S = {
+    ok:   {v: [2, 0, 0, 0, 900, 1500, 15, 5, 80, 0], hot: [], run: 2, D: 0,
+           ans: "<b>Healthy</b>: r = 2 on 8 cores, 80% idle, no I/O wait, no swap. Plenty of headroom.", next: "Nothing to chase — look elsewhere (network? the app itself?)."},
+    cpu:  {v: [14, 0, 0, 0, 4000, 6000, 88, 7, 5, 0], hot: ["r", "us", "id"], run: 14, D: 0,
+           ans: "<b>CPU contention</b>: r = 14 > 8 cores and idle ≈ 5%. b and wa are 0, so it isn't I/O.", next: "Next: top → which process; pidstat -u -t -p &lt;PID&gt; 1 → which thread. Healthy parallel work or threads spinning?"},
+    io:   {v: [1, 6, 0, 0, 1200, 2000, 8, 4, 48, 40], hot: ["b", "wa"], run: 1, D: 6,
+           ans: "<b>Blocked I/O</b>: b = 6 tasks in D state and wa = 40%. CPUs are mostly waiting, not working.", next: "Next: ps -eo pid,stat,wchan,comm (who's in D?), pidstat -d (who does I/O?), iostat -xz 1 (which device, what latency?)."},
+    lock: {v: [40, 0, 0, 0, 3000, 90000, 18, 9, 73, 0], hot: ["r", "cs", "us", "id"], run: 40, D: 0,
+           ans: "<b>Lock / GIL contention</b>: r = 40 and cs very high, yet CPU is mostly idle. Many threads are ready, few make progress — they're taking turns on a lock.", next: "Next: pidstat -w -t (voluntary vs involuntary switches per thread). Fix the synchronization (or the GIL: processes / native threads), not the core count."},
+    mem:  {v: [3, 2, 850, 1200, 1500, 2500, 20, 15, 45, 20], hot: ["si", "so"], run: 3, D: 2,
+           ans: "<b>Memory pressure</b>: si/so > 0 means pages are swapping to and from disk; the wa comes from swap I/O.", next: "Next: free -h (look at available), /proc/pressure/memory (PSI), dmesg | grep -i oom. Swap is a symptom — find who uses the memory."}
+  };
+  let cur = "ok", shown = false;
+  function draw() {
+    const sc = S[cur]; svg.innerHTML = "";
+    svg.appendChild(el("text", {x: 4, y: 14, class: "m"}, "$ vmstat 1     (8 cores)"));
+    cols.forEach((c, k) => {
+      const x = 4 + k * 33, hot = shown && sc.hot.includes(c);
+      svg.appendChild(el("rect", {x, y: 22, width: 31, height: 46, rx: 5, class: hot ? "hot" : "box"}));
+      svg.appendChild(el("text", {x: x + 4, y: 38, class: hot ? "hotT b" : "m b"}, c));
+      const v = sc.v[k], txt = v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 0 : 1).replace(".0", "") + "k" : String(v);
+      svg.appendChild(el("text", {x: x + 4, y: 58, class: hot ? "hotT b" : "b"}, txt));
+    });
+    svg.appendChild(el("text", {x: 4, y: 90, class: "m"}, "8 CPU cores"));
+    for (let k = 0; k < 8; k++) svg.appendChild(el("rect", {x: 4 + k * 22, y: 96, width: 18, height: 18, rx: 3, fill: k < Math.min(8, Math.round(8 * (100 - sc.v[8] - sc.v[9]) / 100)) ? "var(--good)" : "var(--chip)"}));
+    svg.appendChild(el("text", {x: 186, y: 110, class: "m"}, "busy cores (≈ us + sy)"));
+    svg.appendChild(el("text", {x: 4, y: 136, class: "m"}, "runnable (r) and blocked in D (b)"));
+    const n = Math.min(sc.run, 40);
+    for (let k = 0; k < n; k++) svg.appendChild(el("circle", {cx: 9 + (k % 20) * 16, cy: 150 + Math.floor(k / 20) * 14, r: 5, fill: "var(--accent)", opacity: .8}));
+    for (let k = 0; k < sc.D; k++) svg.appendChild(el("circle", {cx: 9 + k * 16, cy: 186, r: 5, fill: "var(--bad)", opacity: .8}));
+    if (sc.D) svg.appendChild(el("text", {x: 16 + sc.D * 16, y: 190, class: "r"}, "D state (waiting on I/O)"));
+  }
+  document.querySelectorAll("#lab9 [data-s]").forEach(b => b.onclick = () => {
+    cur = b.dataset.s; shown = false;
+    document.querySelectorAll("#lab9 [data-s]").forEach(x => x.setAttribute("aria-pressed", x === b));
+    say.innerHTML = `Scenario ${b.textContent}. What's limiting progress — CPU, I/O, memory, or synchronization?`; draw();
+  });
+  document.getElementById("l9rev").onclick = () => { shown = true; draw(); const sc = S[cur]; say.innerHTML = `${sc.ans}<br><span style="color:var(--muted)">${sc.next}</span>`; };
   draw();
 })();
 </script>
