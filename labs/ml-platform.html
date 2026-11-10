@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ML Platform Interactive Labs</title>
-<meta name="description" content="Step-through animations: DataLoader loop, DistributedSampler, persistent_workers, Deployment + Service, zero_grad, set_epoch, DataLoader workers.">
+<meta name="description" content="Step-through animations: DataLoader loop, DistributedSampler, persistent_workers, Deployment + Service, zero_grad, set_epoch, DataLoader workers, admission vs scheduling.">
 <style>
   :root{
     --bg:#f6f5f2; --card:#ffffff; --fg:#1d1d1f; --muted:#6b6b70; --line:#d9d7d1;
@@ -69,7 +69,7 @@
   <nav class="toc">
     <a href="#lab1">1 · DataLoader loop</a><a href="#lab2">2 · Sampler on/off</a>
     <a href="#lab3">3 · persistent_workers</a><a href="#lab4">4 · Deployment + Service</a>
-    <a href="#lab5">5 · zero_grad</a><a href="#lab6">6 · set_epoch</a><a href="#lab7">7 · workers</a>
+    <a href="#lab5">5 · zero_grad</a><a href="#lab6">6 · set_epoch</a><a href="#lab7">7 · workers</a><a href="#lab8">8 · who said no?</a>
   </nav>
 </header>
 <main>
@@ -190,6 +190,23 @@
   </div>
   <div class="say" id="l7say">Press Play.</div>
   <p class="so"><b>So what:</b> workers are <b>helper processes inside each rank</b>. They run <code>dataset[i]</code> + collate <b>ahead of time</b> into a queue, so the GPU doesn't wait. Not ranks — rank count is set by torchrun.</p>
+</section>
+
+<!-- ============ LAB 8 ============ -->
+<section id="lab8">
+  <span class="tag">K8s · K3</span>
+  <h2>A Pod isn't running — who said no?</h2>
+  <p class="why">Namespace with a ResourceQuota of 1 CPU (0.6 already used by other Pods). The only node has 8 CPUs, 3 free. Pick a request and submit.</p>
+  <div class="controls">
+    <button id="l8q" aria-pressed="true">quota: on</button>
+    <button data-c="0.3">request 0.3 CPU</button>
+    <button data-c="0.5">0.5</button>
+    <button data-c="2">2</button>
+    <button data-c="100">100</button>
+  </div>
+  <svg id="l8" viewBox="0 0 340 170" aria-label="admission vs scheduling"></svg>
+  <div class="say" id="l8say">Pick a CPU request.</div>
+  <p class="so"><b>So what:</b> over the quota → the <b>API server</b> rejects it (Forbidden) and the Pod is <b>never created</b>. Fits the quota but no node has room → the Pod exists and stays <b>Pending</b>; <code>kubectl describe pod</code> shows FailedScheduling.</p>
 </section>
 
 </main>
@@ -519,6 +536,46 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   bA.onclick = () => mode(0); bB.onclick = () => mode(2);
   document.getElementById("l7play").onclick = () => { cancelAnimationFrame(raf); const t0 = performance.now(), dur = 3000; const tick = n => { const f = Math.min(1, (n - t0) / dur); draw(f); if (f < 1) raf = requestAnimationFrame(tick); }; raf = requestAnimationFrame(tick); };
   draw(0);
+})();
+
+/* ===================== LAB 8 ===================== */
+(() => {
+  const svg = document.getElementById("l8"), say = document.getElementById("l8say");
+  const QUOTA = 1, USED = 0.6, FREE = 3;
+  let quota = true, req = null, stage = 0, timer = null;
+  const qb = document.getElementById("l8q");
+  function draw() {
+    svg.innerHTML = ""; const ah = arrowDefs(svg);
+    const apiFail = quota && req != null && USED + req > QUOTA + 1e-9;
+    const schedFail = req != null && !apiFail && req > FREE;
+    box(svg, 4, 66, 58, 36, stage === 1 ? "hot" : "box", "kubectl", req != null ? `cpu ${req}` : "apply");
+    const apiCls = stage >= 2 ? (apiFail ? "dead" : "done") : "boxA";
+    box(svg, 82, 56, 108, 56, apiCls, "API server", quota ? `quota ${USED}+${req ?? "?"} ≤ ${QUOTA}?` : "no quota");
+    const schCls = stage >= 3 ? (schedFail ? "dead" : "done") : "boxA";
+    box(svg, 214, 56, 120, 56, schCls, "scheduler", `free CPU ${FREE} ≥ ${req ?? "?"}?`);
+    line(svg, "M62 84 H80", stage >= 1 ? "lnA" : "ln", ah);
+    line(svg, "M190 84 H212", stage >= 3 ? "lnA" : "ln", ah);
+    if (stage >= 2 && apiFail) { svg.appendChild(el("text", {x: 82, y: 30, class: "r b"}, "✗ Forbidden")); svg.appendChild(el("text", {x: 82, y: 46, class: "r"}, "Pod never created")); }
+    if (stage >= 3 && schedFail) { svg.appendChild(el("text", {x: 214, y: 30, class: "r b"}, "✗ Pending")); svg.appendChild(el("text", {x: 214, y: 46, class: "r"}, "FailedScheduling")); }
+    if (stage >= 4) box(svg, 214, 124, 120, 38, "done", "Running", "kubelet started it");
+    svg.appendChild(el("text", {x: 4, y: 140, class: "m"}, "kubectl get pods →"));
+    svg.appendChild(el("text", {x: 4, y: 158, class: "b"}, stage < 2 ? "" : apiFail ? "(not in the list)" : schedFail ? "Pending" : stage >= 4 ? "Running" : "Pending…"));
+  }
+  function run(c) {
+    clearTimeout(timer); req = c; stage = 1; draw(); say.innerHTML = `Submitting a Pod that requests <b>${c} CPU</b>…`;
+    const apiFail = quota && USED + c > QUOTA + 1e-9, schedFail = !apiFail && c > FREE;
+    timer = setTimeout(() => { stage = 2; draw();
+      if (apiFail) { say.innerHTML = `<b>API server</b>: used ${USED} + requested ${c} = ${(USED + c).toFixed(1)} > quota ${QUOTA} → <b>Forbidden</b>. The Pod object is <b>never created</b> — <code>describe</code> would say NotFound.`; return; }
+      say.innerHTML = quota ? `API server: ${USED} + ${c} = ${(USED + c).toFixed(1)} ≤ ${QUOTA} → object stored (Pending). Now the scheduler looks for a node…` : "No quota → API server stores the Pod (Pending). Now the scheduler looks for a node…";
+      timer = setTimeout(() => { stage = 3; draw();
+        if (schedFail) { say.innerHTML = `<b>Scheduler</b>: no node has ${c} free CPU (only ${FREE}) → Pod stays <b>Pending</b>. <code>kubectl describe pod</code> → Events: FailedScheduling, Insufficient cpu.`; return; }
+        timer = setTimeout(() => { stage = 4; draw(); say.innerHTML = `Both gatekeepers said yes → scheduled to the node → the kubelet starts it → <b>Running</b>.`; }, 900);
+      }, 1100);
+    }, 900);
+  }
+  qb.onclick = () => { quota = !quota; qb.setAttribute("aria-pressed", quota); qb.textContent = quota ? "quota: on" : "quota: off"; req = null; stage = 0; draw(); say.textContent = "Pick a CPU request."; };
+  document.querySelectorAll("#lab8 [data-c]").forEach(b => b.onclick = () => run(parseFloat(b.dataset.c)));
+  draw();
 })();
 </script>
 </body>

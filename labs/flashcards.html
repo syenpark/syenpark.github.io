@@ -252,6 +252,21 @@ const CARDS = [
   en:"A crash restarts the container via the kubelet; a lost node or deleted Pod is replaced by the Deployment controller; a hang needs a liveness probe, otherwise Kubernetes thinks it's healthy."},
 
 /* ---------------- Design ---------------- */
+{ id:"K3", t:"K8s", q:"A Pod isn't running. Who said no — the API server or the scheduler?",
+  what:"Two gatekeepers: <b>API server</b> (admission) first, then the <b>scheduler</b>.",
+  how:"API server checks namespace + <b>ResourceQuota</b> (sum of requests in the namespace) → if over: <b>Forbidden</b>, the Pod object is <b>never created</b>. Scheduler looks for a node with enough free CPU/memory → if none: Pod exists but stays <b>Pending</b> (FailedScheduling).",
+  so:"Never created → read the error from kubectl / the controller's Events. Pending → kubectl describe pod → Events.",
+  en:"A quota rejection happens at the API server, so the Pod is never created; a scheduling failure leaves the Pod Pending with a FailedScheduling event — two different places to look.",
+  trap:"\"quota is set\" is not a reason — the SUM of requests (used + requested) exceeds the limit",
+  svg:`<svg viewBox="0 0 320 150" style="color:var(--muted)">${AR}
+   <rect class="box" x="4" y="58" width="56" height="32" rx="7"/><text x="12" y="78">apply</text>
+   <rect class="boxA" x="82" y="50" width="96" height="48" rx="8"/><text x="90" y="70" font-weight="700">API server</text><text class="m" x="90" y="88">quota?</text>
+   <rect class="boxA" x="206" y="50" width="96" height="48" rx="8"/><text x="214" y="70" font-weight="700">scheduler</text><text class="m" x="214" y="88">free CPU?</text>
+   <path class="ln" d="M60 74 H80" marker-end="url(#ah)"/><path class="lnA" d="M178 74 H204" marker-end="url(#ah)"/>
+   <text class="r" x="82" y="26">✗ Forbidden</text><text class="r" x="82" y="40">never created</text>
+   <text class="r" x="206" y="26">✗ Pending</text><text class="r" x="206" y="40">FailedScheduling</text>
+   <text class="g" x="206" y="122">✓ kubelet</text><text class="g" x="206" y="138">→ Running</text></svg>`},
+
 { id:"X1", t:"Design", q:"Six steps for designing a system?",
   what:"requirements → <b>numbers</b> → high-level → deep dive → <b>trade-offs</b> → <b>failures</b>.",
   how:"Numbers = back-of-envelope that drives the design: 2,000 requests/s → 1000 / 2000 = <b>0.5 ms per request</b> → compare with per-item processing time.",
