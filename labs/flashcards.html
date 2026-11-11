@@ -195,6 +195,20 @@ const CARDS = [
   so:"If the sum doesn't match, there's a hidden cost (mine: worker restart at the epoch boundary, ~11 s).",
   en:"I check that the sum of per-step times matches the total; if not, there's a hidden cost — in my benchmark it was DataLoader worker restarts at epoch boundaries."},
 
+{ id:"D3b", t:"DDP", q:"epoch vs step vs batch vs micro-batch?",
+  what:"epoch = whole dataset once · step = one weight update · batch = data behind one step · <b>micro-batch</b> = what one loop iteration actually feeds the GPU.",
+  how:"Batch 128 doesn't fit in memory → DataLoader batch_size 32, call backward every iteration (grads <b>add</b> into .grad), optimizer.step() every <b>4</b> iterations (128 / 32).",
+  so:"Memory of 32, update of 128. Normally micro-batch = batch, so 1 iteration = 1 step.",
+  en:"With gradient accumulation one optimizer step spans several loop iterations: each iteration processes a micro-batch and accumulates gradients, and every N iterations I step once, as if I'd used an N-times larger batch.",
+  trap:"\"4 micro-batches = 4 epochs\" — no, they're all inside ONE step"},
+
+{ id:"D9", t:"DDP", q:"Gradient accumulation with DDP: why use no_sync()?",
+  what:"Run N micro-batches, step once. <b>no_sync()</b> skips the all-reduce on the first N−1 backwards.",
+  how:"backward <b>adds (+=)</b> into .grad, so the micro-batch gradients sum locally; only the last backward (outside no_sync) all-reduces the sum. Averaging is linear: (g1+…+g4)/N = g1/N+…+g4/N.",
+  so:"Same weights, 1/N of the communication (8 → 2 all-reduce calls in my run, backward ≈1.6× faster). Wrap ALL N in no_sync and ranks never sync → weights drift apart.",
+  en:"With gradient accumulation I wrap all but the last micro-batch in no_sync, so gradients accumulate locally and DDP all-reduces once per optimizer step — same result, a fraction of the communication.",
+  trap:"no_sync on every micro-batch — then no all-reduce ever happens and each rank trains its own model"},
+
 /* ---------------- K8s ---------------- */
 { id:"K-a", t:"K8s", q:"What is an object? What is a namespace?",
   what:"Object = one <b>instance</b> of a kind (e.g. Pod \"web\"). Namespace = a <b>name scope</b>.",
