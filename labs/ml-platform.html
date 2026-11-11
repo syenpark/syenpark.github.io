@@ -75,7 +75,7 @@
   <nav class="toc">
     <a href="#lab1">1 · DataLoader loop</a><a href="#lab2">2 · Sampler on/off</a>
     <a href="#lab3">3 · persistent_workers</a><a href="#lab4">4 · Deployment + Service</a>
-    <a href="#lab5">5 · zero_grad</a><a href="#lab6">6 · set_epoch</a><a href="#lab7">7 · workers</a><a href="#lab8">8 · who said no?</a><a href="#lab9">9 · read vmstat</a><a href="#lab10">10 · no_sync</a>
+    <a href="#lab5">5 · zero_grad</a><a href="#lab6">6 · set_epoch</a><a href="#lab7">7 · workers</a><a href="#lab8">8 · who said no?</a><a href="#lab9">9 · read vmstat</a><a href="#lab10">10 · no_sync</a><a href="#lab11">11 · buckets &amp; hooks</a>
   </nav>
 </header>
 <main>
@@ -251,6 +251,28 @@
   </div>
   <div class="say" id="l10say">Press Next micro-batch.</div>
   <p class="so"><b>So what:</b> <code>.grad</code> sums locally because backward <b>adds (+=)</b>; one all-reduce of the sum gives the same average as four. Keep the <b>last</b> micro-batch outside <code>no_sync</code>, or the ranks never sync.</p>
+</section>
+
+<!-- ============ LAB 11 ============ -->
+<section id="lab11">
+  <span class="tag">DDP · D10</span>
+  <h2>Buckets &amp; hooks: when does all-reduce start?</h2>
+  <p class="why">A 6-layer model. <code>backward()</code> runs from the <b>last</b> layer (L6) to the first (L1); each layer's gradient takes 1 time unit. Every all-reduce costs a fixed 1.1 units of overhead + 0.25 per layer it carries. One press = one layer's gradient is ready.</p>
+  <div class="controls">
+    <button data-m="1" aria-pressed="false">1 big bucket</button>
+    <button data-m="3" aria-pressed="true">3 buckets</button>
+    <button data-m="6" aria-pressed="false">6 tiny buckets</button>
+  </div>
+  <div class="controls"><button class="primary" id="l11next">Next layer ▶</button><button id="l11reset">Reset</button></div>
+  <svg id="l11" viewBox="0 0 340 196" aria-label="ddp buckets and hooks"></svg>
+  <pre class="code" id="l11code" aria-label="ddp hook"></pre>
+  <div class="now" id="l11now"></div>
+  <div class="meter">
+    <div>all-reduce calls<strong id="l11calls">0</strong></div>
+    <div>backward + sync time<strong id="l11t">–</strong></div>
+  </div>
+  <div class="say" id="l11say"></div>
+  <p class="so"><b>So what:</b> a <b>hook</b> is a function autograd calls the moment one parameter's gradient is ready. DDP's hook drops it into its <b>bucket</b>; when a bucket is full, it launches that bucket's all-reduce <b>asynchronously</b> while backward keeps computing earlier layers. Communication <b>overlaps</b> computation. Too few buckets = no overlap; too many = per-call overhead piles up (<code>bucket_cap_mb</code>, default 25 MB, sets the size).</p>
 </section>
 
 </main>
@@ -743,6 +765,102 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   document.getElementById("l10next").onclick = () => { if (m >= 4) return; if (!skip(m)) calls += 2; m++; draw(); info(); };
   document.getElementById("l10reset").onclick = () => { m = 0; calls = 0; draw(); info(); };
   draw(); info();
+})();
+/* ===================== LAB 11 ===================== */
+(() => {
+  const svg = document.getElementById("l11"), say = document.getElementById("l11say"), code = document.getElementById("l11code"), now = document.getElementById("l11now");
+  const LAT = 1.1, PER = 0.25, X0 = 44, W = 290, TMAX = 9.5, px = t => X0 + Math.min(t, TMAX) / TMAX * W;
+  const LETTERS = "ABCDEF";
+  let nb = 3, s = 0;
+  const groups = () => nb === 1 ? [[6, 5, 4, 3, 2, 1]] : nb === 3 ? [[6, 5], [4, 3], [2, 1]] : [[6], [5], [4], [3], [2], [1]];
+  // layer Lk grad ready at time 7-k (L6 at t=1 ... L1 at t=6)
+  const readyAt = k => 7 - k;
+  function plan() {
+    let free = 0;
+    return groups().map((ls, i) => {
+      const ready = Math.max(...ls.map(readyAt)), start = Math.max(ready, free), end = start + LAT + PER * ls.length;
+      free = end; return {name: LETTERS[i], ls, ready, start, end};
+    });
+  }
+  const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  function renderCode(hl) {
+    const lines = [
+      ["# DDP registers a hook on every param", ""],
+      ["def hook(p):", "# autograd calls this"],
+      ["  b = bucket_of[p]", ""],
+      ["  b.ready += 1", ""],
+      ["  if b.ready == b.size:", "# bucket full?"],
+      ["    b.work = all_reduce(", "# no wait"],
+      ["        b.grads, async_op=True)", ""],
+      ["", ""],
+      ["# end of backward():", ""],
+      ["for b in buckets:", ""],
+      ["  b.work.wait()", "# grads = average"],
+    ];
+    code.innerHTML = lines.map(([t, c], i) => `<span class="ln${hl.has(i) ? " on" : ""}">${esc(t) || " "}${c ? "  <span class=\"cm\">" + esc(c) + "</span>" : ""}</span>`).join("");
+  }
+  function draw() {
+    svg.innerHTML = "";
+    const P = plan(), T = s, end = s === 6;
+    const bucketOf = k => P.find(b => b.ls.includes(k));
+    // layers
+    svg.appendChild(el("text", {x: 4, y: 11, class: "m"}, "forward: L1 → L6")); svg.appendChild(el("text", {x: 200, y: 11, class: "a b"}, "← backward: L6 → L1"));
+    for (let k = 1; k <= 6; k++) {
+      const x = 4 + (k - 1) * 55, ready = readyAt(k) <= T, cur = readyAt(k) === T;
+      svg.appendChild(el("rect", {x, y: 18, width: 49, height: 34, rx: 7, class: cur ? "hot" : ready ? "done" : "box"}));
+      svg.appendChild(el("text", {x: x + 8, y: 32, class: cur ? "hotT b" : "b"}, `L${k}`));
+      svg.appendChild(el("text", {x: x + 8, y: 46, class: cur ? "hotT" : ready ? "g" : "m"}, ready ? "grad ✓" : "…"));
+    }
+    // buckets
+    P.forEach(b => {
+      const lo = Math.min(...b.ls), hi = Math.max(...b.ls), x = 4 + (lo - 1) * 55 - 1, w = (hi - lo) * 55 + 51;
+      const got = b.ls.filter(k => readyAt(k) <= T).length, full = got === b.ls.length, sent = full && b.start <= T, fin = b.end <= T || (end && false);
+      const cls = fin ? "done" : sent ? "boxA" : "box";
+      svg.appendChild(el("rect", {x, y: 58, width: w, height: 24, rx: 6, class: cls, "stroke-dasharray": full ? "" : "4 3"}));
+      const st = fin ? " ✓" : sent ? " → net" : full ? " queued" : "", lbl = nb === 6 ? `${b.name} ${got}/1${fin ? " ✓" : ""}` : nb === 3 ? `${b.name} ${got}/2${st}` : `bucket ${b.name}  ${got}/6${st}`;
+      svg.appendChild(el("text", {x: x + 6, y: 74, class: sent ? "a b" : "m"}, lbl));
+    });
+    // timeline
+    const yG = 100, yN = 128;
+    svg.appendChild(el("text", {x: 4, y: yG + 15, class: "b"}, "GPU"));
+    svg.appendChild(el("text", {x: 4, y: yN + 15, class: "b"}, "net"));
+    svg.appendChild(el("rect", {x: X0, y: yG, width: W, height: 22, rx: 4, class: "box"}));
+    svg.appendChild(el("rect", {x: X0, y: yN, width: W, height: 22, rx: 4, class: "box"}));
+    for (let k = 6; k >= 1; k--) { const a = readyAt(k) - 1; if (a >= T) continue;
+      svg.appendChild(el("rect", {x: px(a) + 1, y: yG + 2, width: px(a + 1) - px(a) - 2, height: 18, rx: 3, fill: "var(--good)"}));
+      svg.appendChild(el("text", {x: px(a) + 6, y: yG + 15, class: "hotT"}, `L${k}`)); }
+    const total = Math.max(6, P[P.length - 1].end);
+    if (end && total > 6) { svg.appendChild(el("rect", {x: px(6) + 1, y: yG + 2, width: px(total) - px(6) - 2, height: 18, rx: 3, fill: "var(--bad)", opacity: .3}));
+      svg.appendChild(el("text", {x: px(6) + 5, y: yG + 15, class: "r"}, "wait")); }
+    const lim = end ? Infinity : T;
+    P.forEach(b => { if (b.start > lim) return; const e = Math.min(b.end, lim);
+      svg.appendChild(el("rect", {x: px(b.start) + 1, y: yN + 2, width: Math.max(4, px(e) - px(b.start) - 2), height: 18, rx: 3, fill: "var(--accent)", opacity: .8}));
+      if (px(e) - px(b.start) > 14) svg.appendChild(el("text", {x: px(b.start) + 4, y: yN + 15, class: "hotT b"}, b.name)); });
+    for (let t = 0; t <= 9; t++) { svg.appendChild(el("line", {x1: px(t), x2: px(t), y1: yN + 24, y2: yN + 28, class: "ln"})); svg.appendChild(el("text", {x: px(t) - 3, y: yN + 40, class: "m"}, String(t))); }
+    if (!end && T > 0) svg.appendChild(el("line", {x1: px(T), x2: px(T), y1: yG - 4, y2: yN + 26, stroke: "var(--fg)", "stroke-width": 1.5, "stroke-dasharray": "3 2"}));
+    if (end) svg.appendChild(el("text", {x: 4, y: 190, class: "b"}, `done at t = ${+total.toFixed(2)}  (backward alone = 6)`));
+    // code highlight + now line + text
+    const hl = new Set();
+    const calls = P.filter(b => b.start < (end ? Infinity : T + 1e-9) && Math.max(...b.ls.map(readyAt)) <= T).length;
+    document.getElementById("l11calls").textContent = String(calls);
+    document.getElementById("l11t").textContent = end ? `${+total.toFixed(2)} units` : "–";
+    if (s === 0) { now.textContent = ""; say.innerHTML = "Press <b>Next layer</b>. Backward starts at the <b>last</b> layer, so DDP fills buckets in <b>reverse</b> order: L6 goes into the first bucket."; renderCode(hl); return; }
+    const k = 7 - s, b = bucketOf(k), got = b.ls.filter(j => readyAt(j) <= T).length, full = got === b.ls.length;
+    [1, 2, 3, 4].forEach(i => hl.add(i)); if (full) { hl.add(5); hl.add(6); } if (end) { hl.add(9); hl.add(10); }
+    renderCode(hl);
+    const queued = full && b.start > T;
+    now.textContent = `L${k}.grad ready → hook → bucket ${b.name} ${got}/${b.ls.length}` + (full ? (queued ? ` → full, queued (net busy until t=${+b.start.toFixed(2)})` : ` → all_reduce(${b.name}) starts, async`) : " → wait for the rest");
+    if (!end) say.innerHTML = full
+      ? (queued ? `Bucket ${b.name} is full, but the network is still busy with the previous bucket, so it <b>queues</b>. Each call pays the fixed overhead again.` : `Bucket ${b.name} is full → the hook launches its all-reduce <b>right now</b>. The GPU doesn't wait: it keeps computing L${k - 1 || ""} gradients <b>while the network sends</b>.`)
+      : nb === 1 ? `L${k}'s hook fired, but the single bucket isn't full until L1 is done. Nothing is sent yet — the network <b>sits idle</b> during backward.` : `L${k}'s hook fired. Bucket ${b.name} has ${got}/${b.ls.length} → not full, so nothing is sent yet.`;
+    else say.innerHTML = nb === 1 ? `Backward finished at t=6, and only <b>then</b> one big all-reduce starts. GPU waits ${+(total - 6).toFixed(2)} units. Fewest calls, but <b>no overlap</b>.`
+      : nb === 3 ? `Buckets A and B were already sent <b>during</b> backward; only C remains after t=6. GPU waits ${+(total - 6).toFixed(2)} units — the <b>best</b> of the three.`
+      : `6 calls → 6 × the fixed overhead. They <b>queue</b> on the network and fall behind; GPU waits ${+(total - 6).toFixed(2)} units — <b>worse</b> than 1 big bucket.`;
+  }
+  document.querySelectorAll("#lab11 [data-m]").forEach(b => b.onclick = () => { nb = +b.dataset.m; document.querySelectorAll("#lab11 [data-m]").forEach(x => x.setAttribute("aria-pressed", x === b)); s = 0; draw(); });
+  document.getElementById("l11next").onclick = () => { if (s < 6) { s++; draw(); } };
+  document.getElementById("l11reset").onclick = () => { s = 0; draw(); };
+  draw();
 })();
 </script>
 </body>
