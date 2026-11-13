@@ -116,7 +116,7 @@
     <div>Gradients across ranks<strong id="l2grad">–</strong></div>
   </div>
   <div class="say" id="l2say">Pick a mode, then run.</div>
-  <p class="so"><b>So what:</b> without a sampler there's no error — every rank computes <b>identical gradients</b>, so averaging changes nothing: same model as one GPU, no speedup.</p>
+  <p class="so"><b>So what:</b> without a sampler there's no error — every rank processes the <b>whole dataset</b> (with shuffle=False: identical batches → identical gradients, so averaging changes nothing). Same model as one GPU, no speedup.</p>
 
 </section>
 
@@ -154,7 +154,7 @@
     <button id="l4crash">Crash a container</button>
   </div>
   <div class="say" id="l4say">The client only knows the name <b>web</b>.</div>
-  <p class="so"><b>So what:</b> deleted Pod → the <b>Deployment controller</b> creates a new Pod (new name, same label) · crashed process → the <b>kubelet</b> restarts the container (same name, RESTARTS +1) · the Service routes by <b>label</b>, so the client never notices.</p>
+  <p class="so"><b>So what:</b> deleted Pod → the <b>ReplicaSet controller</b> (the Deployment owns a ReplicaSet) creates a new Pod (new name, same label) · crashed process → the <b>kubelet</b> restarts the container (same name, RESTARTS +1) · the Service routes by <b>label</b>, so the client never notices.</p>
 
 </section>
 
@@ -172,7 +172,7 @@
   </div>
   <svg id="l5" viewBox="0 0 340 200" aria-label="grad accumulation"></svg>
   <div class="say" id="l5say">Press Next step.</div>
-  <p class="so"><b>So what:</b> <code>backward()</code> <b>adds (+=)</b> into <code>.grad</code>. Without clearing, step 3 updates with g1+g2+g3 instead of g3 — the wrong direction and too big a step. (Gradient accumulation uses this on purpose: skip zero_grad for N micro-batches, then step once.)</p>
+  <p class="so"><b>So what:</b> <code>backward()</code> <b>adds (+=)</b> into <code>.grad</code>. Without clearing, step 3 updates with g1+g2+g3 instead of g3 — stale gradients from older weights mixed in, and a step that keeps growing. (Gradient accumulation uses this on purpose: skip zero_grad for N micro-batches, then step once.)</p>
 
 </section>
 
@@ -221,7 +221,7 @@
 <section id="lab8">
   <span class="tag">K8s · K3</span>
   <h2>Lab 8 · A Pod isn't running — who said no?</h2>
-  <p class="why">Namespace with a ResourceQuota of 1 CPU (0.6 already used by other Pods). The only node has 8 CPUs, 3 free. Pick a request and submit.</p>
+  <p class="why">Namespace with a ResourceQuota of 1 CPU (0.6 already used by other Pods). The only node has 8 allocatable CPUs, 5 already requested by other Pods → 3 unrequested. Pick a request and submit.</p>
   <div class="controls">
     <button id="l8q" aria-pressed="true">quota: on</button>
     <button data-c="0.3">request 0.3 CPU</button>
@@ -264,7 +264,7 @@
   <div class="calls" id="l11acalls"></div>
   <pre class="code" id="l11acode" aria-label="training loop"></pre>
   <div class="say" id="l11asay"></div>
-  <p class="so"><b>So what:</b> data is built on the <b>CPU</b> (sampler → workers → pinned RAM), crosses <b>PCIe</b> once per batch at <code>.cuda()</code>, and from then on everything stays in <b>GPU memory</b>. <code>backward()</code> is run by the <b>autograd engine</b>; DDP joins only through its <b>hooks</b>, and its Reducer hands full buckets to <b>NCCL</b>, which sends them on a separate stream while compute continues. <code>optimizer.step()</code> touches neither DDP nor the CPU.</p>
+  <p class="so"><b>So what:</b> data is built on the <b>CPU</b> (sampler → workers → pinned RAM), crosses <b>PCIe</b> once per batch at <code>.cuda()</code>, and from then on the tensors stay in <b>GPU memory</b> (the CPU just drives the loop and launches kernels). <code>backward()</code> is run by the <b>autograd engine</b>; DDP joins only through its <b>hooks</b>, and its Reducer hands full buckets to <b>NCCL</b>, which sends them on a separate stream while compute continues. <code>optimizer.step()</code> doesn't involve DDP or any communication.</p>
 </section>
 
 <!-- ============ LAB 11 ============ -->
@@ -272,7 +272,7 @@
 <section id="lab11">
   <span class="tag">DDP · D10</span>
   <h2>Lab 11 · Buckets &amp; hooks: when does all-reduce start?</h2>
-  <p class="why"><b>compute</b> = backward kernels on the GPU (producer). <b>network</b> = NCCL sending a full bucket to rank 1 (consumer). They run at the same time on separate GPU streams. New to hooks/NCCL? Do Lab 10 first.</p>
+  <p class="why"><b>compute</b> = backward kernels on the GPU (producer). <b>network</b> = NCCL all-reducing a full bucket with rank 1 — both ranks send and receive (consumer). They run at the same time on separate GPU streams. New to hooks/NCCL? Do Lab 10 first.</p>
   <p class="why">A 6-layer model. <code>backward()</code> runs from the <b>last</b> layer (L6) to the first (L1); each layer's gradient takes 1 time unit. Every all-reduce costs a fixed 1.1 units of overhead + 0.25 per layer it carries. One press = one layer's gradient is ready.</p>
   <div class="controls">
     <button data-m="1" aria-pressed="false">1 big bucket</button>
@@ -374,7 +374,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
     if (st.ph === "collate" || st.ph === "model") svg.appendChild(el("text", {x: 196, y: 210, class: "a b"}, "→ batch"));
     if (st.ph === "collate" || st.ph === "model") svg.appendChild(el("text", {x: 196, y: 226, class: "a"}, "[3, 1]"));
     const msg = {
-      undefined: "Press <b>Next step</b>. Rank 0's sampler has already made its index list: 0, 2, 4, …",
+      undefined: "Press <b>Next step</b>. Rank 0's sampler (shuffle=False here, for simplicity) gives the index list 0, 2, 4, … when the loop starts.",
       ask: `The <b>DataLoader</b> takes the next index from the sampler's list: <b>${st.v}</b>.`,
       call: `The DataLoader calls <b>dataset[${st.v}]</b>. The Dataset doesn't choose indices — it just answers.`,
       got: `The Dataset returns <b>one sample</b> (x${st.v}, y${st.v}). The DataLoader puts it in the batch tray.`,
@@ -419,7 +419,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
       document.getElementById("l2steps").textContent = on ? "4 (half each)" : "8 (all, duplicated)";
       document.getElementById("l2grad").textContent = on ? "different → averaged" : "identical";
       say.innerHTML = on ? "Each rank processed a <b>disjoint half</b> → twice as fast, and the averaged gradient covers all 8 samples."
-                         : "Both ranks processed <b>all 8</b> samples → <b>identical gradients</b>. No error, no speedup, 2× wasted compute."; } }, 350);
+                         : "Both ranks processed <b>all 8</b> samples (same order here, shuffle=False) → <b>identical gradients</b>. No error, no speedup, 2× wasted compute."; } }, 350);
   };
   draw(0);
 })();
@@ -496,14 +496,14 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
     if (busy) return; const ok = pods.map((p, k) => p.state === "ok" ? k : -1).filter(k => k >= 0);
     if (!ok.length) { say.textContent = "No ready Pods right now — the Service has no Endpoints."; return; }
     busy = true; reqTarget = ok[Math.floor(Math.random() * ok.length)]; draw();
-    say.innerHTML = `client → <b>web</b> (DNS → ClusterIP) → Service picks a Pod with label <b>app=web</b> → <b>${pods[reqTarget].name}</b> answers. The client never sees the Pod name.`;
+    say.innerHTML = `client → <b>web</b> (DNS → ClusterIP) → kube-proxy rules pick one of the Service's endpoints (Pods with label <b>app=web</b>) → <b>${pods[reqTarget].name}</b> answers. The client never sees the Pod name.`;
     await wait(1100); reqTarget = -1; draw(); busy = false;
   };
   document.getElementById("l4del").onclick = async () => {
     if (busy) return; busy = true; const k = Math.floor(Math.random() * 3); const old = pods[k].name;
     pods[k].state = "dead"; draw(); say.innerHTML = `Deleted <b>${old}</b>. Endpoints drop to 2 — the Service sends only to the 2 ready Pods meanwhile.`;
     await wait(1100); ctrl = "want 3, have 2 → +1"; draw();
-    say.innerHTML = "The <b>Deployment controller</b> compares desired (3) with actual (2) and creates one Pod.";
+    say.innerHTML = "The <b>ReplicaSet controller</b> (created by the Deployment) compares desired (3) with actual (2) and creates one Pod.";
     await wait(1100); pods[k] = {name: "web-" + rid(), restarts: 0, state: "new"}; ctrl = ""; draw();
     say.innerHTML = `New Pod <b>${pods[k].name}</b>: <b>new name</b>, same label app=web → the Service picks it up automatically.`;
     await wait(900); pods[k].state = "ok"; draw(); busy = false;
@@ -512,7 +512,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
     if (busy) return; busy = true; const k = Math.floor(Math.random() * 3);
     pods[k].state = "restarting"; draw(); say.innerHTML = `The process in <b>${pods[k].name}</b> crashed. The Pod object stays — the <b>kubelet</b> restarts its container.`;
     await wait(1400); pods[k].state = "ok"; pods[k].restarts++; draw();
-    say.innerHTML = `Same Pod name, <b>RESTARTS ${pods[k].restarts}</b>. The Deployment controller did nothing (count never dropped). Repeated crashes → CrashLoopBackOff.`;
+    say.innerHTML = `Same Pod name, <b>RESTARTS ${pods[k].restarts}</b>. The ReplicaSet controller did nothing (count never dropped). Repeated crashes → CrashLoopBackOff.`;
     busy = false;
   };
   draw();
@@ -649,7 +649,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
       document.getElementById("l7gpu").textContent = `${Math.round(busy / H * 100)}%`;
       document.getElementById("l7n").textContent = String(sc.n);
       say.innerHTML = workers === 0
-        ? "With <b>0 workers</b> the main process loads, then trains, then loads again — the GPU sits idle during every load."
+        ? "With <b>0 workers</b> the main process loads, then trains, then loads again — the GPU sits idle during every load (assuming each step waits for the GPU, e.g. loss.item())."
         : "With <b>2 workers</b> the next batches are prepared <b>in parallel, ahead of time</b> — the GPU trains back-to-back after a short start-up wait.";
     }
   }
@@ -673,7 +673,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
     const apiCls = stage >= 2 ? (apiFail ? "dead" : "done") : "boxA";
     box(svg, 82, 56, 108, 56, apiCls, "API server", quota ? `quota ${USED}+${req ?? "?"} ≤ ${QUOTA}?` : "no quota");
     const schCls = stage >= 3 ? (schedFail ? "dead" : "done") : "boxA";
-    box(svg, 214, 56, 120, 56, schCls, "scheduler", `free CPU ${FREE} ≥ ${req ?? "?"}?`);
+    box(svg, 214, 56, 120, 56, schCls, "scheduler", `unrequested ${FREE} ≥ ${req ?? "?"}?`);
     line(svg, "M62 84 H80", stage >= 1 ? "lnA" : "ln", ah);
     line(svg, "M190 84 H212", stage >= 3 ? "lnA" : "ln", ah);
     if (stage >= 2 && apiFail) { svg.appendChild(el("text", {x: 82, y: 30, class: "r b"}, "✗ Forbidden")); svg.appendChild(el("text", {x: 82, y: 46, class: "r"}, "Pod never created")); }
@@ -689,7 +689,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
       if (apiFail) { say.innerHTML = `<b>API server</b>: used ${USED} + requested ${c} = ${(USED + c).toFixed(1)} > quota ${QUOTA} → <b>Forbidden</b>. The Pod object is <b>never created</b> — <code>describe</code> would say NotFound.`; return; }
       say.innerHTML = quota ? `API server: ${USED} + ${c} = ${(USED + c).toFixed(1)} ≤ ${QUOTA} → object stored (Pending). Now the scheduler looks for a node…` : "No quota → API server stores the Pod (Pending). Now the scheduler looks for a node…";
       timer = setTimeout(() => { stage = 3; draw();
-        if (schedFail) { say.innerHTML = `<b>Scheduler</b>: no node has ${c} free CPU (only ${FREE}) → Pod stays <b>Pending</b>. <code>kubectl describe pod</code> → Events: FailedScheduling, Insufficient cpu.`; return; }
+        if (schedFail) { say.innerHTML = `<b>Scheduler</b>: no node has ${c} unrequested CPU (only ${FREE}; the scheduler counts requests, not live usage) → Pod stays <b>Pending</b>. <code>kubectl describe pod</code> → Events: FailedScheduling, Insufficient cpu.`; return; }
         timer = setTimeout(() => { stage = 4; draw(); say.innerHTML = `Both gatekeepers said yes → scheduled to the node → the kubelet starts it → <b>Running</b>.`; }, 900);
       }, 1100);
     }, 900);
@@ -710,8 +710,8 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
            ans: "<b>CPU contention</b>: r = 14 > 8 cores and idle ≈ 5%. b and wa are 0, so it isn't I/O.", next: "Next: top → which process; pidstat -u -t -p &lt;PID&gt; 1 → which thread. Healthy parallel work or threads spinning?"},
     io:   {v: [1, 6, 0, 0, 1200, 2000, 8, 4, 48, 40], hot: ["b", "wa"], run: 1, D: 6,
            ans: "<b>Blocked I/O</b>: b = 6 tasks in D state and wa = 40%. CPUs are mostly waiting, not working.", next: "Next: ps -eo pid,stat,wchan,comm (who's in D?), pidstat -d (who does I/O?), iostat -xz 1 (which device, what latency?)."},
-    lock: {v: [40, 0, 0, 0, 3000, 90000, 18, 9, 73, 0], hot: ["r", "cs", "us", "id"], run: 40, D: 0,
-           ans: "<b>Lock / GIL contention</b>: r = 40 and cs very high, yet CPU is mostly idle. Many threads are ready, few make progress — they're taking turns on a lock.", next: "Next: pidstat -w -t (voluntary vs involuntary switches per thread). Fix the synchronization (or the GIL: processes / native threads), not the core count."},
+    lock: {v: [2, 0, 0, 0, 3000, 90000, 18, 9, 73, 0], hot: ["cs", "id"], run: 2, D: 0,
+           ans: "<b>Lock / GIL contention</b>: cs is very high (90,000/s) but r is low and CPU is mostly idle. Threads waiting for a lock <b>sleep (state S)</b>, so they don't count in r; they wake, find the lock taken, and sleep again → lots of <b>voluntary</b> switches, little work. (Python GIL: often one core near 100% however many threads.)", next: "Next: pidstat -w -t (voluntary vs involuntary switches per thread). Fix the synchronization (or the GIL: processes / native threads), not the core count."},
     mem:  {v: [3, 2, 850, 1200, 1500, 2500, 20, 15, 45, 20], hot: ["si", "so"], run: 3, D: 2,
            ans: "<b>Memory pressure</b>: si/so > 0 means pages are swapping to and from disk; the wa comes from swap I/O.", next: "Next: free -h (look at available), /proc/pressure/memory (PSI), dmesg | grep -i oom. Swap is a symptom — find who uses the memory."}
   };
@@ -812,7 +812,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
     document.getElementById("l10w").textContent = m < n ? "–" : ok ? "identical ✓" : "diverged ✗";
     const k = m - 1;
     if (m === 0) { say.textContent = full() ? "Press Next iteration. Here all 128 samples fit, so one iteration = one step." : "Press Next iteration. One press = one loop iteration = 32 samples (a micro-batch)."; return; }
-    if (full()) { say.innerHTML = "One iteration, one backward, <b>2 all-reduce calls</b> (2 buckets), one step. Ideal — but needs memory for <b>128</b> samples at once. Same final gradient (7.5) as B and C."; return; }
+    if (full()) { say.innerHTML = "One iteration, one backward, <b>2 all-reduce calls</b> (2 buckets), one step. Ideal — but needs memory for <b>128</b> samples at once. Same final gradient (7.5) as B and C (the g values here already include the ÷ACCUM scale)."; return; }
     if (m < 4) say.innerHTML = skip(k) ? `Iteration ${m}: samples ${k * 32}–${k * 32 + 31}. Inside <b>no_sync()</b> → backward only <b>adds</b> g${m} into .grad. No communication, no step yet.` : `Iteration ${m}: samples ${k * 32}–${k * 32 + 31}. backward adds g${m} into .grad, and DDP <b>all-reduces</b> it (2 buckets = 2 calls). No step yet.`;
     else say.innerHTML = mode === "sync" ? "Iteration 4 = last → step. Memory only for 32, but <b>8 all-reduce calls</b> — 4× A's communication. Only the final sum mattered." : mode === "nosync" ? "Iteration 4 = last → outside no_sync, DDP all-reduces the <b>accumulated sum</b>: <b>2 calls</b>, same as A, with memory for only 32. Same gradient (7.5)." : "The last iteration was inside no_sync too → <b>no all-reduce at all</b>. Each rank steps with its own gradient → weights drift apart.";
   }
@@ -845,43 +845,43 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   const S = [
     {code: [], z: {}, c: {Wram: "p"}, mv: [], calls: [],
       say: "Start: the model's weights <b>W</b> sit in CPU RAM, nothing is on the GPU. Press <b>Next</b>."},
-    {code: [0, 1, 2, 3, 4], z: {main: "Net().cuda(); DDP(model)", pcie: 1, mem: 1, comm: "broadcast W", link: 1}, c: {W: "h", bA: "h", bB: "h", bC: "h"},
+    {code: [0, 1, 2, 3, 4, 5], z: {main: "Net().cuda(); DDP(model)", pcie: 1, mem: 1, comm: "broadcast W", link: 1}, c: {W: "h", bA: "h", bB: "h", bC: "h"},
       mv: [["Wram", "pcie", "W"], ["W", "comm", "link"]],
       calls: ["model.cuda()", "PCIe copy: W → GPU", "DDP(model)", "Reducer: buckets + hooks", "broadcast(W) → NCCL"],
       say: "<b>Setup, once.</b> <code>.cuda()</code> copies W over PCIe into GPU memory. <code>DDP(model)</code> broadcasts rank 0's W so every rank starts identical, and its Reducer allocates <b>buckets in GPU memory</b> and registers a hook on every parameter."},
-    {code: [5, 6], z: {main: "sampler.set_epoch(e)", ram: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "h"}, mv: [["main", "idx"]],
-      calls: ["sampler.set_epoch(e)", "shuffle ALL indices (seed = e)", "keep my positions"],
-      say: "<b>Each epoch.</b> The sampler (CPU, main process) shuffles the whole index list with the shared seed and keeps this rank's positions (Lab 6). Just a list of numbers in RAM."},
-    {code: [7], z: {main: "next(loader)", workers: "dataset[i] ×32, collate", ram: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "p", samples: "h", batch: "h"},
+    {code: [6, 7], z: {main: "sampler.set_epoch(e)", ram: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "h"}, mv: [["main", "idx"]],
+      calls: ["sampler.set_epoch(e)", "stores epoch = e"],
+      say: "<b>Each epoch.</b> <code>set_epoch</code> only <b>stores</b> the epoch number. When the loop then starts iterating, the sampler (CPU, main process) shuffles the whole index list with seed = seed + epoch (same on every rank) and keeps this rank's positions (Lab 6). Just a list of numbers in RAM."},
+    {code: [8], z: {main: "next(loader)", workers: "dataset[i] ×32, collate", ram: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "p", samples: "h", batch: "h"},
       mv: [["idx", "wk"], ["wk", "batch"]],
-      calls: ["next(loader)", "sampler → 32 indices", "worker: dataset[i] × 32", "collate → batch", "pinned RAM → main"],
-      say: "<b>Data, on the CPU.</b> The DataLoader sends 32 indices to a <b>worker process</b>; it calls your <code>dataset[i]</code> 32 times (reading from disk), collates them into one batch in <b>pinned RAM</b>, and passes it to the main process (Lab 1, Lab 7)."},
-    {code: [8], z: {main: "xb.cuda()", ram: 1, pcie: 1, mem: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "p", batch: "p", xb: "h"},
+      calls: ["next(loader)", "sampler → 32 indices", "worker: dataset[i] × 32", "collate → shared memory", "pin thread → pinned RAM"],
+      say: "<b>Data, on the CPU.</b> The DataLoader sends 32 indices to a <b>worker process</b>; it calls your <code>dataset[i]</code> 32 times (reading from disk), collates them into one batch in shared memory; a <b>pin-memory thread</b> in the main process copies it into <b>pinned (page-locked) RAM</b> because <code>pin_memory=True</code> (Lab 1, Lab 7)."},
+    {code: [9], z: {main: "xb.cuda()", ram: 1, pcie: 1, mem: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "p", batch: "p", xb: "h"},
       mv: [["batch", "pcie", "xb"]],
       calls: ["xb.cuda()", "PCIe copy: batch → GPU", "xb in GPU memory"],
-      say: "<b>The moment data lands on the GPU.</b> <code>.cuda()</code> copies the batch over <b>PCIe</b> into GPU memory as <code>xb</code>. Pinned RAM makes this copy fast. From here on, nothing goes back to the CPU."},
-    {code: [9, 10], z: {main: "ddp(xb); loss_fn", compute: "forward L1 → L6", mem: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", xb: "p", act: "h"},
+      say: "<b>The moment data lands on the GPU.</b> <code>.cuda()</code> copies the batch over <b>PCIe</b> into GPU memory as <code>xb</code>. Pinned RAM makes this copy fast (and lets <code>non_blocking=True</code> overlap it). From here on the tensors stay on the GPU unless you call <code>.item()</code> / <code>.cpu()</code>; the CPU only runs the Python loop and launches kernels."},
+    {code: [10, 11], z: {main: "ddp(xb); loss_fn", compute: "forward L1 → L6", mem: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", xb: "p", act: "h"},
       mv: [["xb", "compute"], ["compute", "act"]],
       calls: ["ddp(xb)", "DDP.forward", "model.forward L1→L6", "autograd records graph", "kernels on compute stream"],
-      say: "<b>Forward.</b> DDP just passes <code>xb</code> to your model. Kernels run on the <b>compute stream</b> using W and xb, and write <b>activations</b> to GPU memory (kept for backward). <b>No communication.</b>"},
-    {code: [11], z: {main: "loss.backward()", compute: "L6, L5 grads", mem: 1, comm: "all_reduce(A)", link: 1}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad L6 L5"], bA: ["h", "A full"], bB: "p", bC: "p"},
+      say: "<b>Forward.</b> DDP just passes <code>xb</code> to your model. Kernels run on the <b>compute stream</b> using W and xb, and write <b>activations</b> to GPU memory (kept for backward). <b>No gradient communication</b> (if the model has buffers such as BatchNorm stats, DDP broadcasts them from rank 0 here)."},
+    {code: [12], z: {main: "loss.backward()", compute: "L6, L5 grads", mem: 1, comm: "all_reduce(A)", link: 1}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad L6 L5"], bA: ["h", "A full"], bB: "p", bC: "p"},
       mv: [["compute", "grad"], ["grad", "bA"], ["bA", "comm", "link"]],
       calls: ["loss.backward()", "autograd engine", "L6, L5 grad → hook", "Reducer: A full", "all_reduce(A, async)", "NCCL → rank 1"],
       say: "<b>Backward starts.</b> The <b>autograd engine</b> (not DDP) computes L6, then L5 grads. Each finished grad fires DDP's <b>hook</b>, which copies it into its bucket. A is full → async <code>all_reduce(A)</code> → NCCL sends it on the <b>comm stream</b>."},
-    {code: [11], z: {main: "loss.backward()", compute: "L4 … L1 grads", mem: 1, comm: "all_reduce(B), (C)", link: 1}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad all layers"], bA: "p", bB: ["h", "B full"], bC: ["h", "C full"]},
+    {code: [12], z: {main: "loss.backward()", compute: "L4 … L1 grads", mem: 1, comm: "all_reduce(B), (C)", link: 1}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad all layers"], bA: "p", bB: ["h", "B full"], bC: ["h", "C full"]},
       mv: [["compute", "bB"], ["compute", "bC"], ["bB", "comm", "link"]],
       calls: ["autograd: L4 → L1", "hooks: B, C full", "all_reduce(B), (C)", "comm overlaps compute"],
       say: "<b>Overlap.</b> While NCCL sends A, the compute stream keeps going: L4…L1. B and C fill up and are sent too. Two streams, at the same time (Lab 11)."},
-    {code: [11], z: {main: "backward() returns", compute: "(waits)", mem: 1, comm: "all done"}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad = average"], bA: "p", bB: "p", bC: "p"},
+    {code: [12], z: {main: "backward() returns", compute: "(waits)", mem: 1, comm: "all done"}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad = average"], bA: "p", bB: "p", bC: "p"},
       mv: [["bA", "grad"], ["bC", "grad"]],
-      calls: ["Reducer waits A, B, C", "sum ÷ 2 ranks", "write into p.grad", "backward() returns"],
+      calls: ["Reducer waits A, B, C", "average over 2 ranks", "write into p.grad", "backward() returns"],
       say: "<b>End of backward.</b> The Reducer waits for every bucket, then writes the averaged values back into each <code>param.grad</code>. Now rank 0 and rank 1 hold the <b>same .grad</b>."},
-    {code: [12, 13], z: {main: "optimizer.step()", compute: "W -= lr · grad", mem: 1}, c: {W: ["h", "W new"], bA: "p", bB: "p", bC: "p", grad: ["d", ".grad = 0"]},
+    {code: [13, 14], z: {main: "optimizer.step()", compute: "W -= lr · grad", mem: 1}, c: {W: ["h", "W new"], bA: "p", bB: "p", bC: "p", grad: ["d", ".grad = None"]},
       mv: [["grad", "compute", "W"]],
-      calls: ["optimizer.step()", "torch.optim: W -= lr·grad", "compute stream", "zero_grad(): .grad = 0"],
-      say: "<b>Update.</b> <code>optimizer.step()</code> runs on the <b>compute stream</b>, entirely inside GPU memory: no DDP, no NCCL, no CPU data. Same W + same .grad → <b>same new W on every rank</b>. Then the loop asks for the next batch."},
+      calls: ["optimizer.step()", "torch.optim: W -= lr·grad", "compute stream", "zero_grad(): .grad = None"],
+      say: "<b>Update.</b> <code>optimizer.step()</code> runs on the <b>compute stream</b>, entirely inside GPU memory: no DDP, no NCCL; the CPU only launches the kernels. Same W + same .grad → <b>same new W on every rank</b>. Then the loop asks for the next batch."},
   ];
-  const LINES = [["model = Net().cuda()", "# W → GPU"], ["ddp = DDP(model)", "# once"], ["sampler = DistributedSampler(ds)", ""], ["loader = DataLoader(ds, batch_size=32,", ""], ["           sampler=sampler, num_workers=2)", ""], ["for epoch in range(E):", ""], ["  sampler.set_epoch(epoch)", ""], ["  for xb, yb in loader:", ""], ["    xb, yb = xb.cuda(), yb.cuda()", ""], ["    out = ddp(xb)", ""], ["    loss = loss_fn(out, yb)", ""], ["    loss.backward()", ""], ["    optimizer.step()", ""], ["    optimizer.zero_grad()", ""]];
+  const LINES = [["model = Net().cuda()", "# W → GPU"], ["ddp = DDP(model)", "# once"], ["sampler = DistributedSampler(ds)", ""], ["loader = DataLoader(ds, batch_size=32,", ""], ["      sampler=sampler, num_workers=2,", ""], ["      pin_memory=True)", ""], ["for epoch in range(E):", ""], ["  sampler.set_epoch(epoch)", ""], ["  for xb, yb in loader:", ""], ["    xb, yb = xb.cuda(), yb.cuda()", ""], ["    out = ddp(xb)", ""], ["    loss = loss_fn(out, yb)", ""], ["    loss.backward()", ""], ["    optimizer.step()", ""], ["    optimizer.zero_grad()", ""]];
   const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
   let s = 0;
   const T = (x, y, t, cls, sz) => svg.appendChild(el("text", {x, y, class: cls || "", style: `font-size:${sz || 11}px`}, t));

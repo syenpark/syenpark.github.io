@@ -107,8 +107,8 @@ const CARDS = [
 /* ---------------- DDP ---------------- */
 { id:"D1", t:"DDP", q:"What do DistributedSampler and DDP each do?",
   what:"Sampler = <b>splits the data (indices)</b>. DDP = <b>keeps the model in sync</b>.",
-  how:"The sampler computes a disjoint 1/N set of indices from the rank number — no communication. DDP <b>all-reduces (averages) gradients</b> during backward.",
-  so:"The only rank-to-rank traffic is the gradient all-reduce → every rank keeps identical weights.",
+  how:"The sampler computes a disjoint 1/N set of indices from the rank number — no communication (if the length doesn't divide evenly, it pads by repeating a few indices unless drop_last=True). DDP <b>all-reduces (averages) gradients</b> during backward.",
+  so:"The main rank-to-rank traffic is the gradient all-reduce (plus a weight broadcast at setup, and buffer broadcasts if the model has BatchNorm-style buffers) → every rank keeps identical weights.",
   en:"The sampler splits indices so each rank sees a disjoint 1/N with no communication; DDP averages gradients with all-reduce during backward, so every rank keeps identical weights.",
   trap:"\"the sampler assigns indices to the dataset\" — no, it only builds an index list",
   svg:`<svg viewBox="0 0 320 150" style="color:var(--muted)">${AR}
@@ -120,9 +120,9 @@ const CARDS = [
 
 { id:"D2", t:"DDP", q:"What happens if you run DDP on 4 ranks without a sampler?",
   what:"<b>No error</b>, the model is <b>the same as 1 GPU</b>, <b>no speedup</b>.",
-  how:"Every rank gets the same data → <b>identical gradients</b> → averaging identical gradients changes nothing.",
+  how:"Every rank processes the <b>whole dataset</b>. With shuffle=False the batches are identical → <b>identical gradients</b> → averaging changes nothing.",
   so:"4× wasted compute; only the SUM throughput looks 4× bigger.",
-  en:"No error: every rank gets identical batches, so identical gradients; averaging them changes nothing — same model as one GPU, no speedup, 4× wasted compute.",
+  en:"No error: every rank processes the whole dataset — with shuffle=False, identical batches and identical gradients; averaging them changes nothing — same model as one GPU, no speedup, 4× wasted compute.",
   trap:"\"weights get averaged\" — no, GRADIENTS are averaged"},
 
 { id:"D3", t:"DDP", q:"2,000 samples, 4 ranks, batch_size=32, with a sampler. Steps per rank and global batch?",
@@ -167,16 +167,16 @@ const CARDS = [
 
 { id:"AG1", t:"DDP", q:"In one step, what do autograd, DDP, and the optimizer each do?",
   what:"Autograd <b>computes</b> · DDP <b>averages</b> · optimizer <b>updates</b>.",
-  how:"In backward(), autograd computes the gradient (= which way to nudge) → DDP's hook averages it across ranks → step() applies w = w − lr × grad.",
+  how:"In backward(), autograd computes the gradient (= which way to nudge) → DDP's hook averages it across ranks → step() turns the gradient into an update (plain SGD: w −= lr × grad; Adam/momentum use running averages).",
   so:"Autograd always runs, even on 1 GPU. DDP is a wrapper that hooks into it.",
-  en:"Autograd computes gradients in backward(); DDP hooks into autograd to all-reduce them across ranks; the optimizer only applies the update w −= lr·grad.",
-  trap:"\"the optimizer computes where to nudge\" — no, the gradient is the nudge"},
+  en:"Autograd computes gradients in backward(); DDP hooks into autograd to all-reduce them across ranks; the optimizer turns the averaged gradient into the weight update.",
+  trap:"\"the optimizer computes the gradient\" — no, autograd does; the optimizer only decides how to apply it"},
 
 { id:"U2", t:"DDP", q:"persistent_workers=True vs False?",
   what:"True = workers <b>persist</b>. False (default) = killed and respawned every epoch.",
   how:"Every respawn pays the worker start/stop cost.",
-  so:"In my run ~90% of 24 s was worker restarts → True removes most of it. Keep False if the Dataset changes per epoch.",
-  en:"With persistent_workers=True the workers persist across epochs, so there's no restart cost — in my run ~90% of the time was worker restarts. Keep False only if the Dataset changes per epoch.",
+  so:"In my run ~95% of 24 s was worker start/restart/shutdown; the epoch-boundary restart alone was 11 s → True removes it and roughly halves the run. Keep False if the Dataset changes per epoch.",
+  en:"With persistent_workers=True the workers persist across epochs, so there's no restart cost — in my run removing the epoch-boundary restart roughly halved the run. Keep False only if the Dataset changes per epoch.",
   trap:"Easy to flip — anchor on the word \"persist\"",
   svg:`<svg viewBox="0 0 320 120" style="color:var(--muted)">
    <text class="m" x="4" y="16">False (default)</text>
@@ -204,7 +204,7 @@ const CARDS = [
 
 { id:"D9", t:"DDP", q:"Gradient accumulation with DDP: why use no_sync()?",
   what:"Run N micro-batches, step once. <b>no_sync()</b> skips the all-reduce on the first N−1 backwards.",
-  how:"backward <b>adds (+=)</b> into .grad, so the micro-batch gradients sum locally; only the last backward (outside no_sync) all-reduces the sum. Averaging is linear: (g1+…+g4)/N = g1/N+…+g4/N.",
+  how:"backward <b>adds (+=)</b> into .grad, so the micro-batch gradients sum locally; only the last backward (outside no_sync) all-reduces the sum. Averaging across ranks commutes with summing micro-batches: avg(g1+…+g4) = avg(g1)+…+avg(g4).",
   so:"Same weights, 1/N of the communication (8 → 2 all-reduce calls in my run, backward ≈1.6× faster). Wrap ALL N in no_sync and ranks never sync → weights drift apart.",
   en:"Accumulation cuts memory per pass; no_sync cuts all-reduce calls. I wrap all but the last micro-batch in no_sync, so gradients accumulate locally and DDP all-reduces once per optimizer step — same result, a fraction of the communication.",
   trap:"\"no_sync makes the batch smaller\" — no: accumulation shrinks the micro-batch; no_sync only skips communication. (And no_sync on ALL N → never synced.)"},
@@ -226,7 +226,7 @@ const CARDS = [
   what:"A new Pod appears with a <b>new name</b> (the deleted one is not revived).",
   how:"The controller compares <b>desired 3 vs actual 2</b> → creates one.",
   so:"A bare Pod has no owner, so it stays gone.",
-  en:"The Deployment controller compares desired (3) with actual (2) and creates a new Pod with a new name; a bare Pod has no owner, so it stays gone.",
+  en:"The ReplicaSet controller (the Deployment manages a ReplicaSet) compares desired (3) with actual (2) and creates a new Pod with a new name; a bare Pod has no owner, so it stays gone.",
   svg:`<svg viewBox="0 0 320 132" style="color:var(--muted)">${AR}
    <rect class="boxA" x="4" y="36" width="96" height="40" rx="8"/><text x="12" y="54" font-weight="700">Deployment</text><text class="m" x="12" y="70">want 3</text>
    <rect class="box" x="140" y="6" width="80" height="26" rx="6"/><text x="150" y="24">web-59fdh</text>
@@ -237,7 +237,7 @@ const CARDS = [
 
 { id:"K2b", t:"K8s", q:"How does a Service decide which Pods to send traffic to?",
   what:"A <b>label selector</b> (e.g. app=web).",
-  how:"The Deployment stamps the same label on every Pod → the Service selects by that label and updates its Endpoints.",
+  how:"The Deployment stamps the same label on every Pod → the Service selects by that label, and the endpoints controller keeps its Endpoints list up to date.",
   so:"Pod names and IPs change, but clients keep using one Service name.",
   en:"A Service selects Pods by label; replacements get a new name and IP but the same label, so the Service picks them up and clients keep using one stable name.",
   svg:`<svg viewBox="0 0 320 168" style="color:var(--muted)">${AR}
@@ -262,9 +262,9 @@ const CARDS = [
 
 { id:"K2d", t:"K8s", q:"Who restarts what, for each kind of failure?",
   what:"Process crash · node failure · hang.",
-  how:"Crash → the <b>kubelet</b> restarts the container (same Pod name, RESTARTS↑). Node lost / Pod deleted → the <b>Deployment controller</b> creates a new Pod. Hang → a failing <b>liveness probe</b> triggers a restart.",
+  how:"Crash → the <b>kubelet</b> restarts the container (same Pod name, RESTARTS↑). Pod deleted → the <b>ReplicaSet controller</b> creates a new Pod; node lost → same, but only after the Pods are evicted (~5 min by default). Hang → a failing <b>liveness probe</b> triggers a restart.",
   so:"Kubernetes can't see a hang on its own → you need a throughput-based health check.",
-  en:"A crash restarts the container via the kubelet; a lost node or deleted Pod is replaced by the Deployment controller; a hang needs a liveness probe, otherwise Kubernetes thinks it's healthy."},
+  en:"A crash restarts the container via the kubelet; a deleted Pod is replaced by the ReplicaSet controller (after ~5 minutes of eviction delay if the node was lost); a hang needs a liveness probe, otherwise Kubernetes thinks it's healthy."},
 
 /* ---------------- Linux ---------------- */
 { id:"L1", t:"Linux", q:"Process states R, S, D — and what does the run queue r tell you?",
@@ -282,9 +282,9 @@ const CARDS = [
 
 { id:"L3", t:"Linux", q:"Symptom → cause: CPU-bound vs I/O-bound vs lock contention?",
   what:"Three different fingerprints in the same tools.",
-  how:"CPU-bound: us high, id ≈ 0, r > cores. I/O-bound: b high, wa high, tasks in D. Lock / GIL contention: r and cs high but CPU use LOW — many threads ready, few making progress.",
-  so:"Low CPU + many runnable threads → look at synchronization, not at adding cores.",
-  en:"If many threads are runnable and context switches are high but CPU utilisation stays low, the threads are fighting over a lock — for Python, the GIL — rather than lacking CPUs."},
+  how:"CPU-bound: us high, id ≈ 0, r > cores. I/O-bound: b high, wa high, tasks in D. Lock / GIL contention: cs very high (mostly <b>voluntary</b>), r LOW, CPU mostly idle — waiting threads sleep (S), wake, find the lock taken, sleep again. Python GIL: often ~100% of one core.",
+  so:"Low CPU + very high context switches → look at synchronization (pidstat -w -t), not at adding cores.",
+  en:"If context switches are very high but run queue and CPU utilisation stay low, threads are sleeping on a lock — for Python, the GIL — rather than lacking CPUs."},
 
 { id:"L4", t:"Linux", q:"Memory: free vs available, swap, OOM, PSI?",
   what:"<b>available</b> = memory new work can use without swapping (better than free). buff/cache is reclaimable.",
@@ -293,8 +293,8 @@ const CARDS = [
   en:"I look at available rather than free, treat swap activity as a symptom, check dmesg for OOM kills, and use PSI to catch memory stalls early; in Kubernetes the same limit shows up as OOMKilled."},
 
 { id:"L5", t:"Linux", q:"Network: ss vs sar?",
-  what:"<b>ss</b> = connection level (TCP states, queues). <b>sar -n DEV</b> = interface level (throughput). sar -n TCP = retransmissions/errors.",
-  how:"Slow transfer: is the link saturated (sar) or are connections stuck / retransmitting (ss, sar -n TCP)?",
+  what:"<b>ss</b> = connection level (TCP states, queues). <b>sar -n DEV</b> = interface level (throughput). sar -n ETCP = retransmissions/errors.",
+  how:"Slow transfer: is the link saturated (sar) or are connections stuck / retransmitting (ss, sar -n ETCP)?",
   so:"Pick the tool by the question: the pipe vs the conversations in it.",
   en:"sar tells me whether the interface itself is saturated; ss and TCP counters tell me whether individual connections are stuck or retransmitting."},
 
@@ -307,7 +307,7 @@ const CARDS = [
 /* ---------------- Design ---------------- */
 { id:"K3", t:"K8s", q:"A Pod isn't running. Who said no — the API server or the scheduler?",
   what:"Two gatekeepers: <b>API server</b> (admission) first, then the <b>scheduler</b>.",
-  how:"API server checks namespace + <b>ResourceQuota</b> (sum of requests in the namespace) → if over: <b>Forbidden</b>, the Pod object is <b>never created</b>. Scheduler looks for a node with enough free CPU/memory → if none: Pod exists but stays <b>Pending</b> (FailedScheduling).",
+  how:"API server checks namespace + <b>ResourceQuota</b> (sum of requests in the namespace) → if over: <b>Forbidden</b>, the Pod object is <b>never created</b>. Scheduler looks for a node whose allocatable minus already-requested CPU/memory fits the Pod's requests → if none: Pod exists but stays <b>Pending</b> (FailedScheduling).",
   so:"Never created → read the error from kubectl / the controller's Events. Pending → kubectl describe pod → Events.",
   en:"A quota rejection happens at the API server, so the Pod is never created; a scheduling failure leaves the Pod Pending with a FailedScheduling event — two different places to look.",
   trap:"\"quota is set\" is not a reason — the SUM of requests (used + requested) exceeds the limit",
