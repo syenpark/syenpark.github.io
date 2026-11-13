@@ -75,7 +75,7 @@
   <nav class="toc">
     <a href="#lab1">1 · DataLoader loop</a><a href="#lab2">2 · Sampler on/off</a>
     <a href="#lab3">3 · persistent_workers</a><a href="#lab4">4 · Deployment + Service</a>
-    <a href="#lab5">5 · zero_grad</a><a href="#lab6">6 · set_epoch</a><a href="#lab7">7 · workers</a><a href="#lab8">8 · who said no?</a><a href="#lab9">9 · read vmstat</a><a href="#lab10">10 · no_sync</a><a href="#lab11">11 · buckets &amp; hooks</a>
+    <a href="#lab5">5 · zero_grad</a><a href="#lab6">6 · set_epoch</a><a href="#lab7">7 · workers</a><a href="#lab8">8 · who said no?</a><a href="#lab9">9 · read vmstat</a><a href="#lab11a">10 · who runs what</a><a href="#lab11">11 · buckets &amp; hooks</a><a href="#lab10">12 · no_sync</a>
   </nav>
 </header>
 <main>
@@ -83,7 +83,7 @@
 <!-- ============ LAB 1 ============ -->
 <section id="lab1">
   <span class="tag">DDP · DL1</span>
-  <h2>Who drives <code>for xb, yb in loader</code>?</h2>
+  <h2>Lab 1 · Who drives <code>for xb, yb in loader</code>?</h2>
   <p class="why">Step through one rank (rank 0 of 2, batch_size = 3). Watch who asks whom.</p>
   <svg id="l1" viewBox="0 0 340 250" aria-label="DataLoader loop"></svg>
   <div class="controls">
@@ -92,12 +92,14 @@
   </div>
   <div class="say" id="l1say"></div>
   <p class="so"><b>So what:</b> the Dataset only answers "give me sample i". Picking indices is the sampler's job; collecting and stacking is the DataLoader's job.</p>
+
 </section>
 
 <!-- ============ LAB 2 ============ -->
+
 <section id="lab2">
   <span class="tag">DDP · D1 / D2</span>
-  <h2>What changes when you remove the DistributedSampler?</h2>
+  <h2>Lab 2 · What changes when you remove the DistributedSampler?</h2>
   <p class="why">Two ranks, a dataset of 8 samples. Toggle the sampler and run one epoch.</p>
   <div class="controls">
     <button id="l2on" aria-pressed="true">With sampler</button>
@@ -111,12 +113,14 @@
   </div>
   <div class="say" id="l2say">Pick a mode, then run.</div>
   <p class="so"><b>So what:</b> without a sampler there's no error — every rank computes <b>identical gradients</b>, so averaging changes nothing: same model as one GPU, no speedup.</p>
+
 </section>
 
 <!-- ============ LAB 3 ============ -->
+
 <section id="lab3">
   <span class="tag">DDP · U2 / M1</span>
-  <h2>Where did the 24 seconds go?</h2>
+  <h2>Lab 3 · Where did the 24 seconds go?</h2>
   <p class="why">Proportions from my <code>dataloader_benchmark.py</code> run (2 epochs, 2 workers). Toggle the setting and play.</p>
   <div class="controls">
     <button id="l3f" aria-pressed="true">persistent_workers=False</button>
@@ -130,12 +134,14 @@
   </div>
   <div class="say" id="l3say">Press Play.</div>
   <p class="so"><b>So what:</b> True = workers <b>persist</b>, so the restart blocks disappear. Always check <b>sum(step times) ≈ total</b> before trusting a throughput number.</p>
+
 </section>
 
 <!-- ============ LAB 4 ============ -->
+
 <section id="lab4">
   <span class="tag">K8s · K2a / K2b / K2d</span>
-  <h2>Delete a Pod, crash a container, send a request</h2>
+  <h2>Lab 4 · Delete a Pod, crash a container, send a request</h2>
   <p class="why">A Deployment (replicas: 3) behind a ClusterIP Service. Try each button.</p>
   <svg id="l4" viewBox="0 0 340 250" aria-label="deployment and service"></svg>
   <div class="controls">
@@ -145,12 +151,14 @@
   </div>
   <div class="say" id="l4say">The client only knows the name <b>web</b>.</div>
   <p class="so"><b>So what:</b> deleted Pod → the <b>Deployment controller</b> creates a new Pod (new name, same label) · crashed process → the <b>kubelet</b> restarts the container (same name, RESTARTS +1) · the Service routes by <b>label</b>, so the client never notices.</p>
+
 </section>
 
 <!-- ============ LAB 5 ============ -->
+
 <section id="lab5">
   <span class="tag">DDP · W2</span>
-  <h2>Why <code>zero_grad()</code> every step?</h2>
+  <h2>Lab 5 · Why <code>zero_grad()</code> every step?</h2>
   <p class="why">Three training steps. Each <code>backward()</code> produces a fresh gradient — watch what lands in <code>.grad</code>.</p>
   <div class="controls">
     <button id="l5on" aria-pressed="true">with zero_grad()</button>
@@ -161,28 +169,33 @@
   <svg id="l5" viewBox="0 0 340 200" aria-label="grad accumulation"></svg>
   <div class="say" id="l5say">Press Next step.</div>
   <p class="so"><b>So what:</b> <code>backward()</code> <b>adds (+=)</b> into <code>.grad</code>. Without clearing, step 3 updates with g1+g2+g3 instead of g3 — the wrong direction and too big a step. (Gradient accumulation uses this on purpose: skip zero_grad for N micro-batches, then step once.)</p>
+
 </section>
 
 <!-- ============ LAB 6 ============ -->
+
 <section id="lab6">
   <span class="tag">DDP · W2</span>
-  <h2>What does <code>set_epoch</code> change — and why don't ranks overlap?</h2>
-  <p class="why">8 samples, 2 ranks, <code>shuffle=True</code>. Each rank shuffles the full index list with a seed, then takes every 2nd position.</p>
+  <h2>Lab 6 · What does <code>set_epoch</code> change — and why don't ranks overlap?</h2>
+  <p class="why">10 samples (1–10), 2 ranks. <code>DistributedSampler</code> does 3 things on <b>every rank</b>: ① start from the full list, ② shuffle it with a seed, ③ keep only <b>its own positions</b> (rank 0: 1st, 3rd, 5th… · rank 1: 2nd, 4th, 6th…). The split is by <b>position</b>, not by value.</p>
   <div class="controls">
-    <button id="l6a" aria-pressed="true">set_epoch(epoch)</button>
-    <button id="l6b" aria-pressed="false">no set_epoch</button>
-    <button id="l6c" aria-pressed="false">bug: different seed per rank</button>
+    <button data-m="f" aria-pressed="false">shuffle=False</button>
+    <button data-m="a" aria-pressed="true">set_epoch(epoch)</button>
+    <button data-m="b" aria-pressed="false">no set_epoch</button>
+    <button data-m="c" aria-pressed="false">bug: different seed per rank</button>
   </div>
   <div class="controls"><button class="primary" id="l6next">Next epoch ▶</button><button id="l6reset">Reset</button></div>
-  <svg id="l6" viewBox="0 0 340 210" aria-label="set_epoch"></svg>
+  <svg id="l6" viewBox="0 0 340 236" aria-label="set_epoch"></svg>
   <div class="say" id="l6say"></div>
-  <p class="so"><b>So what:</b> ranks never overlap because they all use the <b>same</b> seed, so they shuffle into the same order and split it. <code>set_epoch</code> makes that seed <b>new each epoch</b>, so the order changes from epoch to epoch.</p>
+  <p class="so"><b>So what:</b> every rank shuffles the <b>whole</b> list by itself — nobody sends it the list. Because they all use the <b>same seed</b>, they all get the <b>same order</b>, and taking different positions of the same order can't overlap. <code>set_epoch(e)</code> changes that shared seed <b>each epoch</b>, so each rank gets <b>different samples</b> every epoch — still disjoint.</p>
+
 </section>
 
 <!-- ============ LAB 7 ============ -->
+
 <section id="lab7">
   <span class="tag">DDP · W1</span>
-  <h2>What do DataLoader workers do while the GPU trains?</h2>
+  <h2>Lab 7 · What do DataLoader workers do while the GPU trains?</h2>
   <p class="why">One rank. Loading a batch takes 2 units of CPU time; training on it takes 1 unit of GPU time.</p>
   <div class="controls">
     <button id="l7a" aria-pressed="true">num_workers=0</button>
@@ -196,12 +209,14 @@
   </div>
   <div class="say" id="l7say">Press Play.</div>
   <p class="so"><b>So what:</b> workers are <b>helper processes inside each rank</b>. They run <code>dataset[i]</code> + collate <b>ahead of time</b> into a queue, so the GPU doesn't wait. Not ranks — rank count is set by torchrun.</p>
+
 </section>
 
 <!-- ============ LAB 8 ============ -->
+
 <section id="lab8">
   <span class="tag">K8s · K3</span>
-  <h2>A Pod isn't running — who said no?</h2>
+  <h2>Lab 8 · A Pod isn't running — who said no?</h2>
   <p class="why">Namespace with a ResourceQuota of 1 CPU (0.6 already used by other Pods). The only node has 8 CPUs, 3 free. Pick a request and submit.</p>
   <div class="controls">
     <button id="l8q" aria-pressed="true">quota: on</button>
@@ -213,12 +228,14 @@
   <svg id="l8" viewBox="0 0 340 170" aria-label="admission vs scheduling"></svg>
   <div class="say" id="l8say">Pick a CPU request.</div>
   <p class="so"><b>So what:</b> over the quota → the <b>API server</b> rejects it (Forbidden) and the Pod is <b>never created</b>. Fits the quota but no node has room → the Pod exists and stays <b>Pending</b>; <code>kubectl describe pod</code> shows FailedScheduling.</p>
+
 </section>
 
 <!-- ============ LAB 9 ============ -->
+
 <section id="lab9">
   <span class="tag">Linux · L1–L3</span>
-  <h2>Read a <code>vmstat 1</code> line — what's the bottleneck?</h2>
+  <h2>Lab 9 · Read a <code>vmstat 1</code> line — what's the bottleneck?</h2>
   <p class="why">An 8-core machine. Pick a scenario, guess the bottleneck from the numbers, then reveal.</p>
   <div class="controls">
     <button data-s="ok" aria-pressed="true">A</button><button data-s="cpu" aria-pressed="false">B</button>
@@ -229,34 +246,29 @@
   <div class="controls"><button class="primary" id="l9rev">Reveal ▶</button></div>
   <div class="say" id="l9say">Scenario A. What's limiting progress — CPU, I/O, memory, or synchronization?</div>
   <p class="so"><b>So what:</b> vmstat says <b>which resource</b>; then <code>top</code> / <code>pidstat -u -t</code> say <b>which process and thread</b>, and <code>strace</code> says <b>which syscall</b>. Confirm, fix, measure again.</p>
+
 </section>
 
-<!-- ============ LAB 10 ============ -->
-<section id="lab10">
-  <span class="tag">DDP · D9</span>
-  <h2>Gradient accumulation: all-reduce every micro-batch, or once?</h2>
-  <p class="why">The batch you want is 128 samples, but only 32 fit in GPU memory. So the loop feeds <b>32 at a time (a micro-batch)</b> and updates the weights once every <b>4</b> iterations. 2 ranks; each backward sends gradients in 2 buckets.</p>
-  <div class="controls">
-    <button data-m="sync" aria-pressed="true">no no_sync</button>
-    <button data-m="nosync" aria-pressed="false">no_sync on first 3</button>
-    <button data-m="bug" aria-pressed="false">bug: no_sync on all 4</button>
-  </div>
-  <div class="controls"><button class="primary" id="l10next">Next iteration ▶</button><button id="l10reset">Reset</button></div>
-  <svg id="l10" viewBox="0 0 340 250" aria-label="no_sync"></svg>
-  <pre class="code" id="l10code" aria-label="training loop"></pre>
-  <div class="now" id="l10now"></div>
-  <div class="meter">
-    <div>all-reduce calls<strong id="l10calls">0</strong></div>
-    <div>weights after step<strong id="l10w">–</strong></div>
-  </div>
-  <div class="say" id="l10say">Press Next micro-batch.</div>
-  <p class="so"><b>So what:</b> <code>.grad</code> sums locally because backward <b>adds (+=)</b>; one all-reduce of the sum gives the same average as four. Keep the <b>last</b> micro-batch outside <code>no_sync</code>, or the ranks never sync.</p>
+<!-- ============ LAB 11a ============ -->
+
+<section id="lab11a">
+  <span class="tag">DDP · D10</span>
+  <h2>Lab 10 · One DDP training step: which code runs where?</h2>
+  <p class="why">One rank, a 6-layer model (L1–L6), 3 buckets. Each band is one layer of software or hardware. Press Next to follow each line of your loop down through what it calls; the numbers show the order of calls.</p>
+  <div class="controls"><button class="primary" id="l11anext">Next ▶</button><button id="l11aback">◀ Back</button><button id="l11areset">Reset</button></div>
+  <svg id="l11a" viewBox="0 0 340 338" aria-label="ddp layers map"></svg>
+  <pre class="code" id="l11acode" aria-label="training loop"></pre>
+  <div class="say" id="l11asay"></div>
+  <p class="so"><b>So what:</b> <code>backward()</code> is run by the <b>autograd engine</b>, not by DDP. DDP gets involved only through the <b>hooks</b> it registered at setup. Its C++ <b>Reducer</b> owns the buckets and asks <code>torch.distributed</code> for an async <code>all_reduce</code>, and <b>NCCL</b> does the actual sending on its own GPU stream. <code>optimizer.step()</code> never touches DDP.</p>
+
 </section>
 
 <!-- ============ LAB 11 ============ -->
+
 <section id="lab11">
   <span class="tag">DDP · D10</span>
-  <h2>Buckets &amp; hooks: when does all-reduce start?</h2>
+  <h2>Lab 11 · Buckets &amp; hooks: when does all-reduce start?</h2>
+  <p class="why"><b>compute</b> = backward kernels on the GPU (producer). <b>network</b> = NCCL sending a full bucket to rank 1 (consumer). They run at the same time on separate GPU streams. New to hooks/NCCL? Do Lab 10 first.</p>
   <p class="why">A 6-layer model. <code>backward()</code> runs from the <b>last</b> layer (L6) to the first (L1); each layer's gradient takes 1 time unit. Every all-reduce costs a fixed 1.1 units of overhead + 0.25 per layer it carries. One press = one layer's gradient is ready.</p>
   <div class="controls">
     <button data-m="1" aria-pressed="false">1 big bucket</button>
@@ -273,6 +285,32 @@
   </div>
   <div class="say" id="l11say"></div>
   <p class="so"><b>So what:</b> a <b>hook</b> is a function autograd calls the moment one parameter's gradient is ready. DDP's hook drops it into its <b>bucket</b>; when a bucket is full, it launches that bucket's all-reduce <b>asynchronously</b> while backward keeps computing earlier layers. Communication <b>overlaps</b> computation. Too few buckets = no overlap; too many = per-call overhead piles up (<code>bucket_cap_mb</code>, default 25 MB, sets the size).</p>
+
+</section>
+
+<!-- ============ LAB 10 ============ -->
+
+<section id="lab10">
+  <span class="tag">DDP · D9</span>
+  <h2>Lab 12 · Gradient accumulation: all-reduce every micro-batch, or once?</h2>
+  <p class="why">Goal: one weight update from <b>128 samples</b> per rank. 2 ranks; each backward sends gradients in 2 buckets (buckets: Lab 11). Two separate knobs: <b>accumulation</b> (feed 32 at a time, step every 4) cuts <b>memory</b>; <b>no_sync</b> cuts <b>communication</b>.</p>
+  <div class="controls">
+    <button data-m="full" aria-pressed="false">A: batch 128 (fits)</button>
+    <button data-m="sync" aria-pressed="true">B: accumulate, sync every</button>
+    <button data-m="nosync" aria-pressed="false">C: accumulate + no_sync</button>
+    <button data-m="bug" aria-pressed="false">bug: no_sync on all 4</button>
+  </div>
+  <div class="controls"><button class="primary" id="l10next">Next iteration ▶</button><button id="l10reset">Reset</button></div>
+  <svg id="l10" viewBox="0 0 340 250" aria-label="no_sync"></svg>
+  <pre class="code" id="l10code" aria-label="training loop"></pre>
+  <div class="now" id="l10now"></div>
+  <div class="meter" style="grid-template-columns:1fr 1fr 1fr">
+    <div>samples on GPU at once<strong id="l10mem">32</strong></div>
+    <div>all-reduce calls<strong id="l10calls">0</strong></div>
+    <div>weights after step<strong id="l10w">–</strong></div>
+  </div>
+  <div class="say" id="l10say"></div>
+  <p class="so"><b>So what:</b> A is the ideal, but 128 may not fit in GPU memory. B fits (32 at a time) but DDP syncs after <b>every</b> backward → 4× the communication. C keeps B's memory and gets back to A's communication: <code>.grad</code> sums locally because backward <b>adds (+=)</b>, so one all-reduce of the sum gives the same average. Keep the <b>last</b> micro-batch outside <code>no_sync</code>, or the ranks never sync.</p>
 </section>
 
 </main>
@@ -514,34 +552,47 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
 (() => {
   const svg = document.getElementById("l6"), say = document.getElementById("l6say");
   const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-  const shuffled = seed => { const a = [0, 1, 2, 3, 4, 5, 6, 7], r = rng(seed * 9973 + 17); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const ALL = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  const shuffled = seed => { const a = ALL.slice(), r = rng(seed * 9973 + 17); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   let mode = "a", epoch = 0;
-  const btns = {a: document.getElementById("l6a"), b: document.getElementById("l6b"), c: document.getElementById("l6c")};
-  const seedFor = (rank) => mode === "a" ? epoch : mode === "b" ? 0 : epoch * 10 + rank + 1;
+  const seedFor = r => mode === "a" ? epoch : mode === "b" ? 0 : epoch * 10 + r + 1;
+  const orderFor = r => mode === "f" ? ALL.slice() : shuffled(seedFor(r));
+  const BW = 29, bx = k => 4 + k * 33;
+  const cell = (x, y, v, cls, op = 1) => { svg.appendChild(el("rect", {x, y, width: BW, height: 24, rx: 5, class: cls, opacity: op})); svg.appendChild(el("text", {x: x + (v > 9 ? 7 : 11), y: y + 16, class: "b"}, String(v))); };
+  const rc = r => r === 0 ? "boxA" : "done";
   function draw() {
     svg.innerHTML = "";
-    const take = [];
-    [0, 1].forEach(r => {
-      const y0 = 6 + r * 78, seed = seedFor(r), order = shuffled(seed);
-      svg.appendChild(el("text", {x: 6, y: y0 + 12, class: "b"}, `rank ${r}`));
-      svg.appendChild(el("text", {x: 60, y: y0 + 12, class: "m"}, `shuffle seed = ${seed}`));
-      order.forEach((v, k) => {
-        const mine = k % 2 === r;
-        svg.appendChild(el("rect", {x: 6 + k * 40, y: y0 + 20, width: 34, height: 26, rx: 6, class: mine ? "boxA" : "box", opacity: mine ? 1 : .45}));
-        svg.appendChild(el("text", {x: 19 + k * 40, y: y0 + 38, class: mine ? "a b" : "m"}, String(v)));
-      });
-      const mineVals = order.filter((_, k) => k % 2 === r); take.push(mineVals);
-      svg.appendChild(el("text", {x: 6, y: y0 + 64}, `takes positions ${r === 0 ? "0,2,4,6" : "1,3,5,7"} → samples ${mineVals.join(", ")}`));
+    let y = 12;
+    svg.appendChild(el("text", {x: 4, y, class: "m"}, "① full list (same on every rank)"));
+    ALL.forEach((v, k) => cell(bx(k), y + 6, v, "box")); y += 48;
+    const orders = mode === "c" ? [orderFor(0), orderFor(1)] : [orderFor(0)];
+    orders.forEach((ord, oi) => {
+      const lbl = mode === "f" ? "② no shuffle → order stays 1…10" : mode === "c" ? `② rank ${oi} shuffles with seed ${seedFor(oi)}` : `② shuffle with seed ${seedFor(0)} → SAME order on rank 0 and 1`;
+      svg.appendChild(el("text", {x: 4, y, class: mode === "c" ? "r b" : "a b"}, lbl));
+      ord.forEach((v, k) => { const owner = k % 2, show = mode !== "c" || owner === oi; cell(bx(k), y + 6, v, show ? rc(owner) : "box", show ? 1 : .35); });
+      ord.forEach((_, k) => svg.appendChild(el("text", {x: bx(k) + 6, y: y + 42, class: "m", style: "font-size:9.5px"}, `p${k}`)));
+      y += 54;
     });
-    const overlap = take[0].filter(v => take[1].includes(v)), missing = [0, 1, 2, 3, 4, 5, 6, 7].filter(v => !take[0].includes(v) && !take[1].includes(v));
-    const ok = !overlap.length;
-    svg.appendChild(el("text", {x: 6, y: 182, class: ok ? "g b" : "r b"}, ok ? "✓ disjoint: every sample exactly once" : `✗ overlap: ${overlap.join(", ")} twice · missing: ${missing.join(", ") || "–"}`));
-    svg.appendChild(el("text", {x: 6, y: 202, class: "m"}, `epoch ${epoch}`));
-    say.innerHTML = mode === "a" ? `Epoch ${epoch}: both ranks use seed <b>${epoch}</b> → same order → clean split. Press Next epoch: the seed changes, the order changes, the split stays disjoint.`
-      : mode === "b" ? `No set_epoch: the seed stays <b>0</b> → the <b>same order every epoch</b>. Still disjoint, but the model sees samples in the same order each time.`
-      : `Bug: each rank uses a <b>different seed</b> → two different orders → some samples are trained twice and some never. This is why the seed must be the same on every rank.`;
+    svg.appendChild(el("text", {x: 4, y, class: "m"}, "③ keep own positions: rank 0 = p0,p2,p4… · rank 1 = p1,p3…"));
+    y += 8;
+    const take = [0, 1].map(r => orders[mode === "c" ? r : 0].filter((_, k) => k % 2 === r));
+    const dup = take[0].filter(v => take[1].includes(v));
+    [0, 1].forEach(r => {
+      svg.appendChild(el("text", {x: 4, y: y + 17, class: "b"}, `rank ${r} gets`));
+      take[r].forEach((v, k) => { const x = 100 + k * 33; cell(x, y, v, rc(r)); if (dup.includes(v)) svg.appendChild(el("rect", {x: x - 2, y: y - 2, width: BW + 4, height: 28, rx: 6, fill: "none", stroke: "var(--bad)", "stroke-width": 2.5})); });
+      y += 30;
+    });
+    const missing = ALL.filter(v => !take[0].includes(v) && !take[1].includes(v));
+    y += 10;
+    svg.appendChild(el("text", {x: 4, y, class: dup.length ? "r b" : "g b"}, dup.length ? `✗ ${dup.join(", ")} trained twice · ${missing.join(", ") || "–"} never` : "✓ disjoint: every sample exactly once"));
+    svg.appendChild(el("text", {x: 260, y, class: "m"}, `epoch ${epoch}`));
+    svg.setAttribute("viewBox", `0 0 340 ${y + 8}`);
+    say.innerHTML = mode === "f" ? `shuffle=False: no shuffle, so rank 0 always gets <b>1, 3, 5, 7, 9</b> and rank 1 always <b>2, 4, 6, 8, 10</b> — every epoch. (This is the odd/even picture.)`
+      : mode === "a" ? `Epoch ${epoch}: both ranks shuffle with seed <b>${epoch}</b> → <b>identical order</b> → split by position → no overlap. Press Next epoch: new seed → new order → <b>rank 0 gets different numbers</b>, still no overlap.`
+      : mode === "b" ? `No set_epoch: seed stays <b>0</b> → rank 0 gets the <b>same 5 samples in the same order every epoch</b>. No overlap, but no reshuffle either.`
+      : `Bug: the two ranks shuffle with <b>different seeds</b> → two different orders. Each still keeps its own positions, but of <b>different lists</b> → some numbers land on both ranks, some on neither.`;
   }
-  Object.entries(btns).forEach(([k, b]) => b.onclick = () => { mode = k; Object.entries(btns).forEach(([kk, bb]) => bb.setAttribute("aria-pressed", kk === k)); epoch = 0; draw(); });
+  document.querySelectorAll("#lab6 [data-m]").forEach(b => b.onclick = () => { mode = b.dataset.m; document.querySelectorAll("#lab6 [data-m]").forEach(x => x.setAttribute("aria-pressed", x === b)); epoch = 0; draw(); });
   document.getElementById("l6next").onclick = () => { epoch++; draw(); };
   document.getElementById("l6reset").onclick = () => { epoch = 0; draw(); };
   draw();
@@ -694,82 +745,147 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   const svg = document.getElementById("l10"), say = document.getElementById("l10say"), code = document.getElementById("l10code");
   const g = [[2, 1, 3, 2], [1, 3, 2, 1]]; // per rank, per micro-batch gradient
   let mode = "sync", m = 0, calls = 0;
-  const skip = k => mode === "bug" || (mode === "nosync" && k < 3);
+  const full = () => mode === "full", N = () => full() ? 1 : 4;
+  const gr = (r, k) => full() ? g[r].reduce((a, b) => a + b, 0) : g[r][k];
+  const skip = k => !full() && (mode === "bug" || (mode === "nosync" && k < 3));
   const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
   function renderCode() {
-    const ctx = mode === "sync" ? ["  ctx = nullcontext()"] : mode === "bug" ? ["  ctx = ddp.no_sync()"] : ["  ctx = (nullcontext() if last", "         else ddp.no_sync())"];
-    const lines = [
-      ["loader = DataLoader(ds, batch_size=32)", ""],
-      ["ACCUM = 4", "# 4 × 32 = 128"],
-      ["for i, (xb, yb) in enumerate(loader):", ""],
-      ["  last = (i + 1) % ACCUM == 0", ""],
-      ...ctx.map(t => [t, ""]),
-      ["  with ctx:", "# no_sync: comm OFF"],
-      ["    loss = loss_fn(ddp(xb), yb) / ACCUM", ""],
-      ["    loss.backward()", "# .grad += g"],
-      ["  if last:", ""],
-      ["    optimizer.step()", ""],
-      ["    optimizer.zero_grad()", ""],
-    ];
-    const n = lines.length, on = new Set();
-    if (m > 0) { for (let i = 2; i <= n - 4; i++) on.add(i); if (m === 4) [n - 3, n - 2, n - 1].forEach(i => on.add(i)); }
+    let lines, on = new Set();
+    if (full()) {
+      lines = [["loader = DataLoader(ds, batch_size=128)", ""], ["for xb, yb in loader:", ""], ["  loss = loss_fn(ddp(xb), yb)", ""], ["  loss.backward()", "# all-reduce here"], ["  optimizer.step()", ""], ["  optimizer.zero_grad()", ""]];
+      if (m) [1, 2, 3, 4, 5].forEach(i => on.add(i));
+    } else {
+      const ctx = mode === "sync" ? ["  ctx = nullcontext()"] : mode === "bug" ? ["  ctx = ddp.no_sync()"] : ["  ctx = (nullcontext() if last", "         else ddp.no_sync())"];
+      lines = [["loader = DataLoader(ds, batch_size=32)", ""], ["ACCUM = 4", "# 4 × 32 = 128"], ["for i, (xb, yb) in enumerate(loader):", ""], ["  last = (i + 1) % ACCUM == 0", ""], ...ctx.map(t => [t, ""]), ["  with ctx:", "# no_sync: comm OFF"], ["    loss = loss_fn(ddp(xb), yb) / ACCUM", ""], ["    loss.backward()", "# .grad += g"], ["  if last:", ""], ["    optimizer.step()", ""], ["    optimizer.zero_grad()", ""]];
+      const n = lines.length;
+      if (m > 0) { for (let i = 2; i <= n - 4; i++) on.add(i); if (m === 4) [n - 3, n - 2, n - 1].forEach(i => on.add(i)); }
+    }
     code.innerHTML = lines.map(([t, c], i) => `<span class="ln${on.has(i) ? " on" : ""}">${esc(t)}${c ? "  <span class=\"cm\">" + esc(c) + "</span>" : ""}</span>`).join("");
     const k = m - 1, now = document.getElementById("l10now");
-    now.textContent = m === 0 ? "" : `i=${k} → last=${m === 4 ? "True" : "False"} → ${skip(k) ? "no_sync (comm OFF)" : "comm ON"} → .grad += g${m}${skip(k) ? "" : ", all-reduce ×2"}${m === 4 ? " → step()" : ""}`;
+    now.textContent = m === 0 ? "" : full() ? "128 samples → backward → all-reduce ×2 → step()" : `i=${k} → last=${m === 4 ? "True" : "False"} → ${skip(k) ? "no_sync (comm OFF)" : "comm ON"} → .grad += g${m}${skip(k) ? "" : ", all-reduce ×2"}${m === 4 ? " → step()" : ""}`;
   }
   function draw() {
     svg.innerHTML = "";
-    // data strip: the 128-sample batch split into 4 micro-batches
-    svg.appendChild(el("text", {x: 4, y: 12, class: "m"}, "batch for ONE step = 128 samples (per rank)"));
-    for (let k = 0; k < 4; k++) {
+    svg.appendChild(el("text", {x: 4, y: 12, class: "m"}, full() ? "batch for ONE step = 128 samples, fed at once" : "batch for ONE step = 128 samples, fed 32 at a time"));
+    if (full()) {
+      svg.appendChild(el("rect", {x: 4, y: 18, width: 328, height: 24, rx: 5, class: m ? "hot" : "box"}));
+      svg.appendChild(el("text", {x: 12, y: 34, class: m ? "hotT b" : "b"}, "#1  samples 0–127 (all on the GPU at once)"));
+    } else for (let k = 0; k < 4; k++) {
       const cur = k === m - 1, done = k < m;
       svg.appendChild(el("rect", {x: 4 + k * 83, y: 18, width: 79, height: 24, rx: 5, class: cur ? "hot" : done ? "done" : "box"}));
       svg.appendChild(el("text", {x: 10 + k * 83, y: 34, class: cur ? "hotT b" : "b"}, `#${k + 1}  ${k * 32}–${k * 32 + 31}`));
     }
-    const off = 54;
+    const off = 54, n = N(), bw = full() ? 80 : 42;
     [0, 1].forEach(r => {
       const y0 = off + r * 70;
       svg.appendChild(el("text", {x: 4, y: y0 + 14, class: "b"}, `rank ${r}`));
-      for (let k = 0; k < 4; k++) {
+      for (let k = 0; k < n; k++) {
         const done = k < m, cls = done ? (skip(k) ? "box" : "boxA") : "box";
-        svg.appendChild(el("rect", {x: 60 + k * 46, y: y0, width: 42, height: 20, rx: 5, class: cls, opacity: done ? 1 : .4}));
-        svg.appendChild(el("text", {x: 66 + k * 46, y: y0 + 14, class: done ? "" : "m"}, `g${k + 1}=${g[r][k]}`));
+        svg.appendChild(el("rect", {x: 60 + k * 46, y: y0, width: bw, height: 20, rx: 5, class: cls, opacity: done ? 1 : .4}));
+        svg.appendChild(el("text", {x: 66 + k * 46, y: y0 + 14, class: done ? "" : "m"}, full() ? `g=${gr(r, k)}` : `g${k + 1}=${gr(r, k)}`));
       }
-      let local = 0; for (let k = 0; k < m; k++) local += g[r][k];
+      let local = 0; for (let k = 0; k < m; k++) local += gr(r, k);
       svg.appendChild(el("text", {x: 4, y: y0 + 44, class: "m"}, ".grad"));
       svg.appendChild(el("rect", {x: 60, y: y0 + 30, width: Math.max(2, local * 14), height: 20, rx: 4, fill: "var(--accent)", opacity: .75}));
       if (m) svg.appendChild(el("text", {x: 66 + local * 14, y: y0 + 45, class: "a"}, `${local}`));
     });
     svg.appendChild(el("text", {x: 4, y: off + 154, class: "m"}, "sync"));
-    for (let k = 0; k < 4; k++) {
+    for (let k = 0; k < n; k++) {
       const done = k < m, sk = skip(k);
       svg.appendChild(el("text", {x: 70 + k * 46, y: off + 154, class: !done ? "m" : sk ? "m" : "a b"}, !done ? "·" : sk ? "skip" : "×2"));
     }
-    const sum0 = g[0].slice(0, m).reduce((a, b) => a + b, 0), sum1 = g[1].slice(0, m).reduce((a, b) => a + b, 0);
-    if (m === 4) {
-      const lastSynced = !skip(3);
-      svg.appendChild(el("text", {x: 4, y: off + 182, class: lastSynced ? "g b" : "r b"}, lastSynced ? `step: both ranks use (${sum0} + ${sum1}) / 2 = ${(sum0 + sum1) / 2}` : `step: rank 0 uses ${sum0}, rank 1 uses ${sum1} → different!`));
+    let s0 = 0, s1 = 0; for (let k = 0; k < m; k++) { s0 += gr(0, k); s1 += gr(1, k); }
+    if (m === n) {
+      const ok = !skip(n - 1);
+      svg.appendChild(el("text", {x: 4, y: off + 182, class: ok ? "g b" : "r b"}, ok ? `step: both ranks use (${s0} + ${s1}) / 2 = ${(s0 + s1) / 2}` : `step: rank 0 uses ${s0}, rank 1 uses ${s1} → different!`));
     }
     renderCode();
   }
   function info() {
+    document.getElementById("l10mem").textContent = full() ? "128" : "32";
     document.getElementById("l10calls").textContent = String(calls);
-    const lastSynced = !skip(3);
-    document.getElementById("l10w").textContent = m < 4 ? "–" : lastSynced ? "identical ✓" : "diverged ✗";
+    const n = N(), ok = !skip(n - 1);
+    document.getElementById("l10w").textContent = m < n ? "–" : ok ? "identical ✓" : "diverged ✗";
     const k = m - 1;
-    if (m === 0) { say.textContent = "Press Next micro-batch. One press = one loop iteration = 32 samples."; return; }
-    if (m < 4) say.innerHTML = skip(k) ? `Iteration ${m}: xb = samples ${k * 32}–${k * 32 + 31}. Inside <b>no_sync()</b> → backward only <b>adds</b> g${m} into .grad. No communication, no step yet.` : `Iteration ${m}: xb = samples ${k * 32}–${k * 32 + 31}. backward adds g${m} into .grad, and DDP <b>all-reduces</b> it (2 buckets = 2 calls). No step yet.`;
-    else say.innerHTML = mode === "sync" ? "Iteration 4 = last → step. 4 iterations × 2 buckets = <b>8 all-reduce calls</b> for one update — only the final sum mattered." : mode === "nosync" ? "Iteration 4 = last → outside no_sync, so DDP all-reduces the <b>accumulated sum</b>: <b>2 calls</b> instead of 8, same averaged gradient, then one step." : "The last iteration was inside no_sync too → <b>no all-reduce at all</b>. Each rank steps with its own gradient → weights drift apart.";
+    if (m === 0) { say.textContent = full() ? "Press Next iteration. Here all 128 samples fit, so one iteration = one step." : "Press Next iteration. One press = one loop iteration = 32 samples (a micro-batch)."; return; }
+    if (full()) { say.innerHTML = "One iteration, one backward, <b>2 all-reduce calls</b> (2 buckets), one step. Ideal — but needs memory for <b>128</b> samples at once. Same final gradient (7.5) as B and C."; return; }
+    if (m < 4) say.innerHTML = skip(k) ? `Iteration ${m}: samples ${k * 32}–${k * 32 + 31}. Inside <b>no_sync()</b> → backward only <b>adds</b> g${m} into .grad. No communication, no step yet.` : `Iteration ${m}: samples ${k * 32}–${k * 32 + 31}. backward adds g${m} into .grad, and DDP <b>all-reduces</b> it (2 buckets = 2 calls). No step yet.`;
+    else say.innerHTML = mode === "sync" ? "Iteration 4 = last → step. Memory only for 32, but <b>8 all-reduce calls</b> — 4× A's communication. Only the final sum mattered." : mode === "nosync" ? "Iteration 4 = last → outside no_sync, DDP all-reduces the <b>accumulated sum</b>: <b>2 calls</b>, same as A, with memory for only 32. Same gradient (7.5)." : "The last iteration was inside no_sync too → <b>no all-reduce at all</b>. Each rank steps with its own gradient → weights drift apart.";
   }
   document.querySelectorAll("#lab10 [data-m]").forEach(b => b.onclick = () => { mode = b.dataset.m; document.querySelectorAll("#lab10 [data-m]").forEach(x => x.setAttribute("aria-pressed", x === b)); m = 0; calls = 0; draw(); info(); });
-  document.getElementById("l10next").onclick = () => { if (m >= 4) return; if (!skip(m)) calls += 2; m++; draw(); info(); };
+  document.getElementById("l10next").onclick = () => { if (m >= N()) return; if (!skip(m)) calls += 2; m++; draw(); info(); };
   document.getElementById("l10reset").onclick = () => { m = 0; calls = 0; draw(); info(); };
   draw(); info();
 })();
+
+/* ===================== LAB 11a ===================== */
+(() => {
+  const svg = document.getElementById("l11a"), say = document.getElementById("l11asay"), code = document.getElementById("l11acode");
+  const Y = "var(--accent)", P = "var(--good)", O = "var(--warn)";
+  const B = [
+    ["loop", "your training loop", Y, "the lines you write"],
+    ["ddp", "DDP wrapper (Python)", P, "wraps your model"],
+    ["red", "DDP Reducer (C++)", P, "owns buckets + hooks"],
+    ["model", "your model", Y, "L1 … L6 forward()"],
+    ["ag", "autograd engine (C++)", P, "graph + grads"],
+    ["opt", "torch.optim", P, "updates weights"],
+    ["pg", "torch.distributed", P, "all_reduce / broadcast API"],
+    ["nccl", "NCCL library", O, "moves data GPU ↔ GPU"],
+    ["cs", "GPU compute stream", O, "runs math kernels"],
+    ["ns", "GPU comm stream", O, "→ NVLink/net → rank 1"],
+  ];
+  const S = [
+    {code: [], steps: [], say: "One training step on <b>rank 0</b>. Blue = code you write, green = PyTorch, orange = library / hardware. Press <b>Next</b>."},
+    {code: [0], steps: [["loop", "ddp = DDP(model)"], ["ddp", "setup (once)"], ["red", "make buckets A,B,C + hooks"], ["pg", "broadcast(rank 0 weights)"], ["nccl", "send weights"], ["ns", "rank 0 → rank 1"]],
+      say: "<b>Once, at setup.</b> DDP copies rank 0's weights to every rank so all start identical. Its Reducer groups params into buckets (<b>last layers first</b>) and registers a <b>hook</b> on every parameter."},
+    {code: [2, 3], steps: [["loop", "out = ddp(xb); loss = …"], ["ddp", "forward → calls model"], ["model", "L1 → L6 forward"], ["ag", "records each op (graph)"], ["cs", "forward kernels"]],
+      say: "<b>Forward.</b> DDP just passes <code>xb</code> to your model. <b>No communication.</b> autograd quietly records each operation so it can run them backward later."},
+    {code: [4], steps: [["loop", "loss.backward()"], ["ag", "L6 grad"], ["cs", "L6 grad kernel"], ["red", "hook: L6 → bucket A (1/2)"]],
+      say: "<code>backward()</code> hands control to the <b>autograd engine</b>, not to DDP. When L6's grad is ready, autograd calls DDP's <b>hook</b>, which drops it into bucket A. A isn't full yet → nothing sent."},
+    {code: [4], steps: [["ag", "L5 grad"], ["red", "hook: A full → all_reduce(A)"], ["pg", "all_reduce(A, async)"], ["nccl", "NCCL kernel for A"], ["ns", "A → rank 1 (sending)"], ["cs", "meanwhile: L4 grad"]],
+      say: "Bucket A is full → the hook asks <code>torch.distributed</code> for an <b>async</b> all_reduce and returns <b>immediately</b>. NCCL sends A on the <b>comm stream</b> while autograd keeps computing L4 on the <b>compute stream</b> → overlap. (Inside <code>no_sync()</code>, the Reducer skips this call.)"},
+    {code: [4], steps: [["ag", "L4 → L1 grads"], ["red", "B full, C full → all_reduce"], ["pg", "all_reduce(B), (C)"], ["nccl", "A done · B, C sending"], ["ns", "B, C → rank 1"], ["cs", "L3 … L1 grad kernels"]],
+      say: "The same thing repeats: each time a bucket fills, its all_reduce starts while backward keeps going."},
+    {code: [4], steps: [["ag", "all grads done"], ["red", "wait A,B,C; avg → p.grad"], ["pg", "work.wait()"], ["loop", "backward() returns"]],
+      say: "Before <code>backward()</code> returns, the Reducer <b>waits</b> for every bucket and writes the averaged gradient (sum ÷ number of ranks) into each <code>param.grad</code>. Now <b>every rank holds the same .grad</b>."},
+    {code: [5, 6], steps: [["loop", "optimizer.step()"], ["opt", "w -= lr · p.grad"], ["cs", "update kernels"]],
+      say: "<code>optimizer.step()</code> is plain <b>torch.optim</b>: no DDP, no NCCL. Same .grad + same starting weights → <b>identical weights on every rank</b>. <code>zero_grad()</code> then clears .grad for the next step."},
+  ];
+  const LINES = [["ddp = DDP(model)", "# once"], ["for xb, yb in loader:", ""], ["  out = ddp(xb)", ""], ["  loss = loss_fn(out, yb)", ""], ["  loss.backward()", ""], ["  optimizer.step()", ""], ["  optimizer.zero_grad()", ""]];
+  const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  let s = 0;
+  function draw() {
+    svg.innerHTML = "";
+    const st = S[s], H = 28, G = 3, y0 = 4;
+    B.forEach(([id, label, col, role], i) => {
+      const y = y0 + i * (H + G), idx = st.steps.findIndex(x => x[0] === id), on = idx >= 0;
+      svg.appendChild(el("rect", {x: 2, y, width: 336, height: H, rx: 6, class: on ? "boxA" : "box", opacity: on || s === 0 ? 1 : .55}));
+      svg.appendChild(el("rect", {x: 2, y, width: 5, height: H, rx: 2, fill: col}));
+      svg.appendChild(el("text", {x: 12, y: y + 18, class: "b", style: "font-size:11px"}, label));
+      if (on) {
+        svg.appendChild(el("circle", {cx: 152, cy: y + H / 2, r: 8, fill: "var(--accent)"}));
+        svg.appendChild(el("text", {x: 148.5, y: y + H / 2 + 4, class: "hotT b", style: "font-size:11px"}, String(idx + 1)));
+        svg.appendChild(el("text", {x: 164, y: y + 18, class: "a b", style: "font-size:11px"}, st.steps[idx][1]));
+      } else svg.appendChild(el("text", {x: 164, y: y + 18, class: "m", style: "font-size:11px"}, role));
+    });
+    const yl = y0 + B.length * (H + G) + 12;
+    [["code you write", Y], ["PyTorch", P], ["library / hardware", O]].forEach(([t, c], k) => {
+      svg.appendChild(el("rect", {x: 4 + k * 108, y: yl - 9, width: 10, height: 10, rx: 2, fill: c}));
+      svg.appendChild(el("text", {x: 18 + k * 108, y: yl, class: "m", style: "font-size:11px"}, t));
+    });
+    code.innerHTML = LINES.map(([t, c], i) => `<span class="ln${st.code.includes(i) ? " on" : ""}">${esc(t)}${c ? "  <span class=\"cm\">" + esc(c) + "</span>" : ""}</span>`).join("");
+    say.innerHTML = `<b>${s}/${S.length - 1}</b> · ` + st.say;
+  }
+  document.getElementById("l11anext").onclick = () => { if (s < S.length - 1) { s++; draw(); } };
+  document.getElementById("l11aback").onclick = () => { if (s > 0) { s--; draw(); } };
+  document.getElementById("l11areset").onclick = () => { s = 0; draw(); };
+  draw();
+})();
+
 /* ===================== LAB 11 ===================== */
 (() => {
   const svg = document.getElementById("l11"), say = document.getElementById("l11say"), code = document.getElementById("l11code"), now = document.getElementById("l11now");
-  const LAT = 1.1, PER = 0.25, X0 = 44, W = 290, TMAX = 9.5, px = t => X0 + Math.min(t, TMAX) / TMAX * W;
+  const LAT = 1.1, PER = 0.25, X0 = 64, W = 270, TMAX = 9.5, px = t => X0 + Math.min(t, TMAX) / TMAX * W;
   const LETTERS = "ABCDEF";
   let nb = 3, s = 0;
   const groups = () => nb === 1 ? [[6, 5, 4, 3, 2, 1]] : nb === 3 ? [[6, 5], [4, 3], [2, 1]] : [[6], [5], [4], [3], [2], [1]];
@@ -817,13 +933,13 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
       const got = b.ls.filter(k => readyAt(k) <= T).length, full = got === b.ls.length, sent = full && b.start <= T, fin = b.end <= T || (end && false);
       const cls = fin ? "done" : sent ? "boxA" : "box";
       svg.appendChild(el("rect", {x, y: 58, width: w, height: 24, rx: 6, class: cls, "stroke-dasharray": full ? "" : "4 3"}));
-      const st = fin ? " ✓" : sent ? " → net" : full ? " queued" : "", lbl = nb === 6 ? `${b.name} ${got}/1${fin ? " ✓" : ""}` : nb === 3 ? `${b.name} ${got}/2${st}` : `bucket ${b.name}  ${got}/6${st}`;
+      const st = fin ? " ✓" : sent ? " sending" : full ? " queued" : "", lbl = nb === 6 ? `${b.name} ${got}/1${fin ? " ✓" : ""}` : nb === 3 ? `${b.name} ${got}/2${st}` : `bucket ${b.name}  ${got}/6${st}`;
       svg.appendChild(el("text", {x: x + 6, y: 74, class: sent ? "a b" : "m"}, lbl));
     });
     // timeline
     const yG = 100, yN = 128;
-    svg.appendChild(el("text", {x: 4, y: yG + 15, class: "b"}, "GPU"));
-    svg.appendChild(el("text", {x: 4, y: yN + 15, class: "b"}, "net"));
+    svg.appendChild(el("text", {x: 4, y: yG + 15, class: "b"}, "compute"));
+    svg.appendChild(el("text", {x: 4, y: yN + 15, class: "b"}, "network"));
     svg.appendChild(el("rect", {x: X0, y: yG, width: W, height: 22, rx: 4, class: "box"}));
     svg.appendChild(el("rect", {x: X0, y: yN, width: W, height: 22, rx: 4, class: "box"}));
     for (let k = 6; k >= 1; k--) { const a = readyAt(k) - 1; if (a >= T) continue;
