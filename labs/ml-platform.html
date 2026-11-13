@@ -64,6 +64,10 @@
   .code .cm{color:var(--muted)}
   .code .ev{color:var(--accent);font-weight:700}
   .now{font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--accent);margin-top:6px;min-height:1.6em}
+  .calls{display:flex;flex-wrap:wrap;align-items:center;gap:4px 2px;margin:6px 0 0;min-height:1.8em;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
+  .calls span{background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:2px 6px}
+  .calls i{color:var(--muted);font-style:normal;padding:0 2px}
+  .calls .lbl{background:none;color:var(--muted);padding:0 4px 0 0}
   .dot{transition:transform .6s ease}
   @media (prefers-reduced-motion: reduce){.dot{transition:none}}
 </style>
@@ -253,14 +257,14 @@
 
 <section id="lab11a">
   <span class="tag">DDP · D10</span>
-  <h2>Lab 10 · One DDP training step: which code runs where?</h2>
-  <p class="why">One rank, a 6-layer model (L1–L6), 3 buckets. Each band is one layer of software or hardware. Press Next to follow each line of your loop down through what it calls; the numbers show the order of calls.</p>
+  <h2>Lab 10 · One DDP training step: where does the data go, and who calls whom?</h2>
+  <p class="why">Rank 0 of 2, a 6-layer model (L1–L6), 3 gradient buckets. The map is the hardware: <b>CPU</b> (processes + RAM) on top, <b>GPU</b> (memory + 2 streams) below, joined by <b>PCIe</b>. Each press runs one part of the loop: the <b>●</b> shows data moving, and the call chain shows which functions run, in order.</p>
   <div class="controls"><button class="primary" id="l11anext">Next ▶</button><button id="l11aback">◀ Back</button><button id="l11areset">Reset</button></div>
-  <svg id="l11a" viewBox="0 0 340 338" aria-label="ddp layers map"></svg>
+  <svg id="l11a" viewBox="0 0 340 372" aria-label="hardware map of one DDP step"></svg>
+  <div class="calls" id="l11acalls"></div>
   <pre class="code" id="l11acode" aria-label="training loop"></pre>
   <div class="say" id="l11asay"></div>
-  <p class="so"><b>So what:</b> <code>backward()</code> is run by the <b>autograd engine</b>, not by DDP. DDP gets involved only through the <b>hooks</b> it registered at setup. Its C++ <b>Reducer</b> owns the buckets and asks <code>torch.distributed</code> for an async <code>all_reduce</code>, and <b>NCCL</b> does the actual sending on its own GPU stream. <code>optimizer.step()</code> never touches DDP.</p>
-
+  <p class="so"><b>So what:</b> data is built on the <b>CPU</b> (sampler → workers → pinned RAM), crosses <b>PCIe</b> once per batch at <code>.cuda()</code>, and from then on everything stays in <b>GPU memory</b>. <code>backward()</code> is run by the <b>autograd engine</b>; DDP joins only through its <b>hooks</b>, and its Reducer hands full buckets to <b>NCCL</b>, which sends them on a separate stream while compute continues. <code>optimizer.step()</code> touches neither DDP nor the CPU.</p>
 </section>
 
 <!-- ============ LAB 11 ============ -->
@@ -820,59 +824,102 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
 
 /* ===================== LAB 11a ===================== */
 (() => {
-  const svg = document.getElementById("l11a"), say = document.getElementById("l11asay"), code = document.getElementById("l11acode");
-  const Y = "var(--accent)", P = "var(--good)", O = "var(--warn)";
-  const B = [
-    ["loop", "your training loop", Y, "the lines you write"],
-    ["ddp", "DDP wrapper (Python)", P, "wraps your model"],
-    ["red", "DDP Reducer (C++)", P, "owns buckets + hooks"],
-    ["model", "your model", Y, "L1 … L6 forward()"],
-    ["ag", "autograd engine (C++)", P, "graph + grads"],
-    ["opt", "torch.optim", P, "updates weights"],
-    ["pg", "torch.distributed", P, "all_reduce / broadcast API"],
-    ["nccl", "NCCL library", O, "moves data GPU ↔ GPU"],
-    ["cs", "GPU compute stream", O, "runs math kernels"],
-    ["ns", "GPU comm stream", O, "→ NVLink/net → rank 1"],
-  ];
+  const svg = document.getElementById("l11a"), say = document.getElementById("l11asay"), code = document.getElementById("l11acode"), callsEl = document.getElementById("l11acalls");
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const Z = { // zones: x, y, w, h, title, default text
+    main: [8, 20, 160, 46, "main process", "your loop + DataLoader"],
+    workers: [172, 20, 160, 46, "worker processes", "dataset[i] → collate"],
+    ram: [8, 72, 324, 66, "RAM (host memory)", ""],
+    pcie: [150, 150, 40, 30, "", ""],
+    mem: [8, 202, 324, 76, "GPU memory", ""],
+    compute: [8, 284, 160, 46, "compute stream", "math kernels"],
+    comm: [172, 284, 160, 46, "comm stream (NCCL)", "sends buckets"],
+    link: [172, 336, 160, 30, "", ""],
+  };
+  const C = { // chips: x, y, w, label
+    idx: [14, 102, 70, "indices"], samples: [90, 102, 84, "32 samples"], batch: [180, 102, 104, "batch (pinned)"], Wram: [290, 102, 36, "W"],
+    W: [14, 228, 34, "W"], xb: [54, 228, 34, "xb"], act: [94, 228, 92, "activations"], grad: [192, 228, 132, ".grad"],
+    bA: [14, 254, 60, "bucket A"], bB: [80, 254, 60, "bucket B"], bC: [146, 254, 60, "bucket C"],
+  };
+  const P = { main: [88, 50], wk: [252, 50], idx: [49, 114], batch: [232, 114], Wram: [308, 114], pcie: [170, 165], W: [31, 240], xb: [71, 240], act: [140, 240], grad: [258, 240], bA: [44, 265], bB: [110, 265], bC: [176, 265], compute: [88, 314], comm: [252, 314], link: [252, 351] };
   const S = [
-    {code: [], steps: [], say: "One training step on <b>rank 0</b>. Blue = code you write, green = PyTorch, orange = library / hardware. Press <b>Next</b>."},
-    {code: [0], steps: [["loop", "ddp = DDP(model)"], ["ddp", "setup (once)"], ["red", "make buckets A,B,C + hooks"], ["pg", "broadcast(rank 0 weights)"], ["nccl", "send weights"], ["ns", "rank 0 → rank 1"]],
-      say: "<b>Once, at setup.</b> DDP copies rank 0's weights to every rank so all start identical. Its Reducer groups params into buckets (<b>last layers first</b>) and registers a <b>hook</b> on every parameter."},
-    {code: [2, 3], steps: [["loop", "out = ddp(xb); loss = …"], ["ddp", "forward → calls model"], ["model", "L1 → L6 forward"], ["ag", "records each op (graph)"], ["cs", "forward kernels"]],
-      say: "<b>Forward.</b> DDP just passes <code>xb</code> to your model. <b>No communication.</b> autograd quietly records each operation so it can run them backward later."},
-    {code: [4], steps: [["loop", "loss.backward()"], ["ag", "L6 grad"], ["cs", "L6 grad kernel"], ["red", "hook: L6 → bucket A (1/2)"]],
-      say: "<code>backward()</code> hands control to the <b>autograd engine</b>, not to DDP. When L6's grad is ready, autograd calls DDP's <b>hook</b>, which drops it into bucket A. A isn't full yet → nothing sent."},
-    {code: [4], steps: [["ag", "L5 grad"], ["red", "hook: A full → all_reduce(A)"], ["pg", "all_reduce(A, async)"], ["nccl", "NCCL kernel for A"], ["ns", "A → rank 1 (sending)"], ["cs", "meanwhile: L4 grad"]],
-      say: "Bucket A is full → the hook asks <code>torch.distributed</code> for an <b>async</b> all_reduce and returns <b>immediately</b>. NCCL sends A on the <b>comm stream</b> while autograd keeps computing L4 on the <b>compute stream</b> → overlap. (Inside <code>no_sync()</code>, the Reducer skips this call.)"},
-    {code: [4], steps: [["ag", "L4 → L1 grads"], ["red", "B full, C full → all_reduce"], ["pg", "all_reduce(B), (C)"], ["nccl", "A done · B, C sending"], ["ns", "B, C → rank 1"], ["cs", "L3 … L1 grad kernels"]],
-      say: "The same thing repeats: each time a bucket fills, its all_reduce starts while backward keeps going."},
-    {code: [4], steps: [["ag", "all grads done"], ["red", "wait A,B,C; avg → p.grad"], ["pg", "work.wait()"], ["loop", "backward() returns"]],
-      say: "Before <code>backward()</code> returns, the Reducer <b>waits</b> for every bucket and writes the averaged gradient (sum ÷ number of ranks) into each <code>param.grad</code>. Now <b>every rank holds the same .grad</b>."},
-    {code: [5, 6], steps: [["loop", "optimizer.step()"], ["opt", "w -= lr · p.grad"], ["cs", "update kernels"]],
-      say: "<code>optimizer.step()</code> is plain <b>torch.optim</b>: no DDP, no NCCL. Same .grad + same starting weights → <b>identical weights on every rank</b>. <code>zero_grad()</code> then clears .grad for the next step."},
+    {code: [], z: {}, c: {Wram: "p"}, mv: [], calls: [],
+      say: "Start: the model's weights <b>W</b> sit in CPU RAM, nothing is on the GPU. Press <b>Next</b>."},
+    {code: [0, 1, 2, 3, 4], z: {main: "Net().cuda(); DDP(model)", pcie: 1, mem: 1, comm: "broadcast W", link: 1}, c: {W: "h", bA: "h", bB: "h", bC: "h"},
+      mv: [["Wram", "pcie", "W"], ["W", "comm", "link"]],
+      calls: ["model.cuda()", "PCIe copy: W → GPU", "DDP(model)", "Reducer: buckets + hooks", "broadcast(W) → NCCL"],
+      say: "<b>Setup, once.</b> <code>.cuda()</code> copies W over PCIe into GPU memory. <code>DDP(model)</code> broadcasts rank 0's W so every rank starts identical, and its Reducer allocates <b>buckets in GPU memory</b> and registers a hook on every parameter."},
+    {code: [5, 6], z: {main: "sampler.set_epoch(e)", ram: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "h"}, mv: [["main", "idx"]],
+      calls: ["sampler.set_epoch(e)", "shuffle ALL indices (seed = e)", "keep my positions"],
+      say: "<b>Each epoch.</b> The sampler (CPU, main process) shuffles the whole index list with the shared seed and keeps this rank's positions (Lab 6). Just a list of numbers in RAM."},
+    {code: [7], z: {main: "next(loader)", workers: "dataset[i] ×32, collate", ram: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "p", samples: "h", batch: "h"},
+      mv: [["idx", "wk"], ["wk", "batch"]],
+      calls: ["next(loader)", "sampler → 32 indices", "worker: dataset[i] × 32", "collate → batch", "pinned RAM → main"],
+      say: "<b>Data, on the CPU.</b> The DataLoader sends 32 indices to a <b>worker process</b>; it calls your <code>dataset[i]</code> 32 times (reading from disk), collates them into one batch in <b>pinned RAM</b>, and passes it to the main process (Lab 1, Lab 7)."},
+    {code: [8], z: {main: "xb.cuda()", ram: 1, pcie: 1, mem: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "p", batch: "p", xb: "h"},
+      mv: [["batch", "pcie", "xb"]],
+      calls: ["xb.cuda()", "PCIe copy: batch → GPU", "xb in GPU memory"],
+      say: "<b>The moment data lands on the GPU.</b> <code>.cuda()</code> copies the batch over <b>PCIe</b> into GPU memory as <code>xb</code>. Pinned RAM makes this copy fast. From here on, nothing goes back to the CPU."},
+    {code: [9, 10], z: {main: "ddp(xb); loss_fn", compute: "forward L1 → L6", mem: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", xb: "p", act: "h"},
+      mv: [["xb", "compute"], ["compute", "act"]],
+      calls: ["ddp(xb)", "DDP.forward", "model.forward L1→L6", "autograd records graph", "kernels on compute stream"],
+      say: "<b>Forward.</b> DDP just passes <code>xb</code> to your model. Kernels run on the <b>compute stream</b> using W and xb, and write <b>activations</b> to GPU memory (kept for backward). <b>No communication.</b>"},
+    {code: [11], z: {main: "loss.backward()", compute: "L6, L5 grads", mem: 1, comm: "all_reduce(A)", link: 1}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad L6 L5"], bA: ["h", "A full"], bB: "p", bC: "p"},
+      mv: [["compute", "grad"], ["grad", "bA"], ["bA", "comm", "link"]],
+      calls: ["loss.backward()", "autograd engine", "L6, L5 grad → hook", "Reducer: A full", "all_reduce(A, async)", "NCCL → rank 1"],
+      say: "<b>Backward starts.</b> The <b>autograd engine</b> (not DDP) computes L6, then L5 grads. Each finished grad fires DDP's <b>hook</b>, which copies it into its bucket. A is full → async <code>all_reduce(A)</code> → NCCL sends it on the <b>comm stream</b>."},
+    {code: [11], z: {main: "loss.backward()", compute: "L4 … L1 grads", mem: 1, comm: "all_reduce(B), (C)", link: 1}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad all layers"], bA: "p", bB: ["h", "B full"], bC: ["h", "C full"]},
+      mv: [["compute", "bB"], ["compute", "bC"], ["bB", "comm", "link"]],
+      calls: ["autograd: L4 → L1", "hooks: B, C full", "all_reduce(B), (C)", "comm overlaps compute"],
+      say: "<b>Overlap.</b> While NCCL sends A, the compute stream keeps going: L4…L1. B and C fill up and are sent too. Two streams, at the same time (Lab 11)."},
+    {code: [11], z: {main: "backward() returns", compute: "(waits)", mem: 1, comm: "all done"}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad = average"], bA: "p", bB: "p", bC: "p"},
+      mv: [["bA", "grad"], ["bC", "grad"]],
+      calls: ["Reducer waits A, B, C", "sum ÷ 2 ranks", "write into p.grad", "backward() returns"],
+      say: "<b>End of backward.</b> The Reducer waits for every bucket, then writes the averaged values back into each <code>param.grad</code>. Now rank 0 and rank 1 hold the <b>same .grad</b>."},
+    {code: [12, 13], z: {main: "optimizer.step()", compute: "W -= lr · grad", mem: 1}, c: {W: ["h", "W new"], bA: "p", bB: "p", bC: "p", grad: ["d", ".grad = 0"]},
+      mv: [["grad", "compute", "W"]],
+      calls: ["optimizer.step()", "torch.optim: W -= lr·grad", "compute stream", "zero_grad(): .grad = 0"],
+      say: "<b>Update.</b> <code>optimizer.step()</code> runs on the <b>compute stream</b>, entirely inside GPU memory: no DDP, no NCCL, no CPU data. Same W + same .grad → <b>same new W on every rank</b>. Then the loop asks for the next batch."},
   ];
-  const LINES = [["ddp = DDP(model)", "# once"], ["for xb, yb in loader:", ""], ["  out = ddp(xb)", ""], ["  loss = loss_fn(out, yb)", ""], ["  loss.backward()", ""], ["  optimizer.step()", ""], ["  optimizer.zero_grad()", ""]];
+  const LINES = [["model = Net().cuda()", "# W → GPU"], ["ddp = DDP(model)", "# once"], ["sampler = DistributedSampler(ds)", ""], ["loader = DataLoader(ds, batch_size=32,", ""], ["           sampler=sampler, num_workers=2)", ""], ["for epoch in range(E):", ""], ["  sampler.set_epoch(epoch)", ""], ["  for xb, yb in loader:", ""], ["    xb, yb = xb.cuda(), yb.cuda()", ""], ["    out = ddp(xb)", ""], ["    loss = loss_fn(out, yb)", ""], ["    loss.backward()", ""], ["    optimizer.step()", ""], ["    optimizer.zero_grad()", ""]];
   const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
   let s = 0;
+  const T = (x, y, t, cls, sz) => svg.appendChild(el("text", {x, y, class: cls || "", style: `font-size:${sz || 11}px`}, t));
   function draw() {
     svg.innerHTML = "";
-    const st = S[s], H = 28, G = 3, y0 = 4;
-    B.forEach(([id, label, col, role], i) => {
-      const y = y0 + i * (H + G), idx = st.steps.findIndex(x => x[0] === id), on = idx >= 0;
-      svg.appendChild(el("rect", {x: 2, y, width: 336, height: H, rx: 6, class: on ? "boxA" : "box", opacity: on || s === 0 ? 1 : .55}));
-      svg.appendChild(el("rect", {x: 2, y, width: 5, height: H, rx: 2, fill: col}));
-      svg.appendChild(el("text", {x: 12, y: y + 18, class: "b", style: "font-size:11px"}, label));
-      if (on) {
-        svg.appendChild(el("circle", {cx: 152, cy: y + H / 2, r: 8, fill: "var(--accent)"}));
-        svg.appendChild(el("text", {x: 148.5, y: y + H / 2 + 4, class: "hotT b", style: "font-size:11px"}, String(idx + 1)));
-        svg.appendChild(el("text", {x: 164, y: y + 18, class: "a b", style: "font-size:11px"}, st.steps[idx][1]));
-      } else svg.appendChild(el("text", {x: 164, y: y + 18, class: "m", style: "font-size:11px"}, role));
+    const st = S[s];
+    // outer boxes
+    svg.appendChild(el("rect", {x: 2, y: 2, width: 336, height: 142, rx: 10, fill: "none", stroke: "var(--muted)", "stroke-width": 1.2}));
+    T(10, 14, "CPU (host)", "b", 11.5);
+    svg.appendChild(el("rect", {x: 2, y: 186, width: 336, height: 150, rx: 10, fill: "none", stroke: "var(--muted)", "stroke-width": 1.2}));
+    T(10, 198, "GPU (device)", "b", 11.5);
+    for (const [id, [x, y, w, h, title, def]] of Object.entries(Z)) {
+      const on = st.z[id] != null;
+      svg.appendChild(el("rect", {x, y, width: w, height: h, rx: 7, class: on ? "boxA" : "box"}));
+      if (title) T(x + 7, y + 14, title, on ? "a b" : "b");
+      if (id === "main" || id === "workers" || id === "compute" || id === "comm") T(x + 7, y + 34, typeof st.z[id] === "string" ? st.z[id] : def, on ? "a b" : "m");
+    }
+    T(196, 170, "PCIe (copy)", st.z.pcie ? "a b" : "m");
+    T(180, 355, "NVLink / net → rank 1", st.z.link ? "a b" : "m");
+    T(10, 355, "● = data moving", "m", 10.5);
+    for (const [id, [x, y, w, label]] of Object.entries(C)) {
+      let v = st.c[id]; if (!v) continue;
+      let lab = label; if (Array.isArray(v)) { lab = v[1]; v = v[0]; }
+      const cls = v === "h" ? "hot" : v === "d" ? "dead" : "done";
+      svg.appendChild(el("rect", {x, y, width: w, height: 22, rx: 5, class: cls}));
+      T(x + 6, y + 15, lab, v === "h" ? "hotT b" : "b", 10.5);
+    }
+    // moving tokens
+    if (!reduce) st.mv.forEach((m, k) => {
+      const pts = m.map(n => P[n]), d = "M" + pts.map(p => p.join(" ")).join(" L");
+      svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.2, "stroke-dasharray": "3 3", opacity: .4}));
+      const dot = el("circle", {r: 5.5, fill: "var(--accent)", stroke: "var(--card)", "stroke-width": 1.5, cx: pts[0][0], cy: pts[0][1]});
+      svg.appendChild(dot);
+      const a = el("animateMotion", {dur: "0.9s", begin: "indefinite", fill: "freeze", path: "M0 0 " + pts.slice(1).map(p => `L${p[0] - pts[0][0]} ${p[1] - pts[0][1]}`).join(" ")});
+      dot.appendChild(a); dot.setAttribute("opacity", 0); setTimeout(() => { try { dot.setAttribute("opacity", 1); a.beginElement(); } catch (e) {} }, 150 + k * 900); setTimeout(() => dot.remove(), 150 + k * 900 + 1000);
     });
-    const yl = y0 + B.length * (H + G) + 12;
-    [["code you write", Y], ["PyTorch", P], ["library / hardware", O]].forEach(([t, c], k) => {
-      svg.appendChild(el("rect", {x: 4 + k * 108, y: yl - 9, width: 10, height: 10, rx: 2, fill: c}));
-      svg.appendChild(el("text", {x: 18 + k * 108, y: yl, class: "m", style: "font-size:11px"}, t));
-    });
+    else st.mv.forEach(m => { const d = "M" + m.map(n => P[n].join(" ")).join(" L"); svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.5, "stroke-dasharray": "3 3"})); });
+    callsEl.innerHTML = st.calls.length ? '<span class="lbl">calls:</span>' + st.calls.map(c => `<span>${esc(c)}</span>`).join("<i>→</i>") : "";
     code.innerHTML = LINES.map(([t, c], i) => `<span class="ln${st.code.includes(i) ? " on" : ""}">${esc(t)}${c ? "  <span class=\"cm\">" + esc(c) + "</span>" : ""}</span>`).join("");
     say.innerHTML = `<b>${s}/${S.length - 1}</b> · ` + st.say;
   }
