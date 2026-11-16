@@ -67,6 +67,11 @@
   .calls{display:flex;flex-wrap:wrap;align-items:center;gap:4px 2px;margin:6px 0 0;min-height:1.8em;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
   .calls span{background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:2px 6px}
   .calls i{color:var(--muted);font-style:normal;padding:0 2px}
+  .calls .rd{background:var(--good-soft);color:var(--good)}
+  .rf{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:14px;margin-top:8px;background:var(--chip);border-radius:10px;padding:10px 12px}
+  .rf dt{color:var(--muted);font-weight:600}
+  .rf dd{margin:0}
+  .rf dd code{font-size:12.5px}
   .calls .lbl{background:none;color:var(--muted);padding:0 4px 0 0}
   .dot{transition:transform .6s ease}
   @media (prefers-reduced-motion: reduce){.dot{transition:none}}
@@ -79,7 +84,7 @@
   <nav class="toc">
     <a href="#lab1">1 · DataLoader loop</a><a href="#lab2">2 · Sampler on/off</a>
     <a href="#lab3">3 · persistent_workers</a><a href="#lab4">4 · Deployment + Service</a>
-    <a href="#lab5">5 · zero_grad</a><a href="#lab6">6 · set_epoch</a><a href="#lab7">7 · workers</a><a href="#lab8">8 · who said no?</a><a href="#lab9">9 · read vmstat</a><a href="#lab11a">10 · who runs what</a><a href="#lab11">11 · buckets &amp; hooks</a><a href="#lab10">12 · no_sync</a>
+    <a href="#lab5">5 · zero_grad</a><a href="#lab6">6 · set_epoch</a><a href="#lab7">7 · workers</a><a href="#lab8">8 · who said no?</a><a href="#lab9">9 · read vmstat</a><a href="#lab11a">10 · who runs what</a><a href="#lab11">11 · buckets &amp; hooks</a><a href="#lab10">12 · no_sync</a><a href="#lab13">13 · K8s: who reads which field</a>
   </nav>
 </header>
 <main>
@@ -258,7 +263,7 @@
 <section id="lab11a">
   <span class="tag">DDP · D10</span>
   <h2>Lab 10 · One DDP training step: where does the data go, and who calls whom?</h2>
-  <p class="why">Rank 0 of 2, a 6-layer model (L1–L6), 3 gradient buckets. The map is the hardware: <b>CPU</b> (processes + RAM) on top, <b>GPU</b> (memory + 2 streams) below, joined by <b>PCIe</b>. Each press runs one part of the loop: the <b>●</b> shows data moving, and the call chain shows which functions run, in order.</p>
+  <p class="why">Rank 0 of 2, a 6-layer model (L1–L6), 3 gradient buckets. The map is the hardware: <b>CPU</b> (processes + RAM) on top, <b>GPU</b> (memory + 2 streams) below, joined by <b>PCIe</b>. Each press runs one part of the loop: the <b>●</b> shows data moving, <b>calls</b> shows which functions run, in order, and <b>reads</b> shows which settings they read.</p>
   <div class="controls"><button class="primary" id="l11anext">Next ▶</button><button id="l11aback">◀ Back</button><button id="l11areset">Reset</button></div>
   <svg id="l11a" viewBox="0 0 340 372" aria-label="hardware map of one DDP step"></svg>
   <div class="calls" id="l11acalls"></div>
@@ -315,6 +320,19 @@
   </div>
   <div class="say" id="l10say"></div>
   <p class="so"><b>So what:</b> A is the ideal, but 128 may not fit in GPU memory. B fits (32 at a time) but DDP syncs after <b>every</b> backward → 4× the communication. C keeps B's memory and gets back to A's communication: <code>.grad</code> sums locally because backward <b>adds (+=)</b>, so one all-reduce of the sum gives the same average. Keep the <b>last</b> micro-batch outside <code>no_sync</code>, or the ranks never sync.</p>
+</section>
+
+<!-- ============ LAB 13 ============ -->
+<section id="lab13">
+  <span class="tag">K8s · K1–K4</span>
+  <h2>Lab 13 · From <code>kubectl apply</code> to traffic: who reads which field?</h2>
+  <p class="why">Namespace <code>k1-demo</code> already has a ResourceQuota, a LimitRange and a PriorityClass. You apply a Deployment (3 replicas) and a Service. Each press = one component doing its job: the map shows <b>who</b>, the YAML below highlights the <b>fields it reads</b>, and the box says <b>what you see if it fails</b>.</p>
+  <div class="controls"><button class="primary" id="l13next">Next ▶</button><button id="l13back">◀ Back</button><button id="l13reset">Reset</button></div>
+  <svg id="l13" viewBox="0 0 340 384" aria-label="kubernetes components map"></svg>
+  <dl class="rf" id="l13rf"></dl>
+  <pre class="code" id="l13code" style="max-height:330px;overflow:auto" aria-label="yaml"></pre>
+  <div class="say" id="l13say"></div>
+  <p class="so"><b>So what:</b> every K8s answer has three parts: <b>who</b> acts (API server admission / a controller / the scheduler / the kubelet / kube-proxy), <b>which field</b> it reads, and <b>where the failure shows up</b>. Admission refuses → Forbidden, nothing created (if a controller made the request, look at its Events). Scheduler can't place → Pending. kubelet trouble → ImagePullBackOff, CrashLoopBackOff, OOMKilled.</p>
 </section>
 
 </main>
@@ -848,37 +866,46 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
     {code: [0, 1, 2, 3, 4, 5], z: {main: "Net().cuda(); DDP(model)", pcie: 1, mem: 1, comm: "broadcast W", link: 1}, c: {W: "h", bA: "h", bB: "h", bC: "h"},
       mv: [["Wram", "pcie", "W"], ["W", "comm", "link"]],
       calls: ["model.cuda()", "PCIe copy: W → GPU", "DDP(model)", "Reducer: buckets + hooks", "broadcast(W) → NCCL"],
+      reads: ["DDP: device_ids, bucket_cap_mb=25, broadcast_buffers=True", "sampler: rank, num_replicas (from torchrun env), shuffle=True, seed=0, drop_last=False"],
       say: "<b>Setup, once.</b> <code>.cuda()</code> copies W over PCIe into GPU memory. <code>DDP(model)</code> broadcasts rank 0's W so every rank starts identical, and its Reducer allocates <b>buckets in GPU memory</b> and registers a hook on every parameter."},
     {code: [6, 7], z: {main: "sampler.set_epoch(e)", ram: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "h"}, mv: [["main", "idx"]],
       calls: ["sampler.set_epoch(e)", "stores epoch = e"],
+      reads: ["sampler: epoch"],
       say: "<b>Each epoch.</b> <code>set_epoch</code> only <b>stores</b> the epoch number. When the loop then starts iterating, the sampler (CPU, main process) shuffles the whole index list with seed = seed + epoch (same on every rank) and keeps this rank's positions (Lab 6). Just a list of numbers in RAM."},
     {code: [8], z: {main: "next(loader)", workers: "dataset[i] ×32, collate", ram: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "p", samples: "h", batch: "h"},
       mv: [["idx", "wk"], ["wk", "batch"]],
       calls: ["next(loader)", "sampler → 32 indices", "worker: dataset[i] × 32", "collate → shared memory", "pin thread → pinned RAM"],
+      reads: ["DataLoader: batch_size=32, num_workers=2, pin_memory=True, persistent_workers=False, collate_fn", "sampler: seed + epoch, rank, num_replicas"],
       say: "<b>Data, on the CPU.</b> The DataLoader sends 32 indices to a <b>worker process</b>; it calls your <code>dataset[i]</code> 32 times (reading from disk), collates them into one batch in shared memory; a <b>pin-memory thread</b> in the main process copies it into <b>pinned (page-locked) RAM</b> because <code>pin_memory=True</code> (Lab 1, Lab 7)."},
     {code: [9], z: {main: "xb.cuda()", ram: 1, pcie: 1, mem: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "p", batch: "p", xb: "h"},
       mv: [["batch", "pcie", "xb"]],
       calls: ["xb.cuda()", "PCIe copy: batch → GPU", "xb in GPU memory"],
+      reads: [".cuda(non_blocking=…)"],
       say: "<b>The moment data lands on the GPU.</b> <code>.cuda()</code> copies the batch over <b>PCIe</b> into GPU memory as <code>xb</code>. Pinned RAM makes this copy fast (and lets <code>non_blocking=True</code> overlap it). From here on the tensors stay on the GPU unless you call <code>.item()</code> / <code>.cpu()</code>; the CPU only runs the Python loop and launches kernels."},
     {code: [10, 11], z: {main: "ddp(xb); loss_fn", compute: "forward L1 → L6", mem: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", xb: "p", act: "h"},
       mv: [["xb", "compute"], ["compute", "act"]],
       calls: ["ddp(xb)", "DDP.forward", "model.forward L1→L6", "autograd records graph", "kernels on compute stream"],
+      reads: ["DDP: broadcast_buffers", "your model.forward()"],
       say: "<b>Forward.</b> DDP just passes <code>xb</code> to your model. Kernels run on the <b>compute stream</b> using W and xb, and write <b>activations</b> to GPU memory (kept for backward). <b>No gradient communication</b> (if the model has buffers such as BatchNorm stats, DDP broadcasts them from rank 0 here)."},
     {code: [12], z: {main: "loss.backward()", compute: "L6, L5 grads", mem: 1, comm: "all_reduce(A)", link: 1}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad L6 L5"], bA: ["h", "A full"], bB: "p", bC: "p"},
       mv: [["compute", "grad"], ["grad", "bA"], ["bA", "comm", "link"]],
       calls: ["loss.backward()", "autograd engine", "L6, L5 grad → hook", "Reducer: A full", "all_reduce(A, async)", "NCCL → rank 1"],
+      reads: ["DDP: bucket_cap_mb, no_sync() context, find_unused_parameters"],
       say: "<b>Backward starts.</b> The <b>autograd engine</b> (not DDP) computes L6, then L5 grads. Each finished grad fires DDP's <b>hook</b>, which copies it into its bucket. A is full → async <code>all_reduce(A)</code> → NCCL sends it on the <b>comm stream</b>."},
     {code: [12], z: {main: "loss.backward()", compute: "L4 … L1 grads", mem: 1, comm: "all_reduce(B), (C)", link: 1}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad all layers"], bA: "p", bB: ["h", "B full"], bC: ["h", "C full"]},
       mv: [["compute", "bB"], ["compute", "bC"], ["bB", "comm", "link"]],
       calls: ["autograd: L4 → L1", "hooks: B, C full", "all_reduce(B), (C)", "comm overlaps compute"],
+      reads: ["DDP: bucket_cap_mb"],
       say: "<b>Overlap.</b> While NCCL sends A, the compute stream keeps going: L4…L1. B and C fill up and are sent too. Two streams, at the same time (Lab 11)."},
     {code: [12], z: {main: "backward() returns", compute: "(waits)", mem: 1, comm: "all done"}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad = average"], bA: "p", bB: "p", bC: "p"},
       mv: [["bA", "grad"], ["bC", "grad"]],
       calls: ["Reducer waits A, B, C", "average over 2 ranks", "write into p.grad", "backward() returns"],
+      reads: ["world_size (number of ranks, for the average)"],
       say: "<b>End of backward.</b> The Reducer waits for every bucket, then writes the averaged values back into each <code>param.grad</code>. Now rank 0 and rank 1 hold the <b>same .grad</b>."},
     {code: [13, 14], z: {main: "optimizer.step()", compute: "W -= lr · grad", mem: 1}, c: {W: ["h", "W new"], bA: "p", bB: "p", bC: "p", grad: ["d", ".grad = None"]},
       mv: [["grad", "compute", "W"]],
       calls: ["optimizer.step()", "torch.optim: W -= lr·grad", "compute stream", "zero_grad(): .grad = None"],
+      reads: ["optimizer: lr, momentum / betas, weight_decay", "zero_grad(set_to_none=True)"],
       say: "<b>Update.</b> <code>optimizer.step()</code> runs on the <b>compute stream</b>, entirely inside GPU memory: no DDP, no NCCL; the CPU only launches the kernels. Same W + same .grad → <b>same new W on every rank</b>. Then the loop asks for the next batch."},
   ];
   const LINES = [["model = Net().cuda()", "# W → GPU"], ["ddp = DDP(model)", "# once"], ["sampler = DistributedSampler(ds)", ""], ["loader = DataLoader(ds, batch_size=32,", ""], ["      sampler=sampler, num_workers=2,", ""], ["      pin_memory=True)", ""], ["for epoch in range(E):", ""], ["  sampler.set_epoch(epoch)", ""], ["  for xb, yb in loader:", ""], ["    xb, yb = xb.cuda(), yb.cuda()", ""], ["    out = ddp(xb)", ""], ["    loss = loss_fn(out, yb)", ""], ["    loss.backward()", ""], ["    optimizer.step()", ""], ["    optimizer.zero_grad()", ""]];
@@ -920,6 +947,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
     });
     else st.mv.forEach(m => { const d = "M" + m.map(n => P[n].join(" ")).join(" L"); svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.5, "stroke-dasharray": "3 3"})); });
     callsEl.innerHTML = st.calls.length ? '<span class="lbl">calls:</span>' + st.calls.map(c => `<span>${esc(c)}</span>`).join("<i>→</i>") : "";
+    if (st.reads && st.reads.length) callsEl.innerHTML += '<div style="flex-basis:100%;height:2px"></div><span class="lbl">reads:</span>' + st.reads.map(c => `<span class="rd">${esc(c)}</span>`).join(" ");
     code.innerHTML = LINES.map(([t, c], i) => `<span class="ln${st.code.includes(i) ? " on" : ""}">${esc(t)}${c ? "  <span class=\"cm\">" + esc(c) + "</span>" : ""}</span>`).join("");
     say.innerHTML = `<b>${s}/${S.length - 1}</b> · ` + st.say;
   }
@@ -1023,6 +1051,113 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   document.querySelectorAll("#lab11 [data-m]").forEach(b => b.onclick = () => { nb = +b.dataset.m; document.querySelectorAll("#lab11 [data-m]").forEach(x => x.setAttribute("aria-pressed", x === b)); s = 0; draw(); });
   document.getElementById("l11next").onclick = () => { if (s < 6) { s++; draw(); } };
   document.getElementById("l11reset").onclick = () => { s = 0; draw(); };
+  draw();
+})();
+
+/* ===================== LAB 13 ===================== */
+(() => {
+  const svg = document.getElementById("l13"), say = document.getElementById("l13say"), code = document.getElementById("l13code"), rf = document.getElementById("l13rf");
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const Z = { // id: x, y, w, h, title
+    kubectl: [8, 4, 150, 26, "you: kubectl apply"],
+    api: [8, 56, 200, 76, "API server"], lr: [14, 78, 92, 28, "LimitRange"], rq: [110, 78, 92, 28, "ResourceQuota"],
+    etcd: [214, 56, 118, 34, "etcd (objects)"], sched: [214, 96, 118, 36, "scheduler"],
+    cm: [8, 140, 324, 58, "controller-manager"], depc: [14, 162, 100, 28, "Deployment ctrl"], rsc: [118, 162, 100, 28, "ReplicaSet ctrl"], epc: [222, 162, 104, 28, "Endpoints ctrl"],
+    kubelet: [8, 240, 100, 40, "kubelet"], pod: [114, 240, 110, 40, "Pod web-xxxx"], proxy: [230, 240, 102, 40, "kube-proxy"],
+    client: [8, 290, 216, 34, "client Pod → web:80"], svc: [230, 290, 102, 34, "Service web"],
+  };
+  const P = {kubectl: [83, 17], api: [60, 70], lr: [60, 92], rq: [156, 92], etcd: [273, 73], sched: [273, 114], depc: [64, 176], rsc: [168, 176], epc: [274, 176], kubelet: [58, 260], pod: [169, 260], proxy: [281, 260], client: [116, 307], svc: [281, 307]};
+  const Y = [
+    ["# ── namespace rules (set up by an admin) ──", ""],
+    ["apiVersion: v1", "q"], ["kind: ResourceQuota", "q"], ["metadata:", "q"], ["  name: team-budget", "q"], ["  namespace: k1-demo", "q"], ["spec:", "q"], ["  hard:", "qh"], ["    requests.cpu: \"1\"  # total ≤ 1 CPU", "qh"],
+    ["---", ""],
+    ["apiVersion: v1", "l"], ["kind: LimitRange", "l"], ["metadata:", "l"], ["  name: defaults", "l"], ["  namespace: k1-demo", "l"], ["spec:", "l"], ["  limits:", "l"], ["  - type: Container", "ld"],
+    ["    defaultRequest:  # requests if empty", "ld"], ["      {cpu: 100m, memory: 64Mi}", "ld"], ["    default:  # limits if empty", "ld"], ["      {cpu: 200m, memory: 128Mi}", "ld"], ["    max: {cpu: \"1\"}     # bigger → Forbidden", "lm"],
+    ["---", ""],
+    ["apiVersion: scheduling.k8s.io/v1", "pc"], ["kind: PriorityClass", "pc"], ["metadata: {name: high}", "pc"], ["value: 1000   # bigger = more important", "pcv"],
+    ["---", ""],
+    ["# ── your app ──", ""],
+    ["apiVersion: apps/v1", "dh"], ["kind: Deployment", "dh"], ["metadata:", "dh"], ["  name: web", "dh"], ["  namespace: k1-demo", "dh"], ["spec:", "dh"],
+    ["  replicas: 3", "dr"], ["  selector:", "ds"], ["    matchLabels: {app: web}", "ds"],
+    ["  template:      # the Pod to stamp out", "dt"], ["    metadata:", "dt"], ["      labels: {app: web}", "dl"], ["    spec:", "dt"],
+    ["      priorityClassName: high", "dp"], ["      containers:", "dt"], ["      - name: web", "dt"], ["        image: nginx:1.27", "di"],
+    ["        # resources: not set →", "dres"], ["        # LimitRange fills:", "dres"], ["        #  requests 100m / 64Mi", "dreq"], ["        #  limits   200m / 128Mi", "dlim"],
+    ["        livenessProbe:", "dpr"], ["          httpGet:", "dpr"], ["            {path: /, port: 80}", "dpr"], ["      # restartPolicy: Always", "drp"], ["      #   (the default)", "drp"],
+    ["---", ""],
+    ["apiVersion: v1", "sh"], ["kind: Service", "sh"], ["metadata:", "sh"], ["  name: web", "sh"], ["  namespace: k1-demo", "sh"], ["spec:", "sh"],
+    ["  type: ClusterIP     # inside cluster only", "st"], ["  selector: {app: web}  # = Pod labels", "ss"], ["  ports:", "sp"], ["  - port: 80", "sp"], ["    targetPort: 80", "sp"],
+  ];
+  const S = [
+    {z: [], hl: [], mv: [], who: "—", reads: "—", fail: "—",
+      say: "Press <b>Next</b>. Watch which component acts and which YAML lines it reads. The rules (quota, LimitRange, PriorityClass) already exist in the namespace."},
+    {z: ["kubectl", "api", "etcd"], hl: ["dh"], mv: [["kubectl", "api", "etcd"]], who: "API server", reads: "<code>apiVersion</code>, <code>kind</code>, <code>metadata</code>, schema of the Deployment",
+      fail: "kubectl prints an error (unknown field, invalid value) → nothing is created",
+      say: "<code>kubectl apply</code> sends the Deployment to the <b>API server</b>. It checks you're allowed (RBAC) and the YAML is valid, then stores it in <b>etcd</b>. <b>No Pods yet</b>: a Deployment is only a record."},
+    {z: ["depc", "api", "etcd"], hl: ["dr", "ds", "dt"], mv: [["etcd", "depc", "api"]], who: "Deployment controller", reads: "<code>replicas</code>, <code>selector</code>, <code>template</code> (+ rollout strategy)",
+      fail: "rollout stuck → <code>kubectl rollout status</code>, <code>describe deploy</code>",
+      say: "The <b>Deployment controller</b> sees the new Deployment and creates a <b>ReplicaSet</b> for this version of the template. (A rolling update = a new ReplicaSet.)"},
+    {z: ["rsc", "api"], hl: ["dr", "ds", "dt"], mv: [["rsc", "api"]], who: "ReplicaSet controller", reads: "<code>replicas: 3</code> vs Pods matching <code>selector</code>; the Pod <code>template</code>",
+      fail: "if the API server refuses a Pod → event <b>FailedCreate</b> on the ReplicaSet (<code>kubectl describe rs</code>)",
+      say: "Desired <b>3</b>, actual <b>0</b> → the <b>ReplicaSet controller</b> sends <b>3 Pod create requests</b> to the API server. It's not you creating the Pods, it's this controller."},
+    {z: ["api", "lr"], hl: ["ld", "lm", "dres", "dreq", "dlim"], mv: [["rsc", "lr"]], who: "API server → LimitRange admission", reads: "LimitRange <code>defaultRequest</code> / <code>default</code> / <code>max</code> ↔ the container's <code>resources</code>",
+      fail: "asks for more than <code>max</code> → <b>Forbidden</b> (nothing created)",
+      say: "<b>First, fill.</b> The Pods have no <code>resources</code>, so LimitRange fills requests 100m / 64Mi and limits 200m / 128Mi, exactly what you saw in Monday's hands-on."},
+    {z: ["api", "rq"], hl: ["qh", "dreq"], mv: [["lr", "rq"]], who: "API server → ResourceQuota admission", reads: "quota <code>hard: requests.cpu</code> ↔ the SUM of requests already in <code>k1-demo</code> + this Pod",
+      fail: "over the total → <b>Forbidden</b>, the Pod is never created. The ReplicaSet made the request, so you see it as <b>FailedCreate</b> in <code>describe rs</code>, not in your terminal",
+      say: "<b>Then, check the total.</b> 3 × 100m = 0.3 CPU fits under 1 → all 3 admitted and stored in etcd, still with <b>no node</b> → STATUS <b>Pending</b> (unscheduled)."},
+    {z: ["sched", "etcd"], hl: ["dreq", "dp", "pcv"], mv: [["etcd", "sched", "etcd"]], who: "scheduler", reads: "Pod <code>requests</code>, <code>priorityClassName</code> → value 1000 (+ nodeSelector / affinity / taints, if set) ↔ each node's allocatable − requests already placed",
+      fail: "no node fits → stays <b>Pending</b>, event <b>FailedScheduling</b>. Higher priority may <b>preempt</b> (evict) lower-priority Pods to make room",
+      say: "The <b>scheduler</b> picks a node where the Pod fits <b>by requests, not live usage</b>, and writes <code>nodeName</code> on the Pod. Priority decides who goes first and who may be evicted (Tuesday's lesson)."},
+    {z: ["kubelet", "pod"], hl: ["di", "dlim", "dpr", "drp"], mv: [["etcd", "kubelet", "pod"]], who: "kubelet (on that node)", reads: "<code>image</code>, <code>limits</code> (→ cgroups), <code>livenessProbe</code>, <code>restartPolicy</code>",
+      fail: "bad image → <b>ErrImagePull / ImagePullBackOff</b> · process crash → restart, RESTARTS↑ → <b>CrashLoopBackOff</b> · memory &gt; limit → <b>OOMKilled</b> · CPU &gt; limit → <b>throttled</b> (slow, not killed) · probe fails → restart",
+      say: "The <b>kubelet</b> on the chosen node sees a Pod assigned to it, pulls the image, sets <b>limits</b> as cgroup caps, starts the container and runs the liveness probe."},
+    {z: ["epc", "proxy", "client", "svc", "pod"], hl: ["st", "ss", "sp", "dl"], mv: [["pod", "epc", "proxy"], ["client", "svc", "pod"]], who: "Endpoints controller + kube-proxy", reads: "Service <code>selector</code> ↔ Pod <code>labels</code> (ready Pods only); <code>port</code> / <code>targetPort</code>; <code>type: ClusterIP</code>",
+      fail: "selector typo → <b>no endpoints</b> → requests fail even though Pods are Running",
+      say: "The <b>endpoints controller</b> lists the ready Pods whose labels match the selector. <b>kube-proxy</b> turns that list into rules on each node. The client calls <code>web:80</code> → DNS → ClusterIP → one of the Pods."},
+    {z: ["rsc", "api", "pod"], hl: ["dr"], mv: [["pod", "rsc", "api"]], who: "ReplicaSet controller", reads: "<code>replicas: 3</code> vs actual 2",
+      fail: "—",
+      say: "Delete a Pod → the <b>ReplicaSet controller</b> sees 2 &lt; 3 → creates a new Pod (<b>new name</b>) → steps 4–8 run again for it. A crash <i>inside</i> a container is the <b>kubelet's</b> job instead (step 7, same name, RESTARTS↑)."},
+  ];
+  const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const T = (x, y, t, cls, sz) => svg.appendChild(el("text", {x, y, class: cls || "", style: `font-size:${sz || 11}px`}, t));
+  let s = 0;
+  function draw() {
+    svg.innerHTML = "";
+    const st = S[s];
+    svg.appendChild(el("rect", {x: 2, y: 36, width: 336, height: 168, rx: 10, fill: "none", stroke: "var(--muted)", "stroke-width": 1.2}));
+    T(10, 49, "control plane", "b", 11.5);
+    svg.appendChild(el("rect", {x: 2, y: 220, width: 336, height: 110, rx: 10, fill: "none", stroke: "var(--muted)", "stroke-width": 1.2}));
+    T(10, 233, "worker node", "b", 11.5);
+    const order = ["kubectl", "api", "etcd", "sched", "cm", "kubelet", "pod", "proxy", "client", "svc", "lr", "rq", "depc", "rsc", "epc"];
+    order.forEach(id => {
+      const [x, y, w, h, title] = Z[id], on = st.z.includes(id);
+      const container = id === "api" || id === "cm";
+      svg.appendChild(el("rect", {x, y, width: w, height: h, rx: 7, class: on && !container ? "boxA" : on ? "boxA" : "box", opacity: container && !on ? 1 : 1}));
+      T(x + 6, y + (container ? 14 : h / 2 + 4), title, on ? "a b" : "b", id === "rq" || id === "lr" || id === "depc" || id === "rsc" || id === "epc" ? 10.5 : 11);
+    });
+    T(14, 126, "admission: ① fill → ② check total", "m", 10);
+    T(8, 350, "Pending = stored, no node yet · Forbidden = never stored", "m", 10.5);
+    T(8, 368, "● = request / object moving", "m", 10.5);
+    if (!reduce) st.mv.forEach((m, k) => {
+      const pts = m.map(n => P[n]), d = "M" + pts.map(p => p.join(" ")).join(" L");
+      svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.2, "stroke-dasharray": "3 3", opacity: .45}));
+      const dot = el("circle", {r: 5.5, fill: "var(--accent)", stroke: "var(--card)", "stroke-width": 1.5, cx: pts[0][0], cy: pts[0][1], opacity: 0});
+      svg.appendChild(dot);
+      const a = el("animateMotion", {dur: "0.9s", begin: "indefinite", fill: "freeze", path: "M0 0 " + pts.slice(1).map(p => `L${p[0] - pts[0][0]} ${p[1] - pts[0][1]}`).join(" ")});
+      dot.appendChild(a);
+      setTimeout(() => { try { dot.setAttribute("opacity", 1); a.beginElement(); } catch (e) {} }, 150 + k * 900);
+      setTimeout(() => dot.remove(), 150 + k * 900 + 1000);
+    });
+    else st.mv.forEach(m => { const d = "M" + m.map(n => P[n].join(" ")).join(" L"); svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.5, "stroke-dasharray": "3 3"})); });
+    rf.innerHTML = `<dt>Who</dt><dd><b>${st.who}</b></dd><dt>Reads</dt><dd>${st.reads}</dd><dt>If it fails</dt><dd>${st.fail}</dd>`;
+    let first = null;
+    code.innerHTML = Y.map(([t, tag], i) => { const on = tag && st.hl.includes(tag); return `<span class="ln${on ? " on" : ""}" data-i="${i}">${esc(t) || " "}</span>`; }).join("");
+    const f = code.querySelector(".ln.on"); code.scrollTop = f ? Math.max(0, f.offsetTop - code.offsetTop - 40) : 0;
+    say.innerHTML = `<b>${s}/${S.length - 1}</b> · ` + st.say;
+  }
+  document.getElementById("l13next").onclick = () => { if (s < S.length - 1) { s++; draw(); } };
+  document.getElementById("l13back").onclick = () => { if (s > 0) { s--; draw(); } };
+  document.getElementById("l13reset").onclick = () => { s = 0; draw(); };
   draw();
 })();
 </script>
