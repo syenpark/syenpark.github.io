@@ -31,6 +31,16 @@
   h1{font-size:20px;margin:0 0 2px}
   .sub{color:var(--muted);font-size:13.5px;margin:0}
   .sub a{color:var(--accent)}
+  .toc2{margin:12px 0 4px;display:flex;flex-direction:column;gap:8px}
+  .tocrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .toclbl{font-size:12.5px;font-weight:700;color:var(--muted);width:100%}
+  .toc2 a{background:var(--chip);color:var(--fg);text-decoration:none;padding:5px 11px;border-radius:999px;font-size:13px}
+  details.area{margin:18px 0 8px}
+  details.area>summary{cursor:pointer;font-size:19px;font-weight:700;padding:10px 4px;border-bottom:2px solid var(--line);list-style:none;display:flex;align-items:center;gap:8px}
+  details.area>summary::-webkit-details-marker{display:none}
+  details.area>summary::before{content:"▸";color:var(--accent);transition:transform .15s}
+  details.area[open]>summary::before{transform:rotate(90deg)}
+  details.area .cnt{font-size:12.5px;font-weight:500;color:var(--muted)}
   .toc{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
   .toc a{background:var(--chip);color:var(--fg);text-decoration:none;padding:6px 12px;border-radius:999px;font-size:13.5px}
   section{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:18px 16px 16px;margin:16px 0}
@@ -81,18 +91,30 @@
 <header>
   <h1>ML Platform Interactive Labs</h1>
   <p class="sub">Press the buttons and watch what each component does. <a href="flashcards.html">← Flashcards</a></p>
-  <nav class="toc">
-    <a href="#lab1">1 · DataLoader loop</a><a href="#lab2">2 · Sampler on/off</a>
-    <a href="#lab3">3 · persistent_workers</a><a href="#lab4">4 · Deployment + Service</a>
-    <a href="#lab5">5 · zero_grad</a><a href="#lab6">6 · set_epoch</a><a href="#lab7">7 · workers</a><a href="#lab8">8 · who said no?</a><a href="#lab9">9 · read vmstat</a><a href="#lab11a">10 · who runs what</a><a href="#lab11">11 · buckets &amp; hooks</a><a href="#lab10">12 · no_sync</a><a href="#lab13">13 · K8s: who reads which field</a>
+  <nav class="toc2">
+    <div class="tocrow"><span class="toclbl">Training (DDP)</span><a href="#lab11a">1 · One DDP step (map)</a><a href="#lab1">2 · DataLoader loop</a><a href="#lab2">3 · Sampler on/off</a><a href="#lab6">4 · set_epoch</a><a href="#lab7">5 · workers</a><a href="#lab3">6 · persistent_workers</a><a href="#lab5">7 · zero_grad</a><a href="#lab11">8 · buckets &amp; hooks</a><a href="#lab10">9 · no_sync</a></div>
+    <div class="tocrow"><span class="toclbl">Kubernetes</span><a href="#lab13">1 · who reads which field</a><a href="#lab4">2 · Deployment + Service</a><a href="#lab8">3 · who said no?</a></div>
+    <div class="tocrow"><span class="toclbl">Linux</span><a href="#lab9">1 · read vmstat</a></div>
   </nav>
 </header>
 <main>
+<details class="area" id="area-training" open>
+<summary>Training (DDP) <span class="cnt">9 labs</span></summary>
+<section id="lab11a">
+  <span class="tag">DDP · D10</span>
+  <h2>Training 1 · One DDP training step: where does the data go, and who calls whom?</h2>
+  <p class="why">Rank 0 of 2, a 6-layer model (L1–L6), 3 gradient buckets. The map is the hardware: <b>CPU</b> (processes + RAM) on top, <b>GPU</b> (memory + 2 streams) below, joined by <b>PCIe</b>. The <b>comm stream</b> is where <b>NCCL</b>, the GPU-to-GPU communication library, runs all-reduce and broadcast. Each press runs one part of the loop: the <b>●</b> shows data moving, <b>calls</b> shows which functions run, in order, and <b>reads</b> shows which settings they read.</p>
+  <div class="controls"><button class="primary" id="l11anext">Next ▶</button><button id="l11aback">◀ Back</button><button id="l11areset">Reset</button></div>
+  <svg id="l11a" viewBox="0 0 340 372" aria-label="hardware map of one DDP step"></svg>
+  <div class="calls" id="l11acalls"></div>
+  <pre class="code" id="l11acode" aria-label="training loop"></pre>
+  <div class="say" id="l11asay"></div>
+  <p class="so"><b>So what:</b> data is built on the <b>CPU</b> (sampler → workers → pinned RAM), crosses <b>PCIe</b> once per batch at <code>.cuda()</code>, and from then on the tensors stay in <b>GPU memory</b> (the CPU just drives the loop and launches kernels). <code>backward()</code> is run by the <b>autograd engine</b>; DDP joins only through its <b>hooks</b>, and its Reducer hands full buckets to <b>NCCL</b>, which sends them on a separate stream while compute continues. <code>optimizer.step()</code> doesn't involve DDP or any communication.</p>
+</section>
 
-<!-- ============ LAB 1 ============ -->
 <section id="lab1">
   <span class="tag">DDP · DL1</span>
-  <h2>Lab 1 · Who drives <code>for xb, yb in loader</code>?</h2>
+  <h2>Training 2 · Who drives <code>for xb, yb in loader</code>?</h2>
   <p class="why">Step through one rank (rank 0 of 2, batch_size = 3). Watch who asks whom.</p>
   <svg id="l1" viewBox="0 0 340 250" aria-label="DataLoader loop"></svg>
   <div class="controls">
@@ -104,11 +126,9 @@
 
 </section>
 
-<!-- ============ LAB 2 ============ -->
-
 <section id="lab2">
   <span class="tag">DDP · D1 / D2</span>
-  <h2>Lab 2 · What changes when you remove the DistributedSampler?</h2>
+  <h2>Training 3 · What changes when you remove the DistributedSampler?</h2>
   <p class="why">Two ranks, a dataset of 8 samples. Toggle the sampler and run one epoch.</p>
   <div class="controls">
     <button id="l2on" aria-pressed="true">With sampler</button>
@@ -125,67 +145,9 @@
 
 </section>
 
-<!-- ============ LAB 3 ============ -->
-
-<section id="lab3">
-  <span class="tag">DDP · U2 / M1</span>
-  <h2>Lab 3 · Where did the 24 seconds go?</h2>
-  <p class="why">Proportions from my <code>dataloader_benchmark.py</code> run (2 epochs, 2 workers). Toggle the setting and play.</p>
-  <div class="controls">
-    <button id="l3f" aria-pressed="true">persistent_workers=False</button>
-    <button id="l3t" aria-pressed="false">=True</button>
-    <button class="primary" id="l3play">Play ▶</button>
-  </div>
-  <svg id="l3" viewBox="0 0 340 120" aria-label="timeline"></svg>
-  <div class="meter">
-    <div>Time in real training steps<strong id="l3steps">–</strong></div>
-    <div>Time in worker start / stop<strong id="l3over">–</strong></div>
-  </div>
-  <div class="say" id="l3say">Press Play.</div>
-  <p class="so"><b>So what:</b> True = workers <b>persist</b>, so the restart blocks disappear. Always check <b>sum(step times) ≈ total</b> before trusting a throughput number.</p>
-
-</section>
-
-<!-- ============ LAB 4 ============ -->
-
-<section id="lab4">
-  <span class="tag">K8s · K2a / K2b / K2d</span>
-  <h2>Lab 4 · Delete a Pod, crash a container, send a request</h2>
-  <p class="why">A Deployment (replicas: 3) behind a ClusterIP Service. Try each button.</p>
-  <svg id="l4" viewBox="0 0 340 250" aria-label="deployment and service"></svg>
-  <div class="controls">
-    <button class="primary" id="l4req">Send request</button>
-    <button id="l4del">Delete a Pod</button>
-    <button id="l4crash">Crash a container</button>
-  </div>
-  <div class="say" id="l4say">The client only knows the name <b>web</b>.</div>
-  <p class="so"><b>So what:</b> deleted Pod → the <b>ReplicaSet controller</b> (the Deployment owns a ReplicaSet) creates a new Pod (new name, same label) · crashed process → the <b>kubelet</b> restarts the container (same name, RESTARTS +1) · the Service routes by <b>label</b>, so the client never notices.</p>
-
-</section>
-
-<!-- ============ LAB 5 ============ -->
-
-<section id="lab5">
-  <span class="tag">DDP · W2</span>
-  <h2>Lab 5 · Why <code>zero_grad()</code> every step?</h2>
-  <p class="why">Three training steps. Each <code>backward()</code> produces a fresh gradient — watch what lands in <code>.grad</code>.</p>
-  <div class="controls">
-    <button id="l5on" aria-pressed="true">with zero_grad()</button>
-    <button id="l5off" aria-pressed="false">without</button>
-    <button class="primary" id="l5next">Next step ▶</button>
-    <button id="l5reset">Reset</button>
-  </div>
-  <svg id="l5" viewBox="0 0 340 200" aria-label="grad accumulation"></svg>
-  <div class="say" id="l5say">Press Next step.</div>
-  <p class="so"><b>So what:</b> <code>backward()</code> <b>adds (+=)</b> into <code>.grad</code>. Without clearing, step 3 updates with g1+g2+g3 instead of g3 — stale gradients from older weights mixed in, and a step that keeps growing. (Gradient accumulation uses this on purpose: skip zero_grad for N micro-batches, then step once.)</p>
-
-</section>
-
-<!-- ============ LAB 6 ============ -->
-
 <section id="lab6">
   <span class="tag">DDP · W2</span>
-  <h2>Lab 6 · What does <code>set_epoch</code> change — and why don't ranks overlap?</h2>
+  <h2>Training 4 · What does <code>set_epoch</code> change — and why don't ranks overlap?</h2>
   <p class="why">10 samples (1–10), 2 ranks. <code>DistributedSampler</code> does 3 things on <b>every rank</b>: ① start from the full list, ② shuffle it with a seed, ③ keep only <b>its own positions</b> (rank 0: 1st, 3rd, 5th… · rank 1: 2nd, 4th, 6th…). The split is by <b>position</b>, not by value.</p>
   <div class="controls">
     <button data-m="f" aria-pressed="false">shuffle=False</button>
@@ -200,11 +162,9 @@
 
 </section>
 
-<!-- ============ LAB 7 ============ -->
-
 <section id="lab7">
   <span class="tag">DDP · W1</span>
-  <h2>Lab 7 · What do DataLoader workers do while the GPU trains?</h2>
+  <h2>Training 5 · What do DataLoader workers do while the GPU trains?</h2>
   <p class="why">One rank. Loading a batch takes 2 units of CPU time; training on it takes 1 unit of GPU time.</p>
   <div class="controls">
     <button id="l7a" aria-pressed="true">num_workers=0</button>
@@ -221,63 +181,46 @@
 
 </section>
 
-<!-- ============ LAB 8 ============ -->
-
-<section id="lab8">
-  <span class="tag">K8s · K3</span>
-  <h2>Lab 8 · A Pod isn't running — who said no?</h2>
-  <p class="why">Namespace with a ResourceQuota of 1 CPU (0.6 already used by other Pods). The only node has 8 allocatable CPUs, 5 already requested by other Pods → 3 unrequested. Pick a request and submit.</p>
+<section id="lab3">
+  <span class="tag">DDP · U2 / M1</span>
+  <h2>Training 6 · Where did the 24 seconds go?</h2>
+  <p class="why">Proportions from my <code>dataloader_benchmark.py</code> run (2 epochs, 2 workers). Toggle the setting and play.</p>
   <div class="controls">
-    <button id="l8q" aria-pressed="true">quota: on</button>
-    <button data-c="0.3">request 0.3 CPU</button>
-    <button data-c="0.5">0.5</button>
-    <button data-c="2">2</button>
-    <button data-c="100">100</button>
+    <button id="l3f" aria-pressed="true">persistent_workers=False</button>
+    <button id="l3t" aria-pressed="false">=True</button>
+    <button class="primary" id="l3play">Play ▶</button>
   </div>
-  <svg id="l8" viewBox="0 0 340 170" aria-label="admission vs scheduling"></svg>
-  <div class="say" id="l8say">Pick a CPU request.</div>
-  <p class="so"><b>So what:</b> over the quota → the <b>API server</b> rejects it (Forbidden) and the Pod is <b>never created</b>. Fits the quota but no node has room → the Pod exists and stays <b>Pending</b>; <code>kubectl describe pod</code> shows FailedScheduling.</p>
+  <svg id="l3" viewBox="0 0 340 120" aria-label="timeline"></svg>
+  <div class="meter">
+    <div>Time in real training steps<strong id="l3steps">–</strong></div>
+    <div>Time in worker start / stop<strong id="l3over">–</strong></div>
+  </div>
+  <div class="say" id="l3say">Press Play.</div>
+  <p class="so"><b>So what:</b> True = workers <b>persist</b>, so the restart blocks disappear. Always check <b>sum(step times) ≈ total</b> before trusting a throughput number.</p>
 
 </section>
 
-<!-- ============ LAB 9 ============ -->
-
-<section id="lab9">
-  <span class="tag">Linux · L1–L3</span>
-  <h2>Lab 9 · Read a <code>vmstat 1</code> line — what's the bottleneck?</h2>
-  <p class="why">An 8-core machine. Pick a scenario, guess the bottleneck from the numbers, then reveal.</p>
+<section id="lab5">
+  <span class="tag">DDP · W2</span>
+  <h2>Training 7 · Why <code>zero_grad()</code> every step?</h2>
+  <p class="why">Three training steps. Each <code>backward()</code> produces a fresh gradient — watch what lands in <code>.grad</code>.</p>
   <div class="controls">
-    <button data-s="ok" aria-pressed="true">A</button><button data-s="cpu" aria-pressed="false">B</button>
-    <button data-s="io" aria-pressed="false">C</button><button data-s="lock" aria-pressed="false">D</button>
-    <button data-s="mem" aria-pressed="false">E</button>
+    <button id="l5on" aria-pressed="true">with zero_grad()</button>
+    <button id="l5off" aria-pressed="false">without</button>
+    <button class="primary" id="l5next">Next step ▶</button>
+    <button id="l5reset">Reset</button>
   </div>
-  <svg id="l9" viewBox="0 0 340 196" aria-label="vmstat"></svg>
-  <div class="controls"><button class="primary" id="l9rev">Reveal ▶</button></div>
-  <div class="say" id="l9say">Scenario A. What's limiting progress — CPU, I/O, memory, or synchronization?</div>
-  <p class="so"><b>So what:</b> vmstat says <b>which resource</b>; then <code>top</code> / <code>pidstat -u -t</code> say <b>which process and thread</b>, and <code>strace</code> says <b>which syscall</b>. Confirm, fix, measure again.</p>
+  <svg id="l5" viewBox="0 0 340 200" aria-label="grad accumulation"></svg>
+  <div class="say" id="l5say">Press Next step.</div>
+  <p class="so"><b>So what:</b> <code>backward()</code> <b>adds (+=)</b> into <code>.grad</code>. Without clearing, step 3 updates with g1+g2+g3 instead of g3 — stale gradients from older weights mixed in, and a step that keeps growing. (Gradient accumulation uses this on purpose: skip zero_grad for N micro-batches, then step once.)</p>
 
 </section>
-
-<!-- ============ LAB 11a ============ -->
-
-<section id="lab11a">
-  <span class="tag">DDP · D10</span>
-  <h2>Lab 10 · One DDP training step: where does the data go, and who calls whom?</h2>
-  <p class="why">Rank 0 of 2, a 6-layer model (L1–L6), 3 gradient buckets. The map is the hardware: <b>CPU</b> (processes + RAM) on top, <b>GPU</b> (memory + 2 streams) below, joined by <b>PCIe</b>. Each press runs one part of the loop: the <b>●</b> shows data moving, <b>calls</b> shows which functions run, in order, and <b>reads</b> shows which settings they read.</p>
-  <div class="controls"><button class="primary" id="l11anext">Next ▶</button><button id="l11aback">◀ Back</button><button id="l11areset">Reset</button></div>
-  <svg id="l11a" viewBox="0 0 340 372" aria-label="hardware map of one DDP step"></svg>
-  <div class="calls" id="l11acalls"></div>
-  <pre class="code" id="l11acode" aria-label="training loop"></pre>
-  <div class="say" id="l11asay"></div>
-  <p class="so"><b>So what:</b> data is built on the <b>CPU</b> (sampler → workers → pinned RAM), crosses <b>PCIe</b> once per batch at <code>.cuda()</code>, and from then on the tensors stay in <b>GPU memory</b> (the CPU just drives the loop and launches kernels). <code>backward()</code> is run by the <b>autograd engine</b>; DDP joins only through its <b>hooks</b>, and its Reducer hands full buckets to <b>NCCL</b>, which sends them on a separate stream while compute continues. <code>optimizer.step()</code> doesn't involve DDP or any communication.</p>
-</section>
-
-<!-- ============ LAB 11 ============ -->
 
 <section id="lab11">
   <span class="tag">DDP · D10</span>
-  <h2>Lab 11 · Buckets &amp; hooks: when does all-reduce start?</h2>
-  <p class="why"><b>compute</b> = backward kernels on the GPU (producer). <b>network</b> = NCCL all-reducing a full bucket with rank 1 — both ranks send and receive (consumer). They run at the same time on separate GPU streams. New to hooks/NCCL? Do Lab 10 first.</p>
+  <h2>Training 8 · Buckets &amp; hooks: when does all-reduce start?</h2>
+  <p class="why"><b>compute</b> = backward kernels on the GPU (producer). <b>network</b> = NCCL all-reducing a full bucket with rank 1 — both ranks send and receive (consumer). They run at the same time on separate GPU streams. New to hooks/NCCL? Do Training 1 first.</p>
+  <p class="why"><b>NCCL</b> (NVIDIA Collective Communications Library) is the library that actually moves the data between GPUs. It runs collective operations such as all-reduce and broadcast as GPU kernels and picks the fastest path (NVLink, PCIe or the network). DDP's Reducer only <i>asks</i> for "all-reduce bucket A"; NCCL does it. You select it with <code>init_process_group(backend="nccl")</code>.</p>
   <p class="why">A 6-layer model. <code>backward()</code> runs from the <b>last</b> layer (L6) to the first (L1); each layer's gradient takes 1 time unit. Every all-reduce costs a fixed 1.1 units of overhead + 0.25 per layer it carries. One press = one layer's gradient is ready.</p>
   <div class="controls">
     <button data-m="1" aria-pressed="false">1 big bucket</button>
@@ -297,12 +240,10 @@
 
 </section>
 
-<!-- ============ LAB 10 ============ -->
-
 <section id="lab10">
   <span class="tag">DDP · D9</span>
-  <h2>Lab 12 · Gradient accumulation: all-reduce every micro-batch, or once?</h2>
-  <p class="why">Goal: one weight update from <b>128 samples</b> per rank. 2 ranks; each backward sends gradients in 2 buckets (buckets: Lab 11). Two separate knobs: <b>accumulation</b> (feed 32 at a time, step every 4) cuts <b>memory</b>; <b>no_sync</b> cuts <b>communication</b>.</p>
+  <h2>Training 9 · Gradient accumulation: all-reduce every micro-batch, or once?</h2>
+  <p class="why">Goal: one weight update from <b>128 samples</b> per rank. 2 ranks; each backward sends gradients in 2 buckets (buckets: Training 8). Two separate knobs: <b>accumulation</b> (feed 32 at a time, step every 4) cuts <b>memory</b>; <b>no_sync</b> cuts <b>communication</b>.</p>
   <div class="controls">
     <button data-m="full" aria-pressed="false">A: batch 128 (fits)</button>
     <button data-m="sync" aria-pressed="true">B: accumulate, sync every</button>
@@ -322,10 +263,13 @@
   <p class="so"><b>So what:</b> A is the ideal, but 128 may not fit in GPU memory. B fits (32 at a time) but DDP syncs after <b>every</b> backward → 4× the communication. C keeps B's memory and gets back to A's communication: <code>.grad</code> sums locally because backward <b>adds (+=)</b>, so one all-reduce of the sum gives the same average. Keep the <b>last</b> micro-batch outside <code>no_sync</code>, or the ranks never sync.</p>
 </section>
 
-<!-- ============ LAB 13 ============ -->
+</details>
+
+<details class="area" id="area-k8s" open>
+<summary>Kubernetes <span class="cnt">3 labs</span></summary>
 <section id="lab13">
   <span class="tag">K8s · K1–K4</span>
-  <h2>Lab 13 · From <code>kubectl apply</code> to traffic: who reads which field?</h2>
+  <h2>Kubernetes 1 · From <code>kubectl apply</code> to traffic: who reads which field?</h2>
   <p class="why">Namespace <code>k1-demo</code> already has a ResourceQuota, a LimitRange and a PriorityClass. You apply a Deployment (3 replicas) and a Service. Each press = one component doing its job: the map shows <b>who</b>, the YAML below highlights the <b>fields it reads</b>, and the box says <b>what you see if it fails</b>.</p>
   <div class="controls"><button class="primary" id="l13next">Next ▶</button><button id="l13back">◀ Back</button><button id="l13reset">Reset</button></div>
   <svg id="l13" viewBox="0 0 340 384" aria-label="kubernetes components map"></svg>
@@ -334,6 +278,60 @@
   <div class="say" id="l13say"></div>
   <p class="so"><b>So what:</b> every K8s answer has three parts: <b>who</b> acts (API server admission / a controller / the scheduler / the kubelet / kube-proxy), <b>which field</b> it reads, and <b>where the failure shows up</b>. Admission refuses → Forbidden, nothing created (if a controller made the request, look at its Events). Scheduler can't place → Pending. kubelet trouble → ImagePullBackOff, CrashLoopBackOff, OOMKilled.</p>
 </section>
+
+<section id="lab4">
+  <span class="tag">K8s · K2a / K2b / K2d</span>
+  <h2>Kubernetes 2 · Delete a Pod, crash a container, send a request</h2>
+  <p class="why">A Deployment (replicas: 3) behind a ClusterIP Service. Try each button.</p>
+  <svg id="l4" viewBox="0 0 340 250" aria-label="deployment and service"></svg>
+  <div class="controls">
+    <button class="primary" id="l4req">Send request</button>
+    <button id="l4del">Delete a Pod</button>
+    <button id="l4crash">Crash a container</button>
+  </div>
+  <div class="say" id="l4say">The client only knows the name <b>web</b>.</div>
+  <p class="so"><b>So what:</b> deleted Pod → the <b>ReplicaSet controller</b> (the Deployment owns a ReplicaSet) creates a new Pod (new name, same label) · crashed process → the <b>kubelet</b> restarts the container (same name, RESTARTS +1) · the Service routes by <b>label</b>, so the client never notices.</p>
+
+</section>
+
+<section id="lab8">
+  <span class="tag">K8s · K3</span>
+  <h2>Kubernetes 3 · A Pod isn't running — who said no?</h2>
+  <p class="why">Namespace with a ResourceQuota of 1 CPU (0.6 already used by other Pods). The only node has 8 allocatable CPUs, 5 already requested by other Pods → 3 unrequested. Pick a request and submit.</p>
+  <div class="controls">
+    <button id="l8q" aria-pressed="true">quota: on</button>
+    <button data-c="0.3">request 0.3 CPU</button>
+    <button data-c="0.5">0.5</button>
+    <button data-c="2">2</button>
+    <button data-c="100">100</button>
+  </div>
+  <svg id="l8" viewBox="0 0 340 170" aria-label="admission vs scheduling"></svg>
+  <div class="say" id="l8say">Pick a CPU request.</div>
+  <p class="so"><b>So what:</b> over the quota → the <b>API server</b> rejects it (Forbidden) and the Pod is <b>never created</b>. Fits the quota but no node has room → the Pod exists and stays <b>Pending</b>; <code>kubectl describe pod</code> shows FailedScheduling.</p>
+
+</section>
+
+</details>
+
+<details class="area" id="area-linux" open>
+<summary>Linux <span class="cnt">1 labs</span></summary>
+<section id="lab9">
+  <span class="tag">Linux · L1–L3</span>
+  <h2>Linux 1 · Read a <code>vmstat 1</code> line — what's the bottleneck?</h2>
+  <p class="why">An 8-core machine. Pick a scenario, guess the bottleneck from the numbers, then reveal.</p>
+  <div class="controls">
+    <button data-s="ok" aria-pressed="true">A</button><button data-s="cpu" aria-pressed="false">B</button>
+    <button data-s="io" aria-pressed="false">C</button><button data-s="lock" aria-pressed="false">D</button>
+    <button data-s="mem" aria-pressed="false">E</button>
+  </div>
+  <svg id="l9" viewBox="0 0 340 196" aria-label="vmstat"></svg>
+  <div class="controls"><button class="primary" id="l9rev">Reveal ▶</button></div>
+  <div class="say" id="l9say">Scenario A. What's limiting progress — CPU, I/O, memory, or synchronization?</div>
+  <p class="so"><b>So what:</b> vmstat says <b>which resource</b>; then <code>top</code> / <code>pidstat -u -t</code> say <b>which process and thread</b>, and <code>strace</code> says <b>which syscall</b>. Confirm, fix, measure again.</p>
+
+</section>
+
+</details>
 
 </main>
 
@@ -871,12 +869,12 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
     {code: [6, 7], z: {main: "sampler.set_epoch(e)", ram: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "h"}, mv: [["main", "idx"]],
       calls: ["sampler.set_epoch(e)", "stores epoch = e"],
       reads: ["sampler: epoch"],
-      say: "<b>Each epoch.</b> <code>set_epoch</code> only <b>stores</b> the epoch number. When the loop then starts iterating, the sampler (CPU, main process) shuffles the whole index list with seed = seed + epoch (same on every rank) and keeps this rank's positions (Lab 6). Just a list of numbers in RAM."},
+      say: "<b>Each epoch.</b> <code>set_epoch</code> only <b>stores</b> the epoch number. When the loop then starts iterating, the sampler (CPU, main process) shuffles the whole index list with seed = seed + epoch (same on every rank) and keeps this rank's positions (Training 4). Just a list of numbers in RAM."},
     {code: [8], z: {main: "next(loader)", workers: "dataset[i] ×32, collate", ram: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "p", samples: "h", batch: "h"},
       mv: [["idx", "wk"], ["wk", "batch"]],
       calls: ["next(loader)", "sampler → 32 indices", "worker: dataset[i] × 32", "collate → shared memory", "pin thread → pinned RAM"],
       reads: ["DataLoader: batch_size=32, num_workers=2, pin_memory=True, persistent_workers=False, collate_fn", "sampler: seed + epoch, rank, num_replicas"],
-      say: "<b>Data, on the CPU.</b> The DataLoader sends 32 indices to a <b>worker process</b>; it calls your <code>dataset[i]</code> 32 times (reading from disk), collates them into one batch in shared memory; a <b>pin-memory thread</b> in the main process copies it into <b>pinned (page-locked) RAM</b> because <code>pin_memory=True</code> (Lab 1, Lab 7)."},
+      say: "<b>Data, on the CPU.</b> The DataLoader sends 32 indices to a <b>worker process</b>; it calls your <code>dataset[i]</code> 32 times (reading from disk), collates them into one batch in shared memory; a <b>pin-memory thread</b> in the main process copies it into <b>pinned (page-locked) RAM</b> because <code>pin_memory=True</code> (Training 2, Training 5)."},
     {code: [9], z: {main: "xb.cuda()", ram: 1, pcie: 1, mem: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "p", batch: "p", xb: "h"},
       mv: [["batch", "pcie", "xb"]],
       calls: ["xb.cuda()", "PCIe copy: batch → GPU", "xb in GPU memory"],
@@ -896,7 +894,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
       mv: [["compute", "bB"], ["compute", "bC"], ["bB", "comm", "link"]],
       calls: ["autograd: L4 → L1", "hooks: B, C full", "all_reduce(B), (C)", "comm overlaps compute"],
       reads: ["DDP: bucket_cap_mb"],
-      say: "<b>Overlap.</b> While NCCL sends A, the compute stream keeps going: L4…L1. B and C fill up and are sent too. Two streams, at the same time (Lab 11)."},
+      say: "<b>Overlap.</b> While NCCL sends A, the compute stream keeps going: L4…L1. B and C fill up and are sent too. Two streams, at the same time (Training 8)."},
     {code: [12], z: {main: "backward() returns", compute: "(waits)", mem: 1, comm: "all done"}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad = average"], bA: "p", bB: "p", bC: "p"},
       mv: [["bA", "grad"], ["bC", "grad"]],
       calls: ["Reducer waits A, B, C", "average over 2 ranks", "write into p.grad", "backward() returns"],
@@ -1159,6 +1157,22 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   document.getElementById("l13back").onclick = () => { if (s > 0) { s--; draw(); } };
   document.getElementById("l13reset").onclick = () => { s = 0; draw(); };
   draw();
+})();
+
+/* ===================== areas: foldable + TOC ===================== */
+(() => {
+  const KEY = "labs-areas-closed";
+  let closed = []; try { closed = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) {}
+  document.querySelectorAll("details.area").forEach(d => {
+    if (closed.includes(d.id)) d.open = false;
+    d.addEventListener("toggle", () => { try { const c = [...document.querySelectorAll("details.area")].filter(x => !x.open).map(x => x.id); localStorage.setItem(KEY, JSON.stringify(c)); } catch (e) {} });
+  });
+  document.querySelectorAll(".toc2 a").forEach(a => a.addEventListener("click", e => {
+    const t = document.querySelector(a.getAttribute("href")); if (!t) return;
+    const d = t.closest("details.area"); if (d && !d.open) d.open = true;
+    e.preventDefault(); t.scrollIntoView({behavior: "smooth", block: "start"}); history.replaceState(null, "", a.getAttribute("href"));
+  }));
+  const h = location.hash && document.querySelector(location.hash); if (h) { const d = h.closest("details.area"); if (d) d.open = true; }
 })();
 </script>
 </body>
