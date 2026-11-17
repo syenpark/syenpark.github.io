@@ -35,6 +35,16 @@
   .tocrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .toclbl{font-size:12.5px;font-weight:700;color:var(--muted);width:100%}
   .toc2 a{background:var(--chip);color:var(--fg);text-decoration:none;padding:5px 11px;border-radius:999px;font-size:13px}
+  .pipe{margin:10px 0 4px;border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:12.5px}
+  .pipe .grp{background:var(--chip);color:var(--muted);font-weight:700;font-size:11.5px;padding:4px 10px;display:flex;justify-content:space-between;gap:8px}
+  .pipe .grp i{font-style:normal;font-weight:500}
+  .pipe .stg{display:grid;grid-template-columns:22px 104px 1fr;gap:6px;align-items:start;padding:5px 10px;border-top:1px solid var(--line)}
+  .pipe .stg .n{width:18px;height:18px;border-radius:50%;background:var(--chip);color:var(--muted);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .pipe .stg .w{font-weight:700}
+  .pipe .stg .f{color:var(--muted);font-size:11.5px}
+  .pipe .stg.on{background:var(--accent-soft)}
+  .pipe .stg.on .n{background:var(--accent);color:#fff}
+  .pipe .stg.on .w{color:var(--accent)}
   details.area{margin:18px 0 8px}
   details.area>summary{cursor:pointer;font-size:19px;font-weight:700;padding:10px 4px;border-bottom:2px solid var(--line);list-style:none;display:flex;align-items:center;gap:8px}
   details.area>summary::-webkit-details-marker{display:none}
@@ -270,8 +280,9 @@
 <section id="lab13">
   <span class="tag">K8s · K1–K4</span>
   <h2>Kubernetes 1 · From <code>kubectl apply</code> to traffic: who reads which field?</h2>
-  <p class="why">Namespace <code>k1-demo</code> already has a ResourceQuota, a LimitRange and a PriorityClass. You apply a Deployment (3 replicas) and a Service. Each press = one component doing its job: the map shows <b>who</b>, the YAML below highlights the <b>fields it reads</b>, and the box says <b>what you see if it fails</b>.</p>
+  <p class="why">Namespace <code>k1-demo</code> already has a ResourceQuota, a LimitRange and a PriorityClass. You apply a Deployment (3 replicas) and a Service. The <b>order list</b> shows which layer acts first for every Pod. Each press = one component doing its job: the map shows <b>who</b>, the YAML below highlights the <b>fields it reads</b>, and the box says <b>what you see if it fails</b>.</p>
   <div class="controls"><button class="primary" id="l13next">Next ▶</button><button id="l13back">◀ Back</button><button id="l13reset">Reset</button></div>
+  <div class="pipe" id="l13pipe" aria-label="order of checks for each Pod"></div>
   <svg id="l13" viewBox="0 0 340 384" aria-label="kubernetes components map"></svg>
   <dl class="rf" id="l13rf"></dl>
   <pre class="code" id="l13code" style="max-height:330px;overflow:auto" aria-label="yaml"></pre>
@@ -1099,7 +1110,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
       say: "Desired <b>3</b>, actual <b>0</b> → the <b>ReplicaSet controller</b> sends <b>3 Pod create requests</b> to the API server. It's not you creating the Pods, it's this controller."},
     {z: ["api", "lr"], hl: ["ld", "lm", "dres", "dreq", "dlim"], mv: [["rsc", "lr"]], who: "API server → LimitRange admission", reads: "LimitRange <code>defaultRequest</code> / <code>default</code> / <code>max</code> ↔ the container's <code>resources</code>",
       fail: "asks for more than <code>max</code> → <b>Forbidden</b> (nothing created)",
-      say: "<b>First, fill.</b> The Pods have no <code>resources</code>, so LimitRange fills requests 100m / 64Mi and limits 200m / 128Mi, exactly what you saw in Monday's hands-on."},
+      say: "<b>First, fill.</b> The Pods have no <code>resources</code>, so LimitRange fills requests 100m / 64Mi and limits 200m / 128Mi, exactly what you saw in Monday's hands-on. In the same fill-in phase, <code>priorityClassName: high</code> is turned into the number 1000."},
     {z: ["api", "rq"], hl: ["qh", "dreq"], mv: [["lr", "rq"]], who: "API server → ResourceQuota admission", reads: "quota <code>hard: requests.cpu</code> ↔ the SUM of requests already in <code>k1-demo</code> + this Pod",
       fail: "over the total → <b>Forbidden</b>, the Pod is never created. The ReplicaSet made the request, so you see it as <b>FailedCreate</b> in <code>describe rs</code>, not in your terminal",
       say: "<b>Then, check the total.</b> 3 × 100m = 0.3 CPU fits under 1 → all 3 admitted and stored in etcd, still with <b>no node</b> → STATUS <b>Pending</b> (unscheduled)."},
@@ -1116,10 +1127,30 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
       fail: "—",
       say: "Delete a Pod → the <b>ReplicaSet controller</b> sees 2 &lt; 3 → creates a new Pod (<b>new name</b>) → steps 4–8 run again for it. A crash <i>inside</i> a container is the <b>kubelet's</b> job instead (step 7, same name, RESTARTS↑)."},
   ];
+  const pipeEl = document.getElementById("l13pipe");
+  const PIPE = [ // [group, who, does, if refused]
+    ["controller", "ReplicaSet ctrl", "sends a Pod create request", ""],
+    ["API server · admission (refused → Forbidden, nothing created)", "auth + schema", "RBAC, valid YAML", "error, nothing created"],
+    ["", "LimitRange", "fills empty requests / limits", "above max → Forbidden"],
+    ["", "PriorityClass", "name → priority number", "unknown class → Forbidden"],
+    ["", "ResourceQuota", "namespace SUM ≤ hard?", "over → Forbidden"],
+    ["", "etcd", "Pod stored, no node yet", "STATUS Pending"],
+    ["scheduler (refused → Pending)", "scheduler", "requests vs free room · priority → order + preemption", "no fit → Pending (FailedScheduling)"],
+    ["node (runtime errors)", "kubelet", "image, limits, probes", "ImagePullBackOff · CrashLoopBackOff · OOMKilled"],
+    ["", "endpoints + kube-proxy", "Service selector ↔ Pod labels", "no endpoints → traffic fails"],
+  ];
+  const PIPEON = [[], [1], [], [0], [2, 3], [4, 5], [6], [7], [8], [0]];
+  function drawPipe() {
+    const on = PIPEON[s] || [];
+    pipeEl.innerHTML = '<div class="grp">Order of checks for each Pod <i>first → last</i></div>' + PIPE.map(([g, w, d, f], i) =>
+      (g && i > 0 ? `<div class="grp">${g}</div>` : "") +
+      `<div class="stg${on.includes(i) ? " on" : ""}"><span class="n">${i}</span><span class="w">${w}</span><span>${d}${f ? `<br><span class="f">${f}</span>` : ""}</span></div>`).join("");
+  }
   const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
   const T = (x, y, t, cls, sz) => svg.appendChild(el("text", {x, y, class: cls || "", style: `font-size:${sz || 11}px`}, t));
   let s = 0;
   function draw() {
+    drawPipe();
     svg.innerHTML = "";
     const st = S[s];
     svg.appendChild(el("rect", {x: 2, y: 36, width: 336, height: 168, rx: 10, fill: "none", stroke: "var(--muted)", "stroke-width": 1.2}));
