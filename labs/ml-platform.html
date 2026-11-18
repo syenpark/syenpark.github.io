@@ -108,7 +108,7 @@
   <nav class="toc2">
     <div class="tocrow"><span class="toclbl">Training (DDP)</span><a href="#lab11a">1 · One DDP step (map)</a><a href="#lab1">2 · DataLoader loop</a><a href="#lab2">3 · Sampler on/off</a><a href="#lab6">4 · set_epoch</a><a href="#lab7">5 · workers</a><a href="#lab3">6 · persistent_workers</a><a href="#lab5">7 · zero_grad</a><a href="#lab11">8 · buckets &amp; hooks</a><a href="#lab10">9 · no_sync</a></div>
     <div class="tocrow"><span class="toclbl">Kubernetes</span><a href="#lab13">1 · who reads which field</a><a href="#lab4">2 · Deployment + Service</a><a href="#lab8">3 · who said no?</a></div>
-    <div class="tocrow"><span class="toclbl">Linux</span><a href="#lab9">1 · read vmstat</a></div>
+    <div class="tocrow"><span class="toclbl">Linux</span><a href="#lab14">1 · vmstat in hardware</a><a href="#lab9">2 · read vmstat</a></div>
   </nav>
 </header>
 <main>
@@ -337,10 +337,26 @@
 </details>
 
 <details class="area" id="area-linux" open>
-<summary>Linux <span class="cnt">1 labs</span></summary>
+<summary>Linux <span class="cnt">2 labs</span></summary>
+<section id="lab14">
+  <span class="tag">Linux · L1–L4</span>
+  <h2>Linux 1 · What each <code>vmstat</code> number is, in the hardware</h2>
+  <p class="why">One machine with 4 CPU cores, RAM and a disk. RAM is managed in <b>pages</b> (4 KB blocks). Pick a column: the map shows what physically happens (tasks on cores, pages moving between RAM and disk), and the vmstat line on top shows which number it makes go up.</p>
+  <div class="controls" id="l14btns">
+    <button data-m="r" aria-pressed="true">r</button><button data-m="b" aria-pressed="false">b</button>
+    <button data-m="cpu" aria-pressed="false">us sy id wa</button><button data-m="cs" aria-pressed="false">cs</button>
+    <button data-m="in" aria-pressed="false">in</button><button data-m="mem" aria-pressed="false">free / cache</button>
+    <button data-m="bibo" aria-pressed="false">bi / bo</button><button data-m="siso" aria-pressed="false">si / so</button>
+    <button data-m="swpd" aria-pressed="false">swpd</button>
+  </div>
+  <svg id="l14" viewBox="0 0 340 384" aria-label="vmstat columns in hardware"></svg>
+  <div class="say" id="l14say"></div>
+  <p class="so"><b>So what:</b> vmstat counts three kinds of things. <b>Tasks</b>: r = running or waiting for a core, b = stuck waiting for the disk. <b>Time</b>: us / sy / id / wa = how each CPU second was spent. <b>Pages and blocks moving</b>: bi / bo = file data between disk and RAM, si / so = process memory pushed out to swap and pulled back. Read them together, then use Linux 2 to practise.</p>
+</section>
+
 <section id="lab9">
   <span class="tag">Linux · L1–L3</span>
-  <h2>Linux 1 · Read a <code>vmstat 1</code> line — what's the bottleneck?</h2>
+  <h2>Linux 2 · Read a <code>vmstat 1</code> line — what's the bottleneck?</h2>
   <p class="why">An 8-core machine. Pick a scenario, guess the bottleneck from the numbers, then reveal.</p>
   <div class="controls">
     <button data-s="ok" aria-pressed="true">A</button><button data-s="cpu" aria-pressed="false">B</button>
@@ -1307,6 +1323,118 @@ const hwMap = (id, on = {}) => {
   document.getElementById("l13next").onclick = () => { if (s < S.length - 1) { s++; draw(); } };
   document.getElementById("l13back").onclick = () => { if (s > 0) { s--; draw(); } };
   document.getElementById("l13reset").onclick = () => { s = 0; draw(); };
+  draw();
+})();
+
+/* ===================== LAB 14 (Linux 1: vmstat in hardware) ===================== */
+(() => {
+  const svg = document.getElementById("l14"), say = document.getElementById("l14say");
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const COLS = ["r", "b", "swpd", "free", "cache", "si", "so", "bi", "bo", "in", "cs", "us", "sy", "id", "wa"];
+  const BASE = {r: 1, b: 0, swpd: "0", free: "6.2G", cache: "4.1G", si: 0, so: 0, bi: 10, bo: 40, in: 900, cs: 1500, us: 10, sy: 4, id: 86, wa: 0};
+  const cellR = k => [10 + (k % 16) * 20, 178 + Math.floor(k / 16) * 18]; // RAM page cell (top-left)
+  const cellF = k => [14 + (k % 8) * 19, 296 + Math.floor(k / 8) * 18];   // files on disk
+  const cellS = k => [178 + (k % 8) * 19, 296 + Math.floor(k / 8) * 18];  // swap area
+  const ctr = ([x, y]) => [x + 8, y + 7];
+  const CORE = i => [12 + i * 58, 68], QUEUE = [250, 66], DWAIT = [250, 110];
+  const M = {
+    r: {v: {r: 7, us: 90, sy: 8, id: 2, cs: 3000}, hl: ["r"], cores: ["A", "B", "C", "D"], queue: ["E", "F", "G"], ram: {anon: 24, cache: 20},
+        mv: [{task: "E", from: [272, 84], to: [38, 90]}, {task: "B", from: [96, 90], to: [300, 84]}],
+        say: "<b>r = tasks that want a CPU right now</b>: the ones running on a core <b>plus</b> the ones queued for one. Here 4 run and 3 wait → r = 7 on 4 cores. When a time slice ends, the scheduler swaps a waiting task in. r staying above the number of cores = <b>CPU contention</b>."},
+    b: {v: {r: 1, b: 3, us: 6, sy: 4, id: 50, wa: 40, bi: 9000}, hl: ["b", "wa", "bi"], cores: ["A", "", "", ""], dwait: ["B", "C", "D"], ram: {anon: 24, cache: 20}, disk: "files",
+        mv: [{task: "B", from: [154, 90], to: [272, 128]}, {page: "cache", from: ctr(cellF(2)), to: ctr(cellR(50))}],
+        say: "<b>b = tasks blocked waiting for the disk</b> (state <b>D</b>, uninterruptible). They asked to read a file, and the data isn't in RAM, so they sleep until the disk answers. They don't use the CPU, so cores sit idle → <b>wa</b> goes up (idle <i>while</i> someone waits on I/O), and <b>bi</b> shows the blocks arriving."},
+    cpu: {v: {us: 50, sy: 20, id: 20, wa: 10}, hl: ["us", "sy", "id", "wa"], cores: ["A", "A", "", ""], ram: {anon: 24, cache: 20}, bar: true,
+        say: "<b>us / sy / id / wa = how each CPU second was spent</b>, in %, adding up to 100. <b>us</b> = running your program's own code. <b>sy</b> = running kernel code for it (system calls: reading files, sending packets, allocating memory). <b>id</b> = nothing to do. <b>wa</b> = nothing to do <i>but</i> some task is waiting on disk I/O (counts as idle time)."},
+    cs: {v: {r: 3, cs: 90000, us: 18, sy: 9, id: 73}, hl: ["cs"], cores: ["A", "", "", ""], queue: ["B"], ram: {anon: 24, cache: 20},
+         mv: [{task: "A", from: [38, 90], to: [272, 84]}, {task: "B", from: [272, 84], to: [38, 90]}],
+         say: "<b>cs = context switches per second</b>: a core stops one task, saves its registers, and loads another. <b>Voluntary</b>: the task goes to sleep (waits for a lock, the disk, the network). <b>Involuntary</b>: its time slice ran out. Very high cs with idle CPUs = threads keep sleeping and waking, e.g. fighting over a <b>lock</b> (Linux 2, scenario D)."},
+    in: {v: {in: 12000, bi: 3000}, hl: ["in"], cores: ["A", "", "", ""], ram: {anon: 24, cache: 20}, disk: "files", irq: true,
+         say: "<b>in = interrupts per second</b>: hardware tapping the CPU on the shoulder: \"I'm done\" from the disk, \"a packet arrived\" from the network card, the timer tick. The CPU pauses what it's doing to handle each one. Lots of I/O → lots of interrupts."},
+    mem: {v: {free: "0.3G", cache: "9.5G"}, hl: ["free", "cache"], cores: ["A", "", "", ""], ram: {anon: 22, cache: 38}, disk: "files",
+          mv: [{page: "cache", from: ctr(cellF(4)), to: ctr(cellR(61))}],
+          say: "<b>free</b> = RAM pages holding nothing at all. <b>cache</b> (and buff) = copies of file data the kernel kept in RAM after reading them, so the next read skips the disk. Linux fills spare RAM with cache on purpose, so <b>low free is normal</b>. Cache can be dropped instantly when a program needs memory → look at <b>available</b> (free + droppable cache) in <code>free -h</code>, not free."},
+    bibo: {v: {bi: 5000, bo: 800, wa: 8}, hl: ["bi", "bo"], cores: ["A", "", "", ""], ram: {anon: 24, cache: 24}, disk: "files",
+           mv: [{page: "cache", from: ctr(cellF(1)), to: ctr(cellR(44))}, {page: "dirty", from: ctr(cellR(30)), to: ctr(cellF(6))}],
+           say: "<b>bi = blocks read in from disk</b> (into RAM, usually the page cache) and <b>bo = blocks written out</b> to disk (e.g. changed file pages being flushed), per second. Normal file I/O. They are about <b>files</b>, not swap."},
+    siso: {v: {free: "0.1G", cache: "0.2G", swpd: "2.1G", si: 800, so: 1200, wa: 20, b: 2}, hl: ["si", "so", "swpd"], cores: ["A", "", "", ""], dwait: ["B", "C"], ram: {anon: 60, cache: 4}, swap: 9,
+           mv: [{page: "anon", from: ctr(cellR(12)), to: ctr(cellS(9))}, {page: "anon", from: ctr(cellS(3)), to: ctr(cellR(40))}],
+           say: "RAM is <b>full of process memory</b> and there's almost no cache left to drop. To make room, the kernel writes pages of process memory it hasn't touched lately to the <b>swap area</b> on disk: <b>so = swap out</b>. When the process touches such a page again, it page-faults and waits (state D) while the page is read back: <b>si = swap in</b>. Both staying high = <b>thrashing</b>: the machine spends its time moving pages, not working."},
+    swpd: {v: {swpd: "1.5G", si: 0, so: 0}, hl: ["swpd"], cores: ["A", "", "", ""], ram: {anon: 30, cache: 20}, swap: 12,
+           say: "<b>swpd = how much is sitting in swap right now</b>, not how much is moving. Pages swapped out long ago and never needed again just stay there. swpd &gt; 0 with <b>si = so = 0</b> is harmless; the warning sign is si / so moving."},
+  };
+  let mode = "r";
+  const T = (x, y, t, cls, sz, fill) => { const e = el("text", {x, y, class: cls || "", style: `font-size:${sz || 11}px`}); if (fill) e.setAttribute("fill", fill); e.textContent = t; svg.appendChild(e); return e; };
+  const PC = {anon: "var(--accent)", cache: "var(--good)", dirty: "var(--warn)"};
+  function page(x, y, kind, faded) { svg.appendChild(el("rect", {x, y, width: 16, height: 14, rx: 2, fill: kind ? PC[kind] : "var(--card)", stroke: kind ? PC[kind] : "var(--line)", opacity: faded ? .45 : 1})); }
+  function task(cx, cy, name) { svg.appendChild(el("circle", {cx, cy, r: 9, fill: "var(--accent)"})); T(cx - 4, cy + 4, name, "hotT b", 10.5); }
+  function move(o, k) {
+    if (reduce) { svg.appendChild(el("line", {x1: o.from[0], y1: o.from[1], x2: o.to[0], y2: o.to[1], stroke: "var(--accent)", "stroke-dasharray": "3 3"})); return; }
+    const g = el("g");
+    if (o.page) g.appendChild(el("rect", {x: -8, y: -7, width: 16, height: 14, rx: 2, fill: PC[o.page], stroke: "var(--card)", "stroke-width": 1.5}));
+    else { g.appendChild(el("circle", {r: 9, fill: "var(--warn)", stroke: "var(--card)", "stroke-width": 1.5})); const t = el("text", {x: -4, y: 4, class: "hotT b", style: "font-size:10.5px"}); t.textContent = o.task; g.appendChild(t); }
+    svg.appendChild(el("path", {d: `M${o.from.join(" ")} L${o.to.join(" ")}`, fill: "none", stroke: "var(--accent)", "stroke-width": 1, "stroke-dasharray": "3 3", opacity: .45}));
+    g.appendChild(el("animateMotion", {dur: "1.6s", begin: `${k * 0.8}s`, repeatCount: "indefinite", path: `M${o.from.join(" ")} L${o.to.join(" ")}`}));
+    svg.appendChild(g);
+  }
+  function draw() {
+    svg.innerHTML = "";
+    const c = M[mode], v = Object.assign({}, BASE, c.v);
+    // vmstat line
+    const CW = {r: 16, b: 16, swpd: 26, free: 26, cache: 28, si: 21, so: 23, bi: 26, bo: 22, in: 27, cs: 30, us: 18, sy: 17, id: 17, wa: 18};
+    let cx = 4;
+    COLS.forEach(k => {
+      const w = CW[k], on = c.hl.includes(k);
+      if (on) svg.appendChild(el("rect", {x: cx - 2, y: 2, width: w, height: 36, rx: 4, fill: "var(--accent-soft)", stroke: "var(--accent)"}));
+      T(cx, 15, k, on ? "a b" : "m", 9);
+      T(cx, 32, String(v[k]), on ? "a b" : "", 9);
+      cx += w;
+    });
+    // CPU
+    svg.appendChild(el("rect", {x: 2, y: 46, width: 336, height: 106, rx: 10, fill: "none", stroke: "var(--muted)"}));
+    T(10, 59, "CPU · 4 cores", "b");
+    for (let i = 0; i < 4; i++) {
+      const [x, y] = CORE(i), t = (c.cores || [])[i];
+      svg.appendChild(el("rect", {x, y, width: 52, height: 44, rx: 6, class: t ? "boxA" : "box"}));
+      T(x + 5, y + 12, `core ${i}`, "m", 9.5);
+      if (t) task(x + 26, y + 28, t); else T(x + 14, y + 32, "idle", "m", 10);
+    }
+    svg.appendChild(el("rect", {x: 246, y: QUEUE[1], width: 88, height: 38, rx: 6, class: (c.queue || []).length ? "boxA" : "box"}));
+    T(250, QUEUE[1] + 11, "waiting for a core", "m", 9);
+    (c.queue || []).forEach((t, k) => task(262 + k * 22, QUEUE[1] + 26, t));
+    svg.appendChild(el("rect", {x: 246, y: DWAIT[1], width: 88, height: 38, rx: 6, class: (c.dwait || []).length ? "boxA" : "box"}));
+    T(250, DWAIT[1] + 11, "waiting for disk (D)", "m", 9);
+    (c.dwait || []).forEach((t, k) => task(262 + k * 22, DWAIT[1] + 26, t));
+    if (c.bar) {
+      const segs = [["us", v.us, "var(--accent)"], ["sy", v.sy, "var(--warn)"], ["id", v.id, "var(--line)"], ["wa", v.wa, "var(--bad)"]];
+      let x = 12; T(12, 126, "1 second of CPU time:", "m", 9.5);
+      segs.forEach(([n, p, col]) => { const w = p / 100 * 228; svg.appendChild(el("rect", {x, y: 130, width: w - 1, height: 16, rx: 3, fill: col, opacity: n === "id" ? 1 : .85})); T(x + 3, 142, w > 46 ? `${n} ${p}%` : n, n === "id" ? "b" : "hotT b", 9.5); x += w; });
+    }
+    // RAM
+    svg.appendChild(el("rect", {x: 2, y: 158, width: 336, height: 100, rx: 10, fill: "none", stroke: "var(--muted)"}));
+    T(10, 171, "RAM · 64 pages shown", "b");
+    for (let k = 0; k < 64; k++) { const [x, y] = cellR(k), kind = k < c.ram.anon ? "anon" : k < c.ram.anon + c.ram.cache ? "cache" : null; page(x, y, kind); }
+    // disk
+    svg.appendChild(el("rect", {x: 2, y: 264, width: 336, height: 76, rx: 10, fill: "none", stroke: "var(--muted)"}));
+    T(10, 277, "disk", "b");
+    svg.appendChild(el("rect", {x: 8, y: 282, width: 162, height: 52, rx: 6, class: c.disk === "files" ? "boxA" : "box"}));
+    T(14, 293, "files (filesystem)", c.disk === "files" ? "a b" : "m", 9.5);
+    for (let k = 0; k < 8; k++) { const [x, y] = cellF(k); page(x, y + 4, "cache", true); }
+    svg.appendChild(el("rect", {x: 172, y: 282, width: 162, height: 52, rx: 6, class: c.swap ? "boxA" : "box"}));
+    T(178, 293, "swap area", c.swap ? "a b" : "m", 9.5);
+    for (let k = 0; k < 16; k++) { const [x, y] = cellS(k); page(x, y + (k < 8 ? 4 : -14 + 18), k < (c.swap || 0) ? "anon" : null, true); }
+    if (c.irq) {
+      [[90, 300], [250, 300]].forEach(([x, y], k) => { if (reduce) return; const g = el("g"); g.appendChild(el("path", {d: "M0 -8 L-4 1 L1 1 L-2 9 L5 -2 L0 -2 Z", fill: "var(--warn)"}));
+        g.appendChild(el("animateMotion", {dur: "1.2s", begin: `${k * 0.6}s`, repeatCount: "indefinite", path: `M${x} ${y} L${60 + k * 116} 92`})); svg.appendChild(g); });
+      T(180, 352, "⚡ interrupt: device → CPU", "a", 10);
+    }
+    (c.mv || []).forEach(move);
+    // legend
+    const lg = [["anon", "process memory"], ["cache", "file data (cache)"], [null, "free page"]];
+    lg.forEach(([k, t], i) => { page(6 + i * 112, 360, k); T(26 + i * 112, 371, t, "m", 10); });
+    say.innerHTML = c.say;
+  }
+  document.querySelectorAll("#l14btns [data-m]").forEach(b => b.onclick = () => { mode = b.dataset.m; document.querySelectorAll("#l14btns [data-m]").forEach(x => x.setAttribute("aria-pressed", x === b)); draw(); });
   draw();
 })();
 
