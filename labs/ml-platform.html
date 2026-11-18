@@ -951,16 +951,26 @@ const hwMap = (id, on = {}) => {
       calls: ["ddp(xb)", "DDP.forward", "model.forward L1→L6", "autograd records graph", "kernels on compute stream"],
       reads: ["DDP: broadcast_buffers", "your model.forward()"],
       say: "<b>Forward.</b> Same W (A) on every rank, different xb → different outputs and losses. Kernels run on the <b>compute stream</b> and write <b>activations</b> to GPU memory. <b>No gradient communication</b> (only BatchNorm-style buffers, if the model has them, are broadcast here)."},
-    {code: [12], z: {main: "loss.backward()", compute: "L6, L5 grads", mem: 1, comm: "all_reduce(A) ⇄", link: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad g0 (L6 L5)"], bA: ["h", "A full"], bB: "p", bC: "p"}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} · A ⇄"]},
-      mv: [["compute", "grad"], ["grad", "bA"], ...OTHERSg(["bA", "comm", "link"]), ...BACK(["link", "comm", "bA"])],
-      calls: ["loss.backward()", "autograd engine", "L6, L5 grad → hook", "Reducer: A full", "all_reduce(A, async)", "NCCL ⇄ all ranks"],
+    {code: [12], z: {main: "loss.backward()", compute: "L6 grad", mem: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad L6"], bA: ["h", "A 1/2"], bB: "p", bC: "p"}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} L6 · A 1/2"]},
+      mv: [["compute", "grad"], ["grad", "bA"]],
+      calls: ["loss.backward()", "autograd engine", "L6 grad ready → hook", "Reducer: L6 → bucket A (1/2)"],
       reads: ["DDP: bucket_cap_mb, no_sync() context, find_unused_parameters"],
-      say: "<b>Backward.</b> The <b>autograd engine</b> computes L6, then L5 grads. Each finished grad fires DDP's <b>hook</b> → copied into bucket A. Every rank is doing the same on <b>its</b> data, so the grads differ: <b>g0, g1, g2, g3</b>. Who copies? The <b>hook</b> (DDP Reducer) puts each grad into its slot in the bucket buffer; <b>NCCL</b> then reads that buffer and does the sending. Every rank fills A at about the same time and calls <code>all_reduce(A)</code>; NCCL waits until <b>all</b> ranks have joined, then each one <b>sends its part and receives the others'</b> (e.g. around a ring — the dots go both ways). The averaged result is written <b>back into bucket A</b> in place; the bucket is not emptied."},
-    {code: [12], z: {main: "loss.backward()", compute: "L4 … L1 grads", mem: 1, comm: "all_reduce(B), (C) ⇄", link: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad g0 all"], bA: "p", bB: ["h", "B full"], bC: ["h", "C full"]}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} · B, C ⇄"]},
-      mv: [["compute", "bB"], ["compute", "bC"], ...OTHERSg(["bB", "comm", "link"]), ...BACK(["link", "comm", "bB"])],
-      calls: ["autograd: L4 → L1", "hooks: B, C full", "all_reduce(B), (C)", "comm overlaps compute"],
+      say: "<b>Backward starts at the last layer.</b> The <b>autograd engine</b> (not DDP) computes L6's grad. That fires DDP's <b>hook</b>, which puts it into its slot in bucket A. A holds L6 + L5, so it's only <b>half full</b> → nothing is sent yet. Every other rank is doing the same with its own data (g1, g2, g3)."},
+    {code: [12], z: {main: "loss.backward()", compute: "L5 grad", mem: 1, comm: "all_reduce(A) ⇄", link: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad L6 L5"], bA: ["h", "A full ⇄"], bB: "p", bC: "p"}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} · A ⇄"]},
+      mv: [["compute", "grad"], ["grad", "bA"], ...OTHERSg(["bA", "comm", "link"]), ...BACK(["link", "comm", "bA"])],
+      calls: ["L5 grad ready → hook", "Reducer: A full", "all_reduce(A, async)", "NCCL ⇄ all ranks"],
       reads: ["DDP: bucket_cap_mb"],
-      say: "<b>Overlap.</b> While NCCL exchanges A, the compute stream keeps going: L4…L1. (This one press covers four layers; in reality B fills after L4+L3 and C after L2+L1, one by one — see the timeline in Training 8.) Every rank is at the same point of its own backward, so each sends and receives B and C too. If one rank is slower, the others wait for it at that bucket's all-reduce: a collective needs <b>everyone</b>."},
+      say: "<b>L5 done → bucket A is full.</b> Who copies? The <b>hook</b> (DDP Reducer) put each grad into the bucket buffer; <b>NCCL</b> reads that buffer and does the sending. Every rank fills A at about the same time and calls <code>all_reduce(A)</code>; NCCL waits until <b>all</b> ranks have joined, then each one <b>sends its part and receives the others'</b> (dot colour = sender). The averaged result is written <b>back into bucket A</b>; the bucket is not emptied."},
+    {code: [12], z: {main: "loss.backward()", compute: "L4, L3 grads", mem: 1, comm: "all_reduce(B) ⇄", link: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad L6 … L3"], bA: ["p", "A ✓ averaged"], bB: ["h", "B full ⇄"], bC: "p"}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} · B ⇄"]},
+      mv: [["compute", "grad"], ["grad", "bB"], ...OTHERSg(["bB", "comm", "link"]), ...BACK(["link", "comm", "bB"])],
+      calls: ["autograd: L4, L3", "hooks → bucket B", "Reducer: B full", "all_reduce(B, async)", "NCCL ⇄ all ranks"],
+      reads: ["DDP: bucket_cap_mb"],
+      say: "<b>Overlap.</b> While NCCL was exchanging A on the comm stream, the compute stream kept going: L4, then L3. Now B is full → its all-reduce starts, again on every rank (Training 8 shows this as a timeline)."},
+    {code: [12], z: {main: "loss.backward()", compute: "L2, L1 grads", mem: 1, comm: "all_reduce(C) ⇄", link: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad all layers"], bA: ["p", "A ✓ averaged"], bB: ["p", "B ✓ averaged"], bC: ["h", "C full ⇄"]}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} · C ⇄"]},
+      mv: [["compute", "grad"], ["grad", "bC"], ...OTHERSg(["bC", "comm", "link"]), ...BACK(["link", "comm", "bC"])],
+      calls: ["autograd: L2, L1", "hooks → bucket C", "Reducer: C full", "all_reduce(C, async)", "NCCL ⇄ all ranks"],
+      reads: ["DDP: bucket_cap_mb"],
+      say: "<b>Last layers.</b> L2, L1 → C full → exchanged. A collective needs <b>everyone</b>: if one rank is slower, the others wait for it at this bucket's all-reduce."},
     {code: [12], z: {main: "backward() returns", compute: "(waits)", mem: 1, comm: "all done", others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad = avg of 4"], bA: "p", bB: "p", bC: "p"}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "= avg of 4"]},
       mv: [["bA", "grad"], ["bC", "grad"]],
       calls: ["Reducer waits A, B, C", "average over 4 ranks", "write into p.grad", "backward() returns"],
@@ -1020,6 +1030,34 @@ const hwMap = (id, on = {}) => {
       else if (st.o.d) rchip(CY + 46, st.o.d[0], fill(st.o.d[1]));
     }
     T(10, 494, "differs per rank: indices, batch, .grad (until averaged) · same: W", "m", 10.5);
+    // hold the previous look of changed chips until the moving dots arrive
+    const firstFan = st.mv.findIndex(x => x.includes("bus"));
+    const kks = st.mv.map((m, k) => m.includes("bus") ? firstFan : k);
+    const revealAt = (!reduce && st.mv.length) ? 150 + (Math.max(...kks) + 1) * 900 : 0;
+    const prev = S[s - 1];
+    if (revealAt && prev) {
+      const g = el("g"); svg.appendChild(g);
+      const put = (x, y, w, h, pv, lab, col) => {
+        g.appendChild(el("rect", {x: x - 1, y: y - 1, width: w + 2, height: h + 2, fill: "var(--card)"}));
+        if (!pv) return;
+        let v = pv, lb = lab; if (Array.isArray(pv)) { v = pv[0]; lb = pv[1]; }
+        const hot = v === "h", dead = v === "d";
+        g.appendChild(el("rect", {x, y, width: w, height: h, rx: 5, fill: col ? "var(--card)" : (hot ? "var(--accent)" : "var(--good-soft)"), stroke: col || (hot ? "var(--accent)" : "var(--good)"), "stroke-width": 1.5, "stroke-dasharray": dead ? "4 3" : ""}));
+        g.appendChild(el("text", {x: x + 5, y: y + h / 2 + 4, class: "b", style: "font-size:10.5px", fill: col || (hot ? "#fff" : "var(--fg)")}, lb));
+      };
+      for (const [id, [x, y, w, label]] of Object.entries(C)) {
+        const v = st.c[id], pv = prev.c[id];
+        if (!v || JSON.stringify(v) === JSON.stringify(pv)) continue;
+        put(x, y, w, 22, pv ? (Array.isArray(pv) ? ["p", pv[1]] : ["p", label]) : null, label);
+      }
+      for (let i = 1; i < NR; i++) {
+        const fillT = t => t.replace("{i}", i).replace("{L}", INIT[i]), x0 = CX(i);
+        const rowNow = st.o.g || st.o.d, rowPrev = prev.o.g || prev.o.d;
+        if (rowNow && JSON.stringify(rowNow) !== JSON.stringify(rowPrev)) put(x0 + 4, CY + 46, 97, 20, rowPrev ? ["p", fillT(rowPrev[1])] : null, "", RC[i]);
+        if (st.o.W && JSON.stringify(st.o.W) !== JSON.stringify(prev.o.W)) put(x0 + 4, CY + 21, 97, 20, prev.o.W ? ["p", fillT(prev.o.W[1])] : null, "", RC[i]);
+      }
+      setTimeout(() => g.remove(), revealAt);
+    }
     if (!reduce) st.mv.forEach((m, k) => {
       const pts = m.map(n => P[n]), d = "M" + pts.map(p => p.join(" ")).join(" L");
       svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.2, "stroke-dasharray": "3 3", opacity: .4}));
@@ -1037,7 +1075,7 @@ const hwMap = (id, on = {}) => {
     callsEl.innerHTML = st.calls.length ? '<span class="lbl">calls:</span>' + st.calls.map(c => `<span>${esc(c)}</span>`).join("<i>→</i>") : "";
     if (st.reads && st.reads.length) callsEl.innerHTML += '<div style="flex-basis:100%;height:2px"></div><span class="lbl">reads:</span>' + st.reads.map(c => `<span class="rd">${esc(c)}</span>`).join(" ");
     code.innerHTML = LINES.map(([t, c], i) => `<span class="ln${st.code.includes(i) ? " on" : ""}">${esc(t)}${c ? "  <span class=\"cm\">" + esc(c) + "</span>" : ""}</span>`).join("");
-    const lbl = ["0", "1a", "1b", "2", "3", "4", "5", "6", "7", "8", "9"][s];
+    const lbl = ["0", "1a", "1b", "2", "3", "4", "5", "6a", "6b", "7a", "7b", "8", "9"][s];
     say.innerHTML = `<b>${lbl}/9</b> · ` + st.say;
   }
   document.getElementById("l11anext").onclick = () => { if (s < S.length - 1) { s++; draw(); } };
