@@ -9,18 +9,21 @@
   :root{
     --bg:#f6f5f2; --card:#ffffff; --fg:#1d1d1f; --muted:#6b6b70; --line:#d9d7d1;
     --accent:#2f6fde; --accent-soft:#e7f0fd; --good:#2e8b57; --good-soft:#e3f3ea; --warn:#c77c11; --bad:#c2453a; --bad-soft:#f8e5e3;
+    --r1:#d97706; --r1-soft:#fdf0e1; --r2:#8b5cf6; --r2-soft:#f1ebfe; --r3:#db2777; --r3-soft:#fce7f1;
     --chip:#ecebe7; --shadow:0 1px 2px rgba(0,0,0,.06),0 6px 24px rgba(0,0,0,.06);
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       --bg:#141416; --card:#1e1e22; --fg:#ececef; --muted:#9a9aa3; --line:#34343a;
       --accent:#7aa7ff; --accent-soft:#1f2b44; --good:#5fc48a; --good-soft:#1c3327; --warn:#e2a64a; --bad:#ef7b70; --bad-soft:#3a2120;
+    --r1:#f5a94f; --r1-soft:#3a2a17; --r2:#b49bfb; --r2-soft:#2a2240; --r3:#f47fb2; --r3-soft:#3d1b2c;
       --chip:#2a2a30; --shadow:none;
     }
   }
   :root[data-theme="dark"]{
     --bg:#141416; --card:#1e1e22; --fg:#ececef; --muted:#9a9aa3; --line:#34343a;
     --accent:#7aa7ff; --accent-soft:#1f2b44; --good:#5fc48a; --good-soft:#1c3327; --warn:#e2a64a; --bad:#ef7b70; --bad-soft:#3a2120;
+    --r1:#f5a94f; --r1-soft:#3a2a17; --r2:#b49bfb; --r2-soft:#2a2240; --r3:#f47fb2; --r3-soft:#3d1b2c;
     --chip:#2a2a30; --shadow:none;
   }
   *{box-sizing:border-box}
@@ -913,6 +916,7 @@ const hwMap = (id, on = {}) => {
   const OTHERSg = (from) => [...Array(NR - 1).keys()].map(k => [...from, "bus", "r" + (k + 1) + "g"]);
   const BACK = (to) => [...Array(NR - 1).keys()].map(k => ["r" + (k + 1) + "g", "bus", ...to]); // other ranks → rank 0 (all-reduce is two-way)
   const INIT = ["A", "B", "C", "D"];
+  const RC = ["var(--accent)", "var(--r1)", "var(--r2)", "var(--r3)"]; // one colour per rank
   // o = other ranks' chips: W / d (data) / g (.grad); "{i}" → rank number, "{L}" → its initial weights letter
   const S = [
     {code: [], z: {}, c: {Wram: ["p", "W·A"]}, o: {W: ["p", "W·{L} (RAM)"]}, mv: [], calls: [],
@@ -985,14 +989,20 @@ const hwMap = (id, on = {}) => {
     svg.appendChild(el("line", {x1: CX(1) + 52, y1: 392, x2: CX(NR - 1) + 52, y2: 392, stroke: busCol, "stroke-width": 2}));
     for (let i = 1; i < NR; i++) svg.appendChild(el("line", {x1: CX(i) + 52, y1: 392, x2: CX(i) + 52, y2: CY, stroke: busCol, "stroke-width": 2}));
     for (const [id, [x, y, w, h, title, def]] of Object.entries(Z)) {
-      const on = id.startsWith("r") && /^r\d$/.test(id) ? st.z.others != null : st.z[id] != null;
+      const isR = /^r\d$/.test(id), on = isR ? st.z.others != null : st.z[id] != null;
+      if (isR) {
+        const c = RC[+id[1]];
+        svg.appendChild(el("rect", {x, y, width: w, height: h, rx: 7, fill: on ? `var(--r${id[1]}-soft)` : "var(--card)", stroke: c, "stroke-width": on ? 2 : 1.5}));
+        const tt = el("text", {x: x + 7, y: y + 14, class: "b", style: "font-size:10.5px", fill: c}, title); svg.appendChild(tt);
+        continue;
+      }
       svg.appendChild(el("rect", {x, y, width: w, height: h, rx: 7, class: on ? "boxA" : "box"}));
-      if (title) T(x + 7, y + 14, title, on ? "a b" : "b", /^r\d$/.test(id) ? 10.5 : 11);
+      if (title) T(x + 7, y + 14, title, on ? "a b" : "b", 11);
       if (id === "main" || id === "workers" || id === "compute" || id === "comm") T(x + 7, y + 34, typeof st.z[id] === "string" ? st.z[id] : def, on ? "a b" : "m");
     }
     T(196, 170, "PCIe (inside one machine)", st.z.pcie ? "a b" : "m", 10.5);
     T(180, 355, "NVLink / network", st.z.link ? "a b" : "m");
-    T(10, 355, "● = data moving", "m", 10.5);
+    T(10, 355, "● colour = which rank sent it", "m", 10.5);
     T(10, 382, "other ranks: same code, same time", "m", 10.5);
     for (const [id, [x, y, w, label]] of Object.entries(C)) {
       let v = st.c[id]; if (!v) continue;
@@ -1002,15 +1012,19 @@ const hwMap = (id, on = {}) => {
     for (let i = 1; i < NR; i++) {
       const fill = t => t.replace("{i}", i).replace("{L}", INIT[i]);
       const x0 = CX(i);
-      if (st.o.W) chip(x0 + 4, CY + 21, 97, 20, st.o.W[0], fill(st.o.W[1]));
-      if (st.o.g) chip(x0 + 4, CY + 46, 97, 20, st.o.g[0], fill(st.o.g[1]));
-      else if (st.o.d) chip(x0 + 4, CY + 46, 97, 20, st.o.d[0], fill(st.o.d[1]));
+      const rchip = (y, v, lab) => { const hot = v === "h", dead = v === "d";
+        svg.appendChild(el("rect", {x: x0 + 4, y, width: 97, height: 20, rx: 5, fill: hot ? RC[i] : "var(--card)", stroke: RC[i], "stroke-width": 1.5, "stroke-dasharray": dead ? "4 3" : "", opacity: dead ? .7 : 1}));
+        const tx = el("text", {x: x0 + 9, y: y + 14, class: "b", style: "font-size:10.5px", fill: hot ? "#fff" : RC[i]}, lab); svg.appendChild(tx); };
+      if (st.o.W) rchip(CY + 21, st.o.W[0], fill(st.o.W[1]));
+      if (st.o.g) rchip(CY + 46, st.o.g[0], fill(st.o.g[1]));
+      else if (st.o.d) rchip(CY + 46, st.o.d[0], fill(st.o.d[1]));
     }
     T(10, 494, "differs per rank: indices, batch, .grad (until averaged) · same: W", "m", 10.5);
     if (!reduce) st.mv.forEach((m, k) => {
       const pts = m.map(n => P[n]), d = "M" + pts.map(p => p.join(" ")).join(" L");
       svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.2, "stroke-dasharray": "3 3", opacity: .4}));
-      const dot = el("circle", {r: 5.5, fill: "var(--accent)", stroke: "var(--card)", "stroke-width": 1.5, cx: pts[0][0], cy: pts[0][1]});
+      const sender = /^r(\d)/.test(m[0]) ? +m[0][1] : 0, dc = RC[sender];
+      const dot = el("circle", {r: 5.5, fill: dc, stroke: "var(--card)", "stroke-width": 1.5, cx: pts[0][0], cy: pts[0][1]});
       svg.appendChild(dot);
       const a = el("animateMotion", {dur: "0.9s", begin: "indefinite", fill: "freeze", path: "M0 0 " + pts.slice(1).map(p => `L${p[0] - pts[0][0]} ${p[1] - pts[0][1]}`).join(" ")});
       dot.appendChild(a); dot.setAttribute("opacity", 0);
