@@ -911,6 +911,7 @@ const hwMap = (id, on = {}) => {
   for (let i = 1; i < NR; i++) { P["r" + i + "W"] = [CX(i) + 26, CY + 32]; P["r" + i + "g"] = [CX(i) + 52, CY + 56]; }
   const OTHERS = (from) => [...Array(NR - 1).keys()].map(k => [...from, "bus", "r" + (k + 1) + "W"]);
   const OTHERSg = (from) => [...Array(NR - 1).keys()].map(k => [...from, "bus", "r" + (k + 1) + "g"]);
+  const BACK = (to) => [...Array(NR - 1).keys()].map(k => ["r" + (k + 1) + "g", "bus", ...to]); // other ranks → rank 0 (all-reduce is two-way)
   const INIT = ["A", "B", "C", "D"];
   // o = other ranks' chips: W / d (data) / g (.grad); "{i}" → rank number, "{L}" → its initial weights letter
   const S = [
@@ -926,17 +927,17 @@ const hwMap = (id, on = {}) => {
       calls: ["DDP(model)", "① broadcast(W) from rank 0 → NCCL", "② Reducer: buckets + a hook per parameter (every rank)", "sampler learns its rank"],
       reads: ["DDP: device_ids, bucket_cap_mb=25, broadcast_buffers=True", "sampler: rank, num_replicas=4 (from torchrun env), shuffle=True, seed=0, drop_last=False"],
       say: "<b>1b · DDP(model), once.</b> ① <b>broadcast</b>: NCCL copies rank 0's W over NVLink/network onto every other rank → all four now hold <b>A</b>. Without this, ranks would start different and stay different, because DDP only averages <b>gradients</b>. This is <b>not</b> the Reducer. ② On every rank the <b>Reducer</b> allocates buckets in GPU memory and registers a <b>hook on every parameter</b> (each layer's weight and bias)."},
-    {code: [6, 7], z: {main: "sampler.set_epoch(e)", ram: 1, others: 1}, c: {W: ["p", "W·A"], bA: "p", bB: "p", bC: "p", idx: ["h", "my ¼"]}, o: {W: ["p", "W·A"], d: ["h", "¼ #{i}"]},
+    {code: [6, 7], z: {main: "sampler.set_epoch(e)", ram: 1, others: 1}, c: {W: ["p", "W·A"], bA: "p", bB: "p", bC: "p", idx: ["h", "idx: my ¼"]}, o: {W: ["p", "W·A"], d: ["h", "idx: ¼ #{i}"]},
       mv: [["main", "idx"]],
       calls: ["sampler.set_epoch(e)", "stores epoch = e"],
       reads: ["sampler: epoch"],
-      say: "<b>Each epoch.</b> <code>set_epoch</code> only <b>stores</b> the epoch number. When the loop starts iterating, every rank shuffles the whole index list with seed = seed + epoch (<b>same order everywhere</b>) and keeps <b>its own positions</b>: every 4th one, starting at its rank number. Four disjoint quarters (Training 4)."},
-    {code: [8], z: {main: "next(loader)", workers: "dataset[i] ×32, collate", ram: 1, others: 1}, c: {W: ["p", "W·A"], bA: "p", bB: "p", bC: "p", idx: ["p", "my ¼"], samples: "h", batch: "h"}, o: {W: ["p", "W·A"], d: ["h", "batch {i}"]},
+      say: "<b>Each epoch.</b> <code>set_epoch</code> only <b>stores</b> the epoch number. When the loop starts iterating, every rank shuffles the whole index list with seed = seed + epoch (<b>same order everywhere</b>) and keeps <b>its own positions</b>: every 4th one, starting at its rank number. Four disjoint quarters (Training 4). The chip in RAM is only that <b>list of index numbers</b> — no data yet; the samples are read in the next step."},
+    {code: [8], z: {main: "next(loader)", workers: "dataset[i] ×32, collate", ram: 1, others: 1}, c: {W: ["p", "W·A"], bA: "p", bB: "p", bC: "p", idx: ["p", "idx: my ¼"], samples: "h", batch: "h"}, o: {W: ["p", "W·A"], d: ["h", "batch {i}"]},
       mv: [["idx", "wk"], ["wk", "batch"]],
       calls: ["next(loader)", "sampler → 32 indices", "worker: dataset[i] × 32", "collate → shared memory", "pin thread → pinned RAM"],
       reads: ["DataLoader: batch_size=32, num_workers=2, pin_memory=True, persistent_workers=False, collate_fn", "sampler: seed + epoch, rank, num_replicas"],
       say: "<b>Data, on the CPU.</b> A <b>worker process</b> calls your <code>dataset[i]</code> 32 times and collates one batch; a pin-memory thread copies it into <b>pinned RAM</b> (Training 2, 5). Every other rank does the same with <b>its</b> indices → <b>4 different batches</b>. This is where DDP's speedup comes from: each GPU works on different samples."},
-    {code: [9], z: {main: "xb.cuda()", ram: 1, pcie: 1, mem: 1, others: 1}, c: {W: ["p", "W·A"], bA: "p", bB: "p", bC: "p", idx: ["p", "my ¼"], batch: "p", xb: "h"}, o: {W: ["p", "W·A"], d: ["h", "xb {i}"]},
+    {code: [9], z: {main: "xb.cuda()", ram: 1, pcie: 1, mem: 1, others: 1}, c: {W: ["p", "W·A"], bA: "p", bB: "p", bC: "p", idx: ["p", "idx: my ¼"], batch: "p", xb: "h"}, o: {W: ["p", "W·A"], d: ["h", "xb {i}"]},
       mv: [["batch", "pcie", "xb"]],
       calls: ["xb.cuda()", "PCIe copy: batch → GPU", "xb in GPU memory"],
       reads: [".cuda(non_blocking=…)"],
@@ -947,15 +948,15 @@ const hwMap = (id, on = {}) => {
       reads: ["DDP: broadcast_buffers", "your model.forward()"],
       say: "<b>Forward.</b> Same W (A) on every rank, different xb → different outputs and losses. Kernels run on the <b>compute stream</b> and write <b>activations</b> to GPU memory. <b>No gradient communication</b> (only BatchNorm-style buffers, if the model has them, are broadcast here)."},
     {code: [12], z: {main: "loss.backward()", compute: "L6, L5 grads", mem: 1, comm: "all_reduce(A) ⇄", link: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad g0 (L6 L5)"], bA: ["h", "A full"], bB: "p", bC: "p"}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} · A ⇄"]},
-      mv: [["compute", "grad"], ["grad", "bA"], ...OTHERSg(["bA", "comm", "link"])],
+      mv: [["compute", "grad"], ["grad", "bA"], ...OTHERSg(["bA", "comm", "link"]), ...BACK(["link", "comm", "bA"])],
       calls: ["loss.backward()", "autograd engine", "L6, L5 grad → hook", "Reducer: A full", "all_reduce(A, async)", "NCCL ⇄ all ranks"],
       reads: ["DDP: bucket_cap_mb, no_sync() context, find_unused_parameters"],
-      say: "<b>Backward.</b> The <b>autograd engine</b> computes L6, then L5 grads. Each finished grad fires DDP's <b>hook</b> → copied into bucket A. Every rank is doing the same on <b>its</b> data, so the grads differ: <b>g0, g1, g2, g3</b>. A is full → async <code>all_reduce(A)</code>: NCCL <b>exchanges</b> bucket A among all four ranks (each sends and receives, e.g. around a ring)."},
+      say: "<b>Backward.</b> The <b>autograd engine</b> computes L6, then L5 grads. Each finished grad fires DDP's <b>hook</b> → copied into bucket A. Every rank is doing the same on <b>its</b> data, so the grads differ: <b>g0, g1, g2, g3</b>. Who copies? The <b>hook</b> (DDP Reducer) puts each grad into its slot in the bucket buffer; <b>NCCL</b> then reads that buffer and does the sending. Every rank fills A at about the same time and calls <code>all_reduce(A)</code>; NCCL waits until <b>all</b> ranks have joined, then each one <b>sends its part and receives the others'</b> (e.g. around a ring — the dots go both ways). The averaged result is written <b>back into bucket A</b> in place; the bucket is not emptied."},
     {code: [12], z: {main: "loss.backward()", compute: "L4 … L1 grads", mem: 1, comm: "all_reduce(B), (C) ⇄", link: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad g0 all"], bA: "p", bB: ["h", "B full"], bC: ["h", "C full"]}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} · B, C ⇄"]},
-      mv: [["compute", "bB"], ["compute", "bC"], ...OTHERSg(["bB", "comm", "link"])],
+      mv: [["compute", "bB"], ["compute", "bC"], ...OTHERSg(["bB", "comm", "link"]), ...BACK(["link", "comm", "bB"])],
       calls: ["autograd: L4 → L1", "hooks: B, C full", "all_reduce(B), (C)", "comm overlaps compute"],
       reads: ["DDP: bucket_cap_mb"],
-      say: "<b>Overlap.</b> While NCCL exchanges A, the compute stream keeps going: L4…L1. B and C fill up and are exchanged too (Training 8)."},
+      say: "<b>Overlap.</b> While NCCL exchanges A, the compute stream keeps going: L4…L1. (This one press covers four layers; in reality B fills after L4+L3 and C after L2+L1, one by one — see the timeline in Training 8.) Every rank is at the same point of its own backward, so each sends and receives B and C too. If one rank is slower, the others wait for it at that bucket's all-reduce: a collective needs <b>everyone</b>."},
     {code: [12], z: {main: "backward() returns", compute: "(waits)", mem: 1, comm: "all done", others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad = avg of 4"], bA: "p", bB: "p", bC: "p"}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "= avg of 4"]},
       mv: [["bA", "grad"], ["bC", "grad"]],
       calls: ["Reducer waits A, B, C", "average over 4 ranks", "write into p.grad", "backward() returns"],
