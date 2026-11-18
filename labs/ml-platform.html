@@ -31,6 +31,7 @@
   h1{font-size:20px;margin:0 0 2px}
   .sub{color:var(--muted);font-size:13.5px;margin:0}
   .sub a{color:var(--accent)}
+  .hw{margin:6px 0 2px}
   .toc2{margin:12px 0 4px;display:flex;flex-direction:column;gap:8px}
   .tocrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .toclbl{font-size:12.5px;font-weight:700;color:var(--muted);width:100%}
@@ -113,9 +114,9 @@
 <section id="lab11a">
   <span class="tag">DDP · D10</span>
   <h2>Training 1 · One DDP training step: where does the data go, and who calls whom?</h2>
-  <p class="why">Rank 0 of 2, a 6-layer model (L1–L6), 3 gradient buckets. The map is the hardware: <b>CPU</b> (processes + RAM) on top, <b>GPU</b> (memory + 2 streams) below, joined by <b>PCIe</b>. The <b>comm stream</b> is where <b>NCCL</b>, the GPU-to-GPU communication library, runs all-reduce and broadcast. Each press runs one part of the loop: the <b>●</b> shows data moving, <b>calls</b> shows which functions run, in order, and <b>reads</b> shows which settings they read.</p>
+  <p class="why">4 ranks (one process + one GPU each, <code>torchrun --nproc_per_node=4</code>), a 6-layer model (L1–L6), 3 gradient buckets. The big map is <b>rank 0</b>: <b>CPU</b> (processes + RAM) on top, <b>GPU</b> (memory + 2 streams) below, joined by <b>PCIe</b>. The cards at the bottom are <b>ranks 1–3</b>, doing the same steps at the same time, so you can see what's <b>different</b> (data, gradients) and what's <b>the same</b> (weights). The <b>comm stream</b> is where <b>NCCL</b>, the GPU-to-GPU communication library, runs all-reduce and broadcast. Each press runs one part of the loop: the <b>●</b> shows data moving, <b>calls</b> shows which functions run, in order, and <b>reads</b> shows which settings they read.</p>
   <div class="controls"><button class="primary" id="l11anext">Next ▶</button><button id="l11aback">◀ Back</button><button id="l11areset">Reset</button></div>
-  <svg id="l11a" viewBox="0 0 340 372" aria-label="hardware map of one DDP step"></svg>
+  <svg id="l11a" viewBox="0 0 340 502" aria-label="hardware map of one DDP step"></svg>
   <div class="calls" id="l11acalls"></div>
   <pre class="code" id="l11acode" aria-label="training loop"></pre>
   <div class="say" id="l11asay"></div>
@@ -125,6 +126,7 @@
 <section id="lab1">
   <span class="tag">DDP · DL1</span>
   <h2>Training 2 · Who drives <code>for xb, yb in loader</code>?</h2>
+  <svg class="hw" id="hw-lab1" viewBox="0 0 340 128" aria-label="where it runs: CPU or GPU"></svg>
   <p class="why">Step through one rank (rank 0 of 2, batch_size = 3). Watch who asks whom.</p>
   <svg id="l1" viewBox="0 0 340 250" aria-label="DataLoader loop"></svg>
   <div class="controls">
@@ -139,6 +141,7 @@
 <section id="lab2">
   <span class="tag">DDP · D1 / D2</span>
   <h2>Training 3 · What changes when you remove the DistributedSampler?</h2>
+  <svg class="hw" id="hw-lab2" viewBox="0 0 340 128" aria-label="where it runs: CPU or GPU"></svg>
   <p class="why">Two ranks, a dataset of 8 samples. Toggle the sampler and run one epoch.</p>
   <div class="controls">
     <button id="l2on" aria-pressed="true">With sampler</button>
@@ -158,6 +161,7 @@
 <section id="lab6">
   <span class="tag">DDP · W2</span>
   <h2>Training 4 · What does <code>set_epoch</code> change — and why don't ranks overlap?</h2>
+  <svg class="hw" id="hw-lab6" viewBox="0 0 340 128" aria-label="where it runs: CPU or GPU"></svg>
   <p class="why">10 samples (1–10), 2 ranks. <code>DistributedSampler</code> does 3 things on <b>every rank</b>: ① start from the full list, ② shuffle it with a seed, ③ keep only <b>its own positions</b> (rank 0: 1st, 3rd, 5th… · rank 1: 2nd, 4th, 6th…). The split is by <b>position</b>, not by value.</p>
   <div class="controls">
     <button data-m="f" aria-pressed="false">shuffle=False</button>
@@ -175,6 +179,7 @@
 <section id="lab7">
   <span class="tag">DDP · W1</span>
   <h2>Training 5 · What do DataLoader workers do while the GPU trains?</h2>
+  <svg class="hw" id="hw-lab7" viewBox="0 0 340 128" aria-label="where it runs: CPU or GPU"></svg>
   <p class="why">One rank. Loading a batch takes 2 units of CPU time; training on it takes 1 unit of GPU time.</p>
   <div class="controls">
     <button id="l7a" aria-pressed="true">num_workers=0</button>
@@ -194,6 +199,7 @@
 <section id="lab3">
   <span class="tag">DDP · U2 / M1</span>
   <h2>Training 6 · Where did the 24 seconds go?</h2>
+  <svg class="hw" id="hw-lab3" viewBox="0 0 340 128" aria-label="where it runs: CPU or GPU"></svg>
   <p class="why">Proportions from my <code>dataloader_benchmark.py</code> run (2 epochs, 2 workers). Toggle the setting and play.</p>
   <div class="controls">
     <button id="l3f" aria-pressed="true">persistent_workers=False</button>
@@ -213,6 +219,7 @@
 <section id="lab5">
   <span class="tag">DDP · W2</span>
   <h2>Training 7 · Why <code>zero_grad()</code> every step?</h2>
+  <svg class="hw" id="hw-lab5" viewBox="0 0 340 128" aria-label="where it runs: CPU or GPU"></svg>
   <p class="why">Three training steps. Each <code>backward()</code> produces a fresh gradient — watch what lands in <code>.grad</code>.</p>
   <div class="controls">
     <button id="l5on" aria-pressed="true">with zero_grad()</button>
@@ -229,7 +236,8 @@
 <section id="lab11">
   <span class="tag">DDP · D10</span>
   <h2>Training 8 · Buckets &amp; hooks: when does all-reduce start?</h2>
-  <p class="why"><b>compute</b> = backward kernels on the GPU (producer). <b>network</b> = NCCL all-reducing a full bucket with rank 1 — both ranks send and receive (consumer). They run at the same time on separate GPU streams. New to hooks/NCCL? Do Training 1 first.</p>
+  <svg class="hw" id="hw-lab11" viewBox="0 0 340 128" aria-label="where it runs: CPU or GPU"></svg>
+  <p class="why"><b>compute</b> = backward kernels on the GPU (producer). <b>comm</b> = the GPU's <b>comm stream</b>, where NCCL exchanges a full bucket with the other GPUs (consumer). The data travels over <b>NVLink</b> between GPUs in the same machine, or over the <b>network card</b> (InfiniBand / Ethernet) between machines. They run at the same time on separate GPU streams. New to hooks/NCCL? Do Training 1 first.</p>
   <p class="why"><b>NCCL</b> (NVIDIA Collective Communications Library) is the library that actually moves the data between GPUs. It runs collective operations such as all-reduce and broadcast as GPU kernels and picks the fastest path (NVLink, PCIe or the network). DDP's Reducer only <i>asks</i> for "all-reduce bucket A"; NCCL does it. You select it with <code>init_process_group(backend="nccl")</code>.</p>
   <p class="why">A 6-layer model. <code>backward()</code> runs from the <b>last</b> layer (L6) to the first (L1); each layer's gradient takes 1 time unit. Every all-reduce costs a fixed 1.1 units of overhead + 0.25 per layer it carries. One press = one layer's gradient is ready.</p>
   <div class="controls">
@@ -253,6 +261,7 @@
 <section id="lab10">
   <span class="tag">DDP · D9</span>
   <h2>Training 9 · Gradient accumulation: all-reduce every micro-batch, or once?</h2>
+  <svg class="hw" id="hw-lab10" viewBox="0 0 340 128" aria-label="where it runs: CPU or GPU"></svg>
   <p class="why">Goal: one weight update from <b>128 samples</b> per rank. 2 ranks; each backward sends gradients in 2 buckets (buckets: Training 8). Two separate knobs: <b>accumulation</b> (feed 32 at a time, step every 4) cuts <b>memory</b>; <b>no_sync</b> cuts <b>communication</b>.</p>
   <div class="controls">
     <button data-m="full" aria-pressed="false">A: batch 128 (fits)</button>
@@ -353,6 +362,25 @@ const arrowDefs = svg => { const d = el("defs"); const m = el("marker", {id: svg
 const box = (svg, x, y, w, h, cls, label, sub) => { svg.appendChild(el("rect", {x, y, width: w, height: h, rx: 8, class: cls})); if (label) svg.appendChild(el("text", {x: x + 10, y: y + (sub ? h / 2 - 2 : h / 2 + 4), class: cls === "hot" ? "hotT b" : "b"}, label)); if (sub) svg.appendChild(el("text", {x: x + 10, y: y + h / 2 + 14, class: cls === "hot" ? "hotT" : "m"}, sub)); };
 const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls, "marker-end": marker || ""}));
 
+/* ===================== hardware mini-map (where does it run?) ===================== */
+const hwMap = (id, on = {}) => {
+  const svg = document.getElementById(id); if (!svg) return; svg.innerHTML = "";
+  const t = (x, y, s, cls, sz) => svg.appendChild(el("text", {x, y, class: cls || "", style: `font-size:${sz || 10.5}px`}, s));
+  svg.appendChild(el("rect", {x: 2, y: 2, width: 152, height: 104, rx: 8, fill: "none", stroke: "var(--muted)", "stroke-width": 1.1}));
+  svg.appendChild(el("rect", {x: 186, y: 2, width: 152, height: 104, rx: 8, fill: "none", stroke: "var(--muted)", "stroke-width": 1.1}));
+  t(8, 13, "CPU (host)", "b", 10.5); t(192, 13, "GPU", "b", 10.5);
+  const Zs = {main: [8, 18, 140, 24, "main process"], workers: [8, 46, 140, 24, "worker processes"], ram: [8, 74, 140, 24, "RAM"],
+              mem: [192, 18, 140, 24, "GPU memory"], compute: [192, 46, 140, 24, "compute stream"], comm: [192, 74, 140, 24, "comm stream (NCCL)"]};
+  for (const [k, [x, y, w, h, lab]] of Object.entries(Zs)) {
+    svg.appendChild(el("rect", {x, y, width: w, height: h, rx: 5, class: on[k] ? "boxA" : "box"}));
+    t(x + 6, y + 16, lab, on[k] ? "a b" : "m");
+  }
+  svg.appendChild(el("rect", {x: 158, y: 46, width: 24, height: 24, rx: 5, class: on.pcie ? "boxA" : "box"}));
+  t(155, 88, "PCIe", on.pcie ? "a b" : "m", 10);
+  if (on.comm) { svg.appendChild(el("line", {x1: 332, y1: 86, x2: 338, y2: 86, stroke: "var(--accent)", "stroke-width": 2})); }
+  t(4, 122, on.note ? "now: " + on.note : "", "a", 10.5);
+};
+
 /* ===================== LAB 1 ===================== */
 (() => {
   const svg = document.getElementById("l1"), say = document.getElementById("l1say");
@@ -367,6 +395,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   function draw() {
     svg.innerHTML = ""; const ah = arrowDefs(svg);
     const st = steps[s] || {};
+    hwMap("hw-lab1", st.ph === "ask" ? {main: 1, ram: 1, note: "DataLoader (main process) takes the next index"} : st.ph === "call" || st.ph === "got" ? {workers: 1, ram: 1, note: "a worker process calls dataset[i]"} : st.ph === "collate" ? {workers: 1, ram: 1, note: "a worker stacks samples into a batch in RAM"} : st.ph === "model" ? {pcie: 1, mem: 1, compute: 1, note: "batch → PCIe → GPU; forward/backward"} : {main: 1, ram: 1, note: "CPU only until the batch goes to the GPU"});
     // sampler index list
     svg.appendChild(el("text", {x: 6, y: 16, class: "m"}, "sampler → index list for rank 0"));
     idx.forEach((v, k) => {
@@ -424,6 +453,8 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   function idxFor(r) { return on ? [0, 1, 2, 3, 4, 5, 6, 7].filter(i => i % 2 === r) : [0, 1, 2, 3, 4, 5, 6, 7]; }
   function draw(progress) {
     svg.innerHTML = "";
+    const n2 = idxFor(0).length;
+    hwMap("hw-lab2", progress === 0 ? {main: 1, ram: 1, note: "sampler builds each rank's index list (CPU)"} : progress < n2 ? {workers: 1, pcie: 1, mem: 1, compute: 1, note: "load on CPU → GPU; forward/backward"} : {mem: 1, comm: 1, note: "gradients all-reduced between GPUs (NCCL)"});
     [0, 1].forEach(r => {
       const y0 = 8 + r * 96, list = idxFor(r);
       svg.appendChild(el("text", {x: 6, y: y0 + 12, class: "b"}, `rank ${r}`));
@@ -461,6 +492,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   const bF = document.getElementById("l3f"), bT = document.getElementById("l3t");
   function draw(frac) {
     svg.innerHTML = "";
+    hwMap("hw-lab3", persist ? {workers: 1, compute: 1, note: "workers stay alive; GPU does the real steps"} : {main: 1, workers: 1, compute: 1, note: "main process respawns workers every epoch"});
     const segs = persist ? segTrue : segFalse, total = segs.reduce((a, s) => a + s[1], 0), maxT = 23.9;
     let x = 6; const W = 328;
     svg.appendChild(el("text", {x: 6, y: 14, class: "m"}, persist ? "True: workers persist" : "False (default): respawn every epoch"));
@@ -553,6 +585,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   const bOn = document.getElementById("l5on"), bOff = document.getElementById("l5off");
   function draw() {
     svg.innerHTML = "";
+    hwMap("hw-lab5", s === 0 ? {mem: 1, note: ".grad = one tensor per parameter, in GPU memory"} : {compute: 1, mem: 1, note: zero ? "backward ADDS into a cleared .grad" : "backward ADDS on top of the old .grad"});
     svg.appendChild(el("text", {x: 6, y: 16, class: "m"}, "new grad from backward()"));
     svg.appendChild(el("text", {x: 196, y: 16, class: "m"}, ".grad at step()"));
     for (let k = 0; k < 3; k++) {
@@ -593,6 +626,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   const rc = r => r === 0 ? "boxA" : "done";
   function draw() {
     svg.innerHTML = "";
+    hwMap("hw-lab6", {main: 1, ram: 1, note: "CPU only: shuffle + split an index list in RAM"});
     let y = 12;
     svg.appendChild(el("text", {x: 4, y, class: "m"}, "① full list (same on every rank)"));
     ALL.forEach((v, k) => cell(bx(k), y + 6, v, "box")); y += 48;
@@ -654,6 +688,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   }
   function draw(frac) {
     svg.innerHTML = "";
+    hwMap("hw-lab7", workers === 0 ? {main: 1, ram: 1, pcie: 1, compute: 1, note: "main process loads, THEN the GPU computes"} : {workers: 1, ram: 1, pcie: 1, compute: 1, note: "workers load WHILE the GPU computes"});
     const sc = schedule(), x0 = 76, W = 258, now = frac * H, px = t => x0 + (Math.min(t, H) / H) * W;
     sc.rows.forEach((row, r) => {
       const y = 8 + r * 34;
@@ -797,6 +832,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   }
   function draw() {
     svg.innerHTML = "";
+    hwMap("hw-lab10", m === 0 ? {main: 1, workers: 1, ram: 1, note: "DataLoader prepares batches on the CPU"} : {pcie: 1, compute: 1, mem: 1, comm: skip(m - 1) ? 0 : 1, note: skip(m - 1) ? "backward adds into .grad; comm idle (no_sync)" : "backward + NCCL all-reduce of the buckets"});
     svg.appendChild(el("text", {x: 4, y: 12, class: "m"}, full() ? "batch for ONE step = 128 samples, fed at once" : "batch for ONE step = 128 samples, fed 32 at a time"));
     if (full()) {
       svg.appendChild(el("rect", {x: 4, y: 18, width: 328, height: 24, rx: 5, class: m ? "hot" : "box"}));
@@ -853,6 +889,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
 (() => {
   const svg = document.getElementById("l11a"), say = document.getElementById("l11asay"), code = document.getElementById("l11acode"), callsEl = document.getElementById("l11acalls");
   const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const NR = 4; // world size
   const Z = { // zones: x, y, w, h, title, default text
     main: [8, 20, 160, 46, "main process", "your loop + DataLoader"],
     workers: [172, 20, 160, 46, "worker processes", "dataset[i] → collate"],
@@ -860,105 +897,133 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
     pcie: [150, 150, 40, 30, "", ""],
     mem: [8, 202, 324, 76, "GPU memory", ""],
     compute: [8, 284, 160, 46, "compute stream", "math kernels"],
-    comm: [172, 284, 160, 46, "comm stream (NCCL)", "sends buckets"],
+    comm: [172, 284, 160, 46, "comm stream (NCCL)", "GPU ↔ GPU transfers"],
     link: [172, 336, 160, 30, "", ""],
   };
+  const CX = i => 8 + (i - 1) * 109, CY = 404; // other-rank cards
+  for (let i = 1; i < NR; i++) Z["r" + i] = [CX(i), CY, 105, 72, `rank ${i} · GPU ${i}`, ""];
   const C = { // chips: x, y, w, label
     idx: [14, 102, 70, "indices"], samples: [90, 102, 84, "32 samples"], batch: [180, 102, 104, "batch (pinned)"], Wram: [290, 102, 36, "W"],
-    W: [14, 228, 34, "W"], xb: [54, 228, 34, "xb"], act: [94, 228, 92, "activations"], grad: [192, 228, 132, ".grad"],
+    W: [14, 228, 44, "W"], xb: [62, 228, 34, "xb"], act: [100, 228, 86, "activations"], grad: [190, 228, 136, ".grad"],
     bA: [14, 254, 60, "bucket A"], bB: [80, 254, 60, "bucket B"], bC: [146, 254, 60, "bucket C"],
   };
-  const P = { main: [88, 50], wk: [252, 50], idx: [49, 114], batch: [232, 114], Wram: [308, 114], pcie: [170, 165], W: [31, 240], xb: [71, 240], act: [140, 240], grad: [258, 240], bA: [44, 265], bB: [110, 265], bC: [176, 265], compute: [88, 314], comm: [252, 314], link: [252, 351] };
+  const P = { main: [88, 50], wk: [252, 50], idx: [49, 114], batch: [232, 114], Wram: [308, 114], pcie: [170, 165], W: [36, 240], xb: [79, 240], act: [143, 240], grad: [258, 240], bA: [44, 265], bB: [110, 265], bC: [176, 265], compute: [88, 314], comm: [252, 314], link: [252, 351], bus: [252, 392] };
+  for (let i = 1; i < NR; i++) { P["r" + i + "W"] = [CX(i) + 26, CY + 32]; P["r" + i + "g"] = [CX(i) + 52, CY + 56]; }
+  const OTHERS = (from) => [...Array(NR - 1).keys()].map(k => [...from, "bus", "r" + (k + 1) + "W"]);
+  const OTHERSg = (from) => [...Array(NR - 1).keys()].map(k => [...from, "bus", "r" + (k + 1) + "g"]);
+  const INIT = ["A", "B", "C", "D"];
+  // o = other ranks' chips: W / d (data) / g (.grad); "{i}" → rank number, "{L}" → its initial weights letter
   const S = [
-    {code: [], z: {}, c: {Wram: "p"}, mv: [], calls: [],
-      say: "Start: the model's weights <b>W</b> sit in CPU RAM, nothing is on the GPU. Press <b>Next</b>."},
-    {code: [0, 1, 2, 3, 4, 5], z: {main: "Net().cuda(); DDP(model)", pcie: 1, mem: 1, comm: "broadcast W", link: 1}, c: {W: "h", bA: "h", bB: "h", bC: "h"},
-      mv: [["Wram", "pcie", "W"], ["W", "comm", "link"]],
-      calls: ["model.cuda()", "PCIe copy: W → GPU", "DDP(model)", "Reducer: buckets + hooks", "broadcast(W) → NCCL"],
-      reads: ["DDP: device_ids, bucket_cap_mb=25, broadcast_buffers=True", "sampler: rank, num_replicas (from torchrun env), shuffle=True, seed=0, drop_last=False"],
-      say: "<b>Setup, once.</b> <code>.cuda()</code> copies W over PCIe into GPU memory. <code>DDP(model)</code> broadcasts rank 0's W so every rank starts identical, and its Reducer allocates <b>buckets in GPU memory</b> and registers a hook on every parameter."},
-    {code: [6, 7], z: {main: "sampler.set_epoch(e)", ram: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "h"}, mv: [["main", "idx"]],
+    {code: [], z: {}, c: {Wram: ["p", "W·A"]}, o: {W: ["p", "W·{L} (RAM)"]}, mv: [], calls: [],
+      say: `<b>Start.</b> torchrun starts one process per GPU (here ${NR}). Each builds the model itself, and the initial weights are <b>random</b>: rank 0 has W = <b>A</b>, ranks 1–3 have <b>B, C, D</b>. All different! Nothing is on a GPU yet.`},
+    {code: [0], z: {main: "model = Net().cuda()", pcie: 1, mem: 1, others: 1}, c: {W: ["h", "W·A"]}, o: {W: ["h", "W·{L}"]},
+      mv: [["Wram", "pcie", "W"]],
+      calls: ["Net()", "model.cuda()", "PCIe copy: W → this rank's GPU"],
+      reads: [".cuda() → GPU number LOCAL_RANK (set by torchrun)"],
+      say: "<b>1a · .cuda().</b> Each rank copies <b>its own</b> W over PCIe to <b>its own</b> GPU. PCIe is the road inside one machine (CPU RAM → GPU). Still all different: A, B, C, D."},
+    {code: [1, 2, 3, 4, 5], z: {main: "DDP(model); sampler; loader", mem: 1, comm: "broadcast W (once)", link: 1, others: 1}, c: {W: ["p", "W·A"], bA: "h", bB: "h", bC: "h"}, o: {W: ["h", "W·A copied"]},
+      mv: OTHERS(["W", "comm", "link"]),
+      calls: ["DDP(model)", "① broadcast(W) from rank 0 → NCCL", "② Reducer: buckets + a hook per parameter (every rank)", "sampler learns its rank"],
+      reads: ["DDP: device_ids, bucket_cap_mb=25, broadcast_buffers=True", "sampler: rank, num_replicas=4 (from torchrun env), shuffle=True, seed=0, drop_last=False"],
+      say: "<b>1b · DDP(model), once.</b> ① <b>broadcast</b>: NCCL copies rank 0's W over NVLink/network onto every other rank → all four now hold <b>A</b>. Without this, ranks would start different and stay different, because DDP only averages <b>gradients</b>. This is <b>not</b> the Reducer. ② On every rank the <b>Reducer</b> allocates buckets in GPU memory and registers a <b>hook on every parameter</b> (each layer's weight and bias)."},
+    {code: [6, 7], z: {main: "sampler.set_epoch(e)", ram: 1, others: 1}, c: {W: ["p", "W·A"], bA: "p", bB: "p", bC: "p", idx: ["h", "my ¼"]}, o: {W: ["p", "W·A"], d: ["h", "¼ #{i}"]},
+      mv: [["main", "idx"]],
       calls: ["sampler.set_epoch(e)", "stores epoch = e"],
       reads: ["sampler: epoch"],
-      say: "<b>Each epoch.</b> <code>set_epoch</code> only <b>stores</b> the epoch number. When the loop then starts iterating, the sampler (CPU, main process) shuffles the whole index list with seed = seed + epoch (same on every rank) and keeps this rank's positions (Training 4). Just a list of numbers in RAM."},
-    {code: [8], z: {main: "next(loader)", workers: "dataset[i] ×32, collate", ram: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "p", samples: "h", batch: "h"},
+      say: "<b>Each epoch.</b> <code>set_epoch</code> only <b>stores</b> the epoch number. When the loop starts iterating, every rank shuffles the whole index list with seed = seed + epoch (<b>same order everywhere</b>) and keeps <b>its own positions</b>: every 4th one, starting at its rank number. Four disjoint quarters (Training 4)."},
+    {code: [8], z: {main: "next(loader)", workers: "dataset[i] ×32, collate", ram: 1, others: 1}, c: {W: ["p", "W·A"], bA: "p", bB: "p", bC: "p", idx: ["p", "my ¼"], samples: "h", batch: "h"}, o: {W: ["p", "W·A"], d: ["h", "batch {i}"]},
       mv: [["idx", "wk"], ["wk", "batch"]],
       calls: ["next(loader)", "sampler → 32 indices", "worker: dataset[i] × 32", "collate → shared memory", "pin thread → pinned RAM"],
       reads: ["DataLoader: batch_size=32, num_workers=2, pin_memory=True, persistent_workers=False, collate_fn", "sampler: seed + epoch, rank, num_replicas"],
-      say: "<b>Data, on the CPU.</b> The DataLoader sends 32 indices to a <b>worker process</b>; it calls your <code>dataset[i]</code> 32 times (reading from disk), collates them into one batch in shared memory; a <b>pin-memory thread</b> in the main process copies it into <b>pinned (page-locked) RAM</b> because <code>pin_memory=True</code> (Training 2, Training 5)."},
-    {code: [9], z: {main: "xb.cuda()", ram: 1, pcie: 1, mem: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", idx: "p", batch: "p", xb: "h"},
+      say: "<b>Data, on the CPU.</b> A <b>worker process</b> calls your <code>dataset[i]</code> 32 times and collates one batch; a pin-memory thread copies it into <b>pinned RAM</b> (Training 2, 5). Every other rank does the same with <b>its</b> indices → <b>4 different batches</b>. This is where DDP's speedup comes from: each GPU works on different samples."},
+    {code: [9], z: {main: "xb.cuda()", ram: 1, pcie: 1, mem: 1, others: 1}, c: {W: ["p", "W·A"], bA: "p", bB: "p", bC: "p", idx: ["p", "my ¼"], batch: "p", xb: "h"}, o: {W: ["p", "W·A"], d: ["h", "xb {i}"]},
       mv: [["batch", "pcie", "xb"]],
       calls: ["xb.cuda()", "PCIe copy: batch → GPU", "xb in GPU memory"],
       reads: [".cuda(non_blocking=…)"],
-      say: "<b>The moment data lands on the GPU.</b> <code>.cuda()</code> copies the batch over <b>PCIe</b> into GPU memory as <code>xb</code>. Pinned RAM makes this copy fast (and lets <code>non_blocking=True</code> overlap it). From here on the tensors stay on the GPU unless you call <code>.item()</code> / <code>.cpu()</code>; the CPU only runs the Python loop and launches kernels."},
-    {code: [10, 11], z: {main: "ddp(xb); loss_fn", compute: "forward L1 → L6", mem: 1}, c: {W: "p", bA: "p", bB: "p", bC: "p", xb: "p", act: "h"},
+      say: "<b>The moment data lands on the GPU.</b> <code>.cuda()</code> copies the batch over <b>PCIe</b> into GPU memory as <code>xb</code> (each rank its own batch). From here on the tensors stay on the GPU unless you call <code>.item()</code> / <code>.cpu()</code>; the CPU only runs the Python loop and launches kernels."},
+    {code: [10, 11], z: {main: "ddp(xb); loss_fn", compute: "forward L1 → L6", mem: 1, others: 1}, c: {W: ["p", "W·A"], bA: "p", bB: "p", bC: "p", xb: "p", act: "h"}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"]},
       mv: [["xb", "compute"], ["compute", "act"]],
       calls: ["ddp(xb)", "DDP.forward", "model.forward L1→L6", "autograd records graph", "kernels on compute stream"],
       reads: ["DDP: broadcast_buffers", "your model.forward()"],
-      say: "<b>Forward.</b> DDP just passes <code>xb</code> to your model. Kernels run on the <b>compute stream</b> using W and xb, and write <b>activations</b> to GPU memory (kept for backward). <b>No gradient communication</b> (if the model has buffers such as BatchNorm stats, DDP broadcasts them from rank 0 here)."},
-    {code: [12], z: {main: "loss.backward()", compute: "L6, L5 grads", mem: 1, comm: "all_reduce(A)", link: 1}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad L6 L5"], bA: ["h", "A full"], bB: "p", bC: "p"},
-      mv: [["compute", "grad"], ["grad", "bA"], ["bA", "comm", "link"]],
-      calls: ["loss.backward()", "autograd engine", "L6, L5 grad → hook", "Reducer: A full", "all_reduce(A, async)", "NCCL → rank 1"],
+      say: "<b>Forward.</b> Same W (A) on every rank, different xb → different outputs and losses. Kernels run on the <b>compute stream</b> and write <b>activations</b> to GPU memory. <b>No gradient communication</b> (only BatchNorm-style buffers, if the model has them, are broadcast here)."},
+    {code: [12], z: {main: "loss.backward()", compute: "L6, L5 grads", mem: 1, comm: "all_reduce(A) ⇄", link: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad g0 (L6 L5)"], bA: ["h", "A full"], bB: "p", bC: "p"}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} · A ⇄"]},
+      mv: [["compute", "grad"], ["grad", "bA"], ...OTHERSg(["bA", "comm", "link"])],
+      calls: ["loss.backward()", "autograd engine", "L6, L5 grad → hook", "Reducer: A full", "all_reduce(A, async)", "NCCL ⇄ all ranks"],
       reads: ["DDP: bucket_cap_mb, no_sync() context, find_unused_parameters"],
-      say: "<b>Backward starts.</b> The <b>autograd engine</b> (not DDP) computes L6, then L5 grads. Each finished grad fires DDP's <b>hook</b>, which copies it into its bucket. A is full → async <code>all_reduce(A)</code> → NCCL sends it on the <b>comm stream</b>."},
-    {code: [12], z: {main: "loss.backward()", compute: "L4 … L1 grads", mem: 1, comm: "all_reduce(B), (C)", link: 1}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad all layers"], bA: "p", bB: ["h", "B full"], bC: ["h", "C full"]},
-      mv: [["compute", "bB"], ["compute", "bC"], ["bB", "comm", "link"]],
+      say: "<b>Backward.</b> The <b>autograd engine</b> computes L6, then L5 grads. Each finished grad fires DDP's <b>hook</b> → copied into bucket A. Every rank is doing the same on <b>its</b> data, so the grads differ: <b>g0, g1, g2, g3</b>. A is full → async <code>all_reduce(A)</code>: NCCL <b>exchanges</b> bucket A among all four ranks (each sends and receives, e.g. around a ring)."},
+    {code: [12], z: {main: "loss.backward()", compute: "L4 … L1 grads", mem: 1, comm: "all_reduce(B), (C) ⇄", link: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad g0 all"], bA: "p", bB: ["h", "B full"], bC: ["h", "C full"]}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} · B, C ⇄"]},
+      mv: [["compute", "bB"], ["compute", "bC"], ...OTHERSg(["bB", "comm", "link"])],
       calls: ["autograd: L4 → L1", "hooks: B, C full", "all_reduce(B), (C)", "comm overlaps compute"],
       reads: ["DDP: bucket_cap_mb"],
-      say: "<b>Overlap.</b> While NCCL sends A, the compute stream keeps going: L4…L1. B and C fill up and are sent too. Two streams, at the same time (Training 8)."},
-    {code: [12], z: {main: "backward() returns", compute: "(waits)", mem: 1, comm: "all done"}, c: {W: "p", xb: "p", act: "p", grad: ["h", ".grad = average"], bA: "p", bB: "p", bC: "p"},
+      say: "<b>Overlap.</b> While NCCL exchanges A, the compute stream keeps going: L4…L1. B and C fill up and are exchanged too (Training 8)."},
+    {code: [12], z: {main: "backward() returns", compute: "(waits)", mem: 1, comm: "all done", others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad = avg of 4"], bA: "p", bB: "p", bC: "p"}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "= avg of 4"]},
       mv: [["bA", "grad"], ["bC", "grad"]],
-      calls: ["Reducer waits A, B, C", "average over 2 ranks", "write into p.grad", "backward() returns"],
-      reads: ["world_size (number of ranks, for the average)"],
-      say: "<b>End of backward.</b> The Reducer waits for every bucket, then writes the averaged values back into each <code>param.grad</code>. Now rank 0 and rank 1 hold the <b>same .grad</b>."},
-    {code: [13, 14], z: {main: "optimizer.step()", compute: "W -= lr · grad", mem: 1}, c: {W: ["h", "W new"], bA: "p", bB: "p", bC: "p", grad: ["d", ".grad = None"]},
+      calls: ["Reducer waits A, B, C", "average over 4 ranks", "write into p.grad", "backward() returns"],
+      reads: ["world_size = 4 (for the average)"],
+      say: "<b>End of backward.</b> The Reducer waits for every bucket and writes the average back into each <code>param.grad</code>. Now all four ranks hold the <b>same .grad</b> = (g0+g1+g2+g3)/4: a gradient that has seen <b>all four</b> batches."},
+    {code: [13, 14], z: {main: "optimizer.step()", compute: "W -= lr · grad", mem: 1, others: 1}, c: {W: ["h", "W new"], bA: "p", bB: "p", bC: "p", grad: ["d", ".grad = None"]}, o: {W: ["h", "W new"], g: ["d", ".grad = None"]},
       mv: [["grad", "compute", "W"]],
       calls: ["optimizer.step()", "torch.optim: W -= lr·grad", "compute stream", "zero_grad(): .grad = None"],
       reads: ["optimizer: lr, momentum / betas, weight_decay", "zero_grad(set_to_none=True)"],
-      say: "<b>Update.</b> <code>optimizer.step()</code> runs on the <b>compute stream</b>, entirely inside GPU memory: no DDP, no NCCL; the CPU only launches the kernels. Same W + same .grad → <b>same new W on every rank</b>. Then the loop asks for the next batch."},
+      say: "<b>Update, on each rank by itself.</b> No DDP, no NCCL. Same W + same .grad → <b>the same new W on every rank</b>, without ever sending weights again. Net effect: 4 GPUs train on 4 batches per step, like one GPU with a batch 4× as big."},
   ];
   const LINES = [["model = Net().cuda()", "# W → GPU"], ["ddp = DDP(model)", "# once"], ["sampler = DistributedSampler(ds)", ""], ["loader = DataLoader(ds, batch_size=32,", ""], ["      sampler=sampler, num_workers=2,", ""], ["      pin_memory=True)", ""], ["for epoch in range(E):", ""], ["  sampler.set_epoch(epoch)", ""], ["  for xb, yb in loader:", ""], ["    xb, yb = xb.cuda(), yb.cuda()", ""], ["    out = ddp(xb)", ""], ["    loss = loss_fn(out, yb)", ""], ["    loss.backward()", ""], ["    optimizer.step()", ""], ["    optimizer.zero_grad()", ""]];
   const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
   let s = 0;
   const T = (x, y, t, cls, sz) => svg.appendChild(el("text", {x, y, class: cls || "", style: `font-size:${sz || 11}px`}, t));
+  const chip = (x, y, w, h, v, lab) => { const cls = v === "h" ? "hot" : v === "d" ? "dead" : "done"; svg.appendChild(el("rect", {x, y, width: w, height: h, rx: 5, class: cls})); T(x + 5, y + h / 2 + 4, lab, v === "h" ? "hotT b" : "b", 10.5); };
   function draw() {
     svg.innerHTML = "";
     const st = S[s];
-    // outer boxes
     svg.appendChild(el("rect", {x: 2, y: 2, width: 336, height: 142, rx: 10, fill: "none", stroke: "var(--muted)", "stroke-width": 1.2}));
-    T(10, 14, "CPU (host)", "b", 11.5);
+    T(10, 14, "rank 0 · CPU (host)", "b", 11.5);
     svg.appendChild(el("rect", {x: 2, y: 186, width: 336, height: 150, rx: 10, fill: "none", stroke: "var(--muted)", "stroke-width": 1.2}));
-    T(10, 198, "GPU (device)", "b", 11.5);
+    T(10, 198, "rank 0 · GPU 0", "b", 11.5);
+    const busCol = st.z.link ? "var(--accent)" : "var(--muted)";
+    svg.appendChild(el("line", {x1: 252, y1: 366, x2: 252, y2: 392, stroke: busCol, "stroke-width": 2}));
+    svg.appendChild(el("line", {x1: CX(1) + 52, y1: 392, x2: CX(NR - 1) + 52, y2: 392, stroke: busCol, "stroke-width": 2}));
+    for (let i = 1; i < NR; i++) svg.appendChild(el("line", {x1: CX(i) + 52, y1: 392, x2: CX(i) + 52, y2: CY, stroke: busCol, "stroke-width": 2}));
     for (const [id, [x, y, w, h, title, def]] of Object.entries(Z)) {
-      const on = st.z[id] != null;
+      const on = id.startsWith("r") && /^r\d$/.test(id) ? st.z.others != null : st.z[id] != null;
       svg.appendChild(el("rect", {x, y, width: w, height: h, rx: 7, class: on ? "boxA" : "box"}));
-      if (title) T(x + 7, y + 14, title, on ? "a b" : "b");
+      if (title) T(x + 7, y + 14, title, on ? "a b" : "b", /^r\d$/.test(id) ? 10.5 : 11);
       if (id === "main" || id === "workers" || id === "compute" || id === "comm") T(x + 7, y + 34, typeof st.z[id] === "string" ? st.z[id] : def, on ? "a b" : "m");
     }
-    T(196, 170, "PCIe (copy)", st.z.pcie ? "a b" : "m");
-    T(180, 355, "NVLink / net → rank 1", st.z.link ? "a b" : "m");
+    T(196, 170, "PCIe (inside one machine)", st.z.pcie ? "a b" : "m", 10.5);
+    T(180, 355, "NVLink / network", st.z.link ? "a b" : "m");
     T(10, 355, "● = data moving", "m", 10.5);
+    T(10, 382, "other ranks: same code, same time", "m", 10.5);
     for (const [id, [x, y, w, label]] of Object.entries(C)) {
       let v = st.c[id]; if (!v) continue;
       let lab = label; if (Array.isArray(v)) { lab = v[1]; v = v[0]; }
-      const cls = v === "h" ? "hot" : v === "d" ? "dead" : "done";
-      svg.appendChild(el("rect", {x, y, width: w, height: 22, rx: 5, class: cls}));
-      T(x + 6, y + 15, lab, v === "h" ? "hotT b" : "b", 10.5);
+      chip(x, y, w, 22, v, lab);
     }
-    // moving tokens
+    for (let i = 1; i < NR; i++) {
+      const fill = t => t.replace("{i}", i).replace("{L}", INIT[i]);
+      const x0 = CX(i);
+      if (st.o.W) chip(x0 + 4, CY + 21, 97, 20, st.o.W[0], fill(st.o.W[1]));
+      if (st.o.g) chip(x0 + 4, CY + 46, 97, 20, st.o.g[0], fill(st.o.g[1]));
+      else if (st.o.d) chip(x0 + 4, CY + 46, 97, 20, st.o.d[0], fill(st.o.d[1]));
+    }
+    T(10, 494, "differs per rank: indices, batch, .grad (until averaged) · same: W", "m", 10.5);
     if (!reduce) st.mv.forEach((m, k) => {
       const pts = m.map(n => P[n]), d = "M" + pts.map(p => p.join(" ")).join(" L");
       svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.2, "stroke-dasharray": "3 3", opacity: .4}));
       const dot = el("circle", {r: 5.5, fill: "var(--accent)", stroke: "var(--card)", "stroke-width": 1.5, cx: pts[0][0], cy: pts[0][1]});
       svg.appendChild(dot);
       const a = el("animateMotion", {dur: "0.9s", begin: "indefinite", fill: "freeze", path: "M0 0 " + pts.slice(1).map(p => `L${p[0] - pts[0][0]} ${p[1] - pts[0][1]}`).join(" ")});
-      dot.appendChild(a); dot.setAttribute("opacity", 0); setTimeout(() => { try { dot.setAttribute("opacity", 1); a.beginElement(); } catch (e) {} }, 150 + k * 900); setTimeout(() => dot.remove(), 150 + k * 900 + 1000);
+      dot.appendChild(a); dot.setAttribute("opacity", 0);
+      const isFan = m.includes("bus"), delay = isFan ? (m === st.mv.find(x => x.includes("bus")) ? 0 : 0) : 0;
+      const kk = isFan ? st.mv.findIndex(x => x.includes("bus")) : k;
+      setTimeout(() => { try { dot.setAttribute("opacity", 1); a.beginElement(); } catch (e) {} }, 150 + kk * 900);
+      setTimeout(() => dot.remove(), 150 + kk * 900 + 1000);
     });
     else st.mv.forEach(m => { const d = "M" + m.map(n => P[n].join(" ")).join(" L"); svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.5, "stroke-dasharray": "3 3"})); });
     callsEl.innerHTML = st.calls.length ? '<span class="lbl">calls:</span>' + st.calls.map(c => `<span>${esc(c)}</span>`).join("<i>→</i>") : "";
     if (st.reads && st.reads.length) callsEl.innerHTML += '<div style="flex-basis:100%;height:2px"></div><span class="lbl">reads:</span>' + st.reads.map(c => `<span class="rd">${esc(c)}</span>`).join(" ");
     code.innerHTML = LINES.map(([t, c], i) => `<span class="ln${st.code.includes(i) ? " on" : ""}">${esc(t)}${c ? "  <span class=\"cm\">" + esc(c) + "</span>" : ""}</span>`).join("");
-    say.innerHTML = `<b>${s}/${S.length - 1}</b> · ` + st.say;
+    const lbl = ["0", "1a", "1b", "2", "3", "4", "5", "6", "7", "8", "9"][s];
+    say.innerHTML = `<b>${lbl}/9</b> · ` + st.say;
   }
   document.getElementById("l11anext").onclick = () => { if (s < S.length - 1) { s++; draw(); } };
   document.getElementById("l11aback").onclick = () => { if (s > 0) { s--; draw(); } };
@@ -1002,6 +1067,8 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
   function draw() {
     svg.innerHTML = "";
     const P = plan(), T = s, end = s === 6;
+    const sentAny = P.some(b => Math.max(...b.ls.map(readyAt)) <= T && b.start <= (end ? Infinity : T + 1e-9));
+    hwMap("hw-lab11", s === 0 ? {mem: 1, note: "buckets = buffers in GPU memory"} : {compute: end ? 0 : 1, mem: 1, comm: sentAny ? 1 : 0, note: sentAny ? (end ? "comm stream finishes the last buckets" : "compute AND comm streams busy at once") : "backward writes grads into buckets; nothing sent"});
     const bucketOf = k => P.find(b => b.ls.includes(k));
     // layers
     svg.appendChild(el("text", {x: 4, y: 11, class: "m"}, "forward: L1 → L6")); svg.appendChild(el("text", {x: 200, y: 11, class: "a b"}, "← backward: L6 → L1"));
@@ -1023,7 +1090,7 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
     // timeline
     const yG = 100, yN = 128;
     svg.appendChild(el("text", {x: 4, y: yG + 15, class: "b"}, "compute"));
-    svg.appendChild(el("text", {x: 4, y: yN + 15, class: "b"}, "network"));
+    svg.appendChild(el("text", {x: 4, y: yN + 15, class: "b"}, "comm"));
     svg.appendChild(el("rect", {x: X0, y: yG, width: W, height: 22, rx: 4, class: "box"}));
     svg.appendChild(el("rect", {x: X0, y: yN, width: W, height: 22, rx: 4, class: "box"}));
     for (let k = 6; k >= 1; k--) { const a = readyAt(k) - 1; if (a >= T) continue;
@@ -1051,11 +1118,11 @@ const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls,
     const queued = full && b.start > T;
     now.textContent = `L${k}.grad ready → hook → bucket ${b.name} ${got}/${b.ls.length}` + (full ? (queued ? ` → full, queued (net busy until t=${+b.start.toFixed(2)})` : ` → all_reduce(${b.name}) starts, async`) : " → wait for the rest");
     if (!end) say.innerHTML = full
-      ? (queued ? `Bucket ${b.name} is full, but the network is still busy with the previous bucket, so it <b>queues</b>. Each call pays the fixed overhead again.` : `Bucket ${b.name} is full → the hook launches its all-reduce <b>right now</b>. The GPU doesn't wait: it keeps computing L${k - 1 || ""} gradients <b>while the network sends</b>.`)
-      : nb === 1 ? `L${k}'s hook fired, but the single bucket isn't full until L1 is done. Nothing is sent yet — the network <b>sits idle</b> during backward.` : `L${k}'s hook fired. Bucket ${b.name} has ${got}/${b.ls.length} → not full, so nothing is sent yet.`;
+      ? (queued ? `Bucket ${b.name} is full, but the comm stream is still busy with the previous bucket, so it <b>queues</b>. Each call pays the fixed overhead again.` : `Bucket ${b.name} is full → the hook launches its all-reduce <b>right now</b>. The GPU doesn't wait: it keeps computing L${k - 1 || ""} gradients <b>while the network sends</b>.`)
+      : nb === 1 ? `L${k}'s hook fired, but the single bucket isn't full until L1 is done. Nothing is sent yet — the comm stream <b>sits idle</b> during backward.` : `L${k}'s hook fired. Bucket ${b.name} has ${got}/${b.ls.length} → not full, so nothing is sent yet.`;
     else say.innerHTML = nb === 1 ? `Backward finished at t=6, and only <b>then</b> one big all-reduce starts. GPU waits ${+(total - 6).toFixed(2)} units. Fewest calls, but <b>no overlap</b>.`
       : nb === 3 ? `Buckets A and B were already sent <b>during</b> backward; only C remains after t=6. GPU waits ${+(total - 6).toFixed(2)} units — the <b>best</b> of the three.`
-      : `6 calls → 6 × the fixed overhead. They <b>queue</b> on the network and fall behind; GPU waits ${+(total - 6).toFixed(2)} units — <b>worse</b> than 1 big bucket.`;
+      : `6 calls → 6 × the fixed overhead. They <b>queue</b> on the comm stream and fall behind; GPU waits ${+(total - 6).toFixed(2)} units — <b>worse</b> than 1 big bucket.`;
   }
   document.querySelectorAll("#lab11 [data-m]").forEach(b => b.onclick = () => { nb = +b.dataset.m; document.querySelectorAll("#lab11 [data-m]").forEach(x => x.setAttribute("aria-pressed", x === b)); s = 0; draw(); });
   document.getElementById("l11next").onclick = () => { if (s < 6) { s++; draw(); } };
