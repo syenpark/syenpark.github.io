@@ -209,6 +209,41 @@ const CARDS = [
   en:"Accumulation cuts memory per pass; no_sync cuts all-reduce calls. I wrap all but the last micro-batch in no_sync, so gradients accumulate locally and DDP all-reduces once per optimizer step — same result, a fraction of the communication.",
   trap:"\"no_sync makes the batch smaller\" — no: accumulation shrinks the micro-batch; no_sync only skips communication. (And no_sync on ALL N → never synced.)"},
 
+{ id:"C1", t:"DDP", q:"Which parts of a training step run on the CPU, and which on the GPU?",
+  what:"<b>CPU</b>: sampler, DataLoader, worker processes (dataset[i] + collate), pinned RAM. <b>GPU</b>: forward, backward, optimizer.step(), and NCCL communication.",
+  how:"The batch crosses <b>PCIe</b> once, at <code>xb.cuda()</code> (pinned memory + non_blocking makes that copy async). After that the tensors stay in GPU memory, unless you call <code>.item()</code> / <code>.cpu()</code>, which copies back and makes the CPU wait.",
+  so:"\"GPU utilisation is low\" → first split it: is the CPU side (data loading) too slow, or the GPU side?",
+  en:"Data loading runs on the CPU in worker processes; only the finished batch is copied over PCIe to the GPU, where forward, backward, the update and NCCL all happen.",
+  trap:"\"the sampler / DataLoader runs on the GPU\" — no, they're CPU code"},
+
+{ id:"B1", t:"DDP", q:"broadcast vs all-reduce in DDP: what, when, which direction?",
+  what:"<b>broadcast</b> = copy rank 0's WEIGHTS to every rank, once, inside <code>DDP(model)</code>. <b>all-reduce</b> = every rank's GRADIENTS summed and averaged, every step during backward.",
+  how:"Each rank builds the model itself with random weights (A, B, C, D) → broadcast makes them all A. After that only gradients travel: all-reduce is two-way (every rank sends and receives, e.g. around a ring). Both are run by NCCL.",
+  so:"Same starting weights + same averaged gradients → the same new weights on every rank, without ever sending weights again.",
+  en:"DDP broadcasts rank 0's weights once at construction so every replica starts identical; after that it only all-reduces gradients each step, which keeps the replicas identical.",
+  trap:"\"all-reduce sends rank 0's result to the others\" — no, it's an exchange; everyone sends and receives"},
+
+{ id:"D10", t:"DDP", q:"L5's gradient is ready. Who does what until bucket A is averaged across ranks?",
+  what:"autograd → <b>hook</b> → <b>Reducer</b> (bucket full?) → <b>all_reduce</b> (torch.distributed) → <b>NCCL</b> runs it.",
+  how:"autograd finishes L5's grad and calls the hook the Reducer registered on that parameter → the hook copies the grad into bucket A → A is now full, so the Reducer launches an <b>async</b> all_reduce(A) → NCCL exchanges A with every rank on the comm stream and writes the average back into A.",
+  so:"Backward keeps computing L4, L3… on the compute stream while NCCL sends A: communication <b>overlaps</b> computation. Too few buckets = no overlap; too many = per-call overhead.",
+  en:"When a gradient is ready, autograd fires DDP's hook; once a bucket is full the Reducer launches an async all-reduce that NCCL executes on its own stream, overlapping communication with the rest of backward.",
+  trap:"\"the Reducer fires the hook\" — autograd fires it; and all_reduce isn't in DDP — torch.distributed hands it to NCCL"},
+
+{ id:"R1", t:"DDP", q:"Reducer vs all_reduce vs NCCL?",
+  what:"<b>Reducer</b> = DDP's manager (C++, one per rank). <b>all_reduce</b> = the operation: sum/average across ranks. <b>NCCL</b> = the library that actually does it on the GPUs.",
+  how:"Reducer owns the buckets and hooks, decides WHEN and WHAT to send, and writes the result into .grad. all_reduce is torch.distributed's thin wrapper; it knows nothing about models or buckets. NCCL (ncclAllReduce) runs GPU kernels that move the data over NVLink / the network.",
+  so:"Packing analogy: Reducer = the packer who ships a full box; all_reduce = the delivery service type; NCCL = the courier.",
+  en:"The Reducer decides when a bucket is ready and calls all_reduce; all_reduce is just the collective operation, and NCCL is the library that executes it on the GPUs.",
+  trap:"\"the Reducer does the all-reduce\" — it only launches it"},
+
+{ id:"D11", t:"DDP", q:"Checkpoint and resume with DDP: what to save, who writes, who reads?",
+  what:"Save 4 things: weights (<code>ddp.module.state_dict()</code>), optimizer state, epoch, RNG state. <b>Rank 0 writes</b>; on resume <b>every rank reads</b> the same file.",
+  how:"rank 0: torch.save to a tmp file, then os.replace (never half-written) → <b>dist.barrier()</b> so nobody moves on before the file exists. Resume: all ranks torch.load(path, map_location=device), load model + optimizer + RNG, start at saved epoch + 1 (set_epoch → same shuffle).",
+  so:"You lose only the work since the last save; the interval trades save time against work lost. Without optimizer state (momentum) the run continues differently.",
+  en:"Only rank 0 writes the checkpoint — weights, optimizer state, epoch and RNG — then all ranks hit a barrier; on resume every rank loads the same file and continues from the next epoch.",
+  trap:"every rank saving to one path (racing writers), or ddp.state_dict() (keys get a 'module.' prefix and won't load into a plain model)"},
+
 /* ---------------- K8s ---------------- */
 { id:"K-a", t:"K8s", q:"What is an object? What is a namespace?",
   what:"Object = one <b>instance</b> of a kind (e.g. Pod \"web\"). Namespace = a <b>name scope</b>.",
@@ -266,6 +301,19 @@ const CARDS = [
   so:"Kubernetes can't see a hang on its own → you need a throughput-based health check.",
   en:"A crash restarts the container via the kubelet; a deleted Pod is replaced by the ReplicaSet controller (after ~5 minutes of eviction delay if the node was lost); a hang needs a liveness probe, otherwise Kubernetes thinks it's healthy."},
 
+{ id:"K4", t:"K8s", q:"ResourceQuota vs LimitRange vs PriorityClass: who reads each, and when?",
+  what:"<b>ResourceQuota</b> = the namespace's TOTAL budget · <b>LimitRange</b> = per-container defaults and min/max · <b>PriorityClass</b> = importance, used for scheduling order and preemption.",
+  how:"Order for each Pod: API server admission → ① <b>LimitRange</b> fills empty requests/limits → ② PriorityClass name → number → ③ <b>ResourceQuota</b> checks the namespace SUM (over → <b>Forbidden</b>) → stored, Pending → <b>scheduler</b> uses requests + priority (no room → may <b>preempt</b> LOWER-priority Pods, else Pending).",
+  so:"Priority can't get past ResourceQuota: quota is checked earlier, at the API server. Preemption frees NODE room, never quota. An evicted Pod's ReplicaSet controller makes a replacement (new name), which then waits Pending.",
+  en:"LimitRange fills in defaults, ResourceQuota caps the namespace total at admission, and PriorityClass only matters later, in the scheduler: it decides who goes first and who can be preempted.",
+  trap:"\"high priority skips the quota\" — no; and the scheduler doesn't create Pods, the ReplicaSet controller does",
+  svg:`<svg viewBox="0 0 320 150" style="color:var(--muted)">${AR}
+   <rect class="boxA" x="4" y="22" width="190" height="96" rx="8"/><text x="12" y="40" font-weight="700">API server (admission)</text>
+   <text x="14" y="62">① LimitRange: fill</text><text x="14" y="82">② PriorityClass → 1000</text><text x="14" y="102">③ ResourceQuota: sum ≤ hard?</text>
+   <rect class="boxA" x="214" y="40" width="102" height="60" rx="8"/><text x="222" y="60" font-weight="700">scheduler</text><text class="m" x="222" y="78">requests,</text><text class="m" x="222" y="92">priority</text>
+   <path class="lnA" d="M194 70 H212" marker-end="url(#ah)"/>
+   <text class="r" x="12" y="138">✗ Forbidden (never created)</text><text class="r" x="214" y="120">✗ Pending /</text><text class="r" x="214" y="136">preempt lower</text></svg>`},
+
 /* ---------------- Linux ---------------- */
 { id:"L1", t:"Linux", q:"Process states R, S, D — and what does the run queue r tell you?",
   what:"R = running or <b>runnable</b> (could run if a CPU were free). S = interruptible sleep (waiting for an event). D = <b>uninterruptible</b> sleep (usually I/O).",
@@ -288,12 +336,12 @@ const CARDS = [
 
 { id:"L4", t:"Linux", q:"Memory: free vs available, swap, OOM, PSI?",
   what:"<b>available</b> = memory new work can use without swapping (better than free). buff/cache is reclaimable.",
-  how:"si/so > 0 = pages moving to/from disk. OOM killer kills a process when nothing can be reclaimed (dmesg | grep -i oom). PSI (/proc/pressure/memory) shows stalls before swap or OOM appear.",
+  how:"RAM is managed in 4 KB <b>pages</b>. <b>so</b> = pages of process memory written out to the <b>swap area</b> on disk to make room; <b>si</b> = read back in when the process touches them again (it waits, state D). Both staying high = thrashing. OOM killer kills a process when nothing can be reclaimed (dmesg | grep -i oom). PSI (/proc/pressure/memory) shows stalls before swap or OOM appear.",
   so:"In Kubernetes, a container over its memory limit is OOMKilled — same mechanism, per cgroup.",
   en:"I look at available rather than free, treat swap activity as a symptom, check dmesg for OOM kills, and use PSI to catch memory stalls early; in Kubernetes the same limit shows up as OOMKilled."},
 
 { id:"L5", t:"Linux", q:"Network: ss vs sar?",
-  what:"<b>ss</b> = connection level (TCP states, queues). <b>sar -n DEV</b> = interface level (throughput). sar -n ETCP = retransmissions/errors.",
+  what:"<b>NIC</b> = the network card (hardware, on PCIe). <b>Interface</b> = the OS\u2019s name for a port (eth0; lo and docker0 are virtual). <b>sar -n DEV</b> = throughput per interface · <b>ss -ti</b> = per connection (rtt, cwnd, retrans) · <b>sar -n ETCP</b> = TCP retransmits/errors machine-wide.",
   how:"Slow transfer: is the link saturated (sar) or are connections stuck / retransmitting (ss, sar -n ETCP)?",
   so:"Pick the tool by the question: the pipe vs the conversations in it.",
   en:"sar tells me whether the interface itself is saturated; ss and TCP counters tell me whether individual connections are stuck or retransmitting."},
@@ -314,7 +362,7 @@ const CARDS = [
   svg:`<svg viewBox="0 0 320 150" style="color:var(--muted)">${AR}
    <rect class="box" x="4" y="58" width="56" height="32" rx="7"/><text x="12" y="78">apply</text>
    <rect class="boxA" x="82" y="50" width="96" height="48" rx="8"/><text x="90" y="70" font-weight="700">API server</text><text class="m" x="90" y="88">quota?</text>
-   <rect class="boxA" x="206" y="50" width="96" height="48" rx="8"/><text x="214" y="70" font-weight="700">scheduler</text><text class="m" x="214" y="88">free CPU?</text>
+   <rect class="boxA" x="206" y="50" width="96" height="48" rx="8"/><text x="214" y="70" font-weight="700">scheduler</text><text class="m" x="214" y="88">room left?</text>
    <path class="ln" d="M60 74 H80" marker-end="url(#ah)"/><path class="lnA" d="M178 74 H204" marker-end="url(#ah)"/>
    <text class="r" x="82" y="26">✗ Forbidden</text><text class="r" x="82" y="40">never created</text>
    <text class="r" x="206" y="26">✗ Pending</text><text class="r" x="206" y="40">FailedScheduling</text>

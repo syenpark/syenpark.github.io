@@ -61,7 +61,8 @@
     section > *{grid-column:1 / -1}
     section > svg:not(.hw){grid-column:1;grid-row:span 14;max-height:calc(100vh - 32px);position:sticky;top:16px}
     section > .tag{justify-self:start}
-    section > svg.hw, section > .calls, section > pre.code, section > .say, section > .meter, section > .now, section > dl.rf, section > .pipe{grid-column:2}
+    section > svg.hw{grid-column:1}
+    section > .calls, section > pre.code, section > .say, section > .meter, section > .now, section > dl.rf, section > .pipe{grid-column:2}
     section > .controls{grid-column:2}
   }
   details.area{margin:18px 0 8px}
@@ -121,14 +122,14 @@
   <h1>ML Platform Interactive Labs</h1>
   <p class="sub">Press the buttons and watch what each component does. <a href="flashcards.html">← Flashcards</a></p>
   <nav class="toc2">
-    <div class="tocrow"><span class="toclbl">Training (DDP)</span><a href="#lab11a">1 · One DDP step (map)</a><a href="#lab1">2 · DataLoader loop</a><a href="#lab2">3 · Sampler on/off</a><a href="#lab6">4 · set_epoch</a><a href="#lab7">5 · workers</a><a href="#lab3">6 · persistent_workers</a><a href="#lab5">7 · zero_grad</a><a href="#lab11">8 · buckets &amp; hooks</a><a href="#lab10">9 · no_sync</a></div>
+    <div class="tocrow"><span class="toclbl">Training (DDP)</span><a href="#lab11a">1 · One DDP step (map)</a><a href="#lab1">2 · DataLoader loop</a><a href="#lab2">3 · Sampler on/off</a><a href="#lab6">4 · set_epoch</a><a href="#lab7">5 · workers</a><a href="#lab3">6 · persistent_workers</a><a href="#lab5">7 · zero_grad</a><a href="#lab11">8 · buckets &amp; hooks</a><a href="#lab10">9 · no_sync</a><a href="#lab16">10 · checkpoint</a></div>
     <div class="tocrow"><span class="toclbl">Kubernetes</span><a href="#lab13">1 · who reads which field</a><a href="#lab4">2 · Deployment + Service</a><a href="#lab8">3 · who said no?</a></div>
     <div class="tocrow"><span class="toclbl">Linux</span><a href="#lab14">1 · vmstat in hardware</a><a href="#lab9">2 · read vmstat</a><a href="#lab15">3 · network layers</a></div>
   </nav>
 </header>
 <main>
 <details class="area" id="area-training" open>
-<summary>Training (DDP) <span class="cnt">9 labs</span></summary>
+<summary>Training (DDP) <span class="cnt">10 labs</span></summary>
 <section id="lab11a">
   <span class="tag">DDP · D10</span>
   <h2>Training 1 · One DDP training step: where does the data go, and who calls whom?</h2>
@@ -299,6 +300,24 @@
   <div class="say" id="l10say"></div>
   <p class="so"><b>So what:</b> A is the ideal, but 128 may not fit in GPU memory. B fits (32 at a time) but DDP syncs after <b>every</b> backward → 4× the communication. C keeps B's memory and gets back to A's communication: <code>.grad</code> sums locally because backward <b>adds (+=)</b>, so one all-reduce of the sum gives the same average. Keep the <b>last</b> micro-batch outside <code>no_sync</code>, or the ranks never sync.</p>
 </section>
+
+<section id="lab16">
+  <span class="tag">DDP · D11</span>
+  <h2>Training 10 · Checkpoint &amp; resume: who writes, who reads, what's inside</h2>
+  <p class="why">4 ranks train for 4 epochs; a checkpoint is saved at the end of each epoch. In epoch 2 every rank dies. Press Next to see the save, the barrier, the crash and the resume. The two bug buttons show the classic mistakes.</p>
+  <div class="controls" id="l16btns">
+    <button data-m="ok" aria-pressed="true">correct</button>
+    <button data-m="all" aria-pressed="false">bug: every rank saves</button>
+    <button data-m="keys" aria-pressed="false">bug: ddp.state_dict()</button>
+  </div>
+  <div class="controls"><button class="primary" id="l16next">Next ▶</button><button id="l16back">◀ Back</button><button id="l16reset">Reset</button></div>
+  <svg id="l16" viewBox="0 0 340 330" aria-label="checkpoint and resume"></svg>
+  <pre class="code" id="l16code" aria-label="checkpoint file"></pre>
+  <div class="say" id="l16say"></div>
+  <p class="so"><b>So what:</b> save <b>4 things</b> (weights from <code>ddp.module</code>, optimizer state, epoch, RNG state); <b>rank 0 writes</b>, then a <b>barrier</b>; on resume <b>every rank reads</b> the same file and continues at saved epoch + 1. You lose only the work since the last save.</p>
+</section>
+
+
 
 </details>
 
@@ -1108,7 +1127,7 @@ const hwMap = (id, on = {}) => {
     }
     if (!reduce) st.mv.forEach((m, k) => {
       const pts = m.map(n => P[n]), d = "M" + pts.map(p => p.join(" ")).join(" L");
-      svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.2, "stroke-dasharray": "3 3", opacity: .4}));
+      svg.insertBefore(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.2, "stroke-dasharray": "3 3", opacity: .4}), svg.firstChild);
       const sender = /^r(\d)/.test(m[0]) ? +m[0][1] : 0, dc = RC[sender];
       const dot = el("circle", {r: 5.5, fill: dc, stroke: "var(--card)", "stroke-width": 1.5, cx: pts[0][0], cy: pts[0][1]});
       svg.appendChild(dot);
@@ -1131,7 +1150,7 @@ const hwMap = (id, on = {}) => {
     code.innerHTML = LINES.map(([t, c], i) => `<span class="ln${st.code.includes(i) ? " on" : ""}">${esc(t)}${c ? "  <span class=\"cm\">" + esc(c) + "</span>" : ""}</span>`).join("");
     const lbl = ["0", "1a", "1b", "2", "3", "4", "5", "6a", "6b", "7a", "7b", "8", "9"][s];
     const mm = st.say.match(/^(<b>[\s\S]*?<\/b>)([\s\S]*)$/);
-    say.innerHTML = `<b>${lbl}/9</b> · ` + (mm && mm[2].trim() ? `${mm[1]} <details class="more"><summary>details</summary>${mm[2]}</details>` : st.say);
+    say.innerHTML = `<b>${lbl}/9</b> · ` + (mm && mm[2].trim() ? `${mm[1]} <details class="more"${window.matchMedia && matchMedia("(min-width: 1100px)").matches ? " open" : ""}><summary>details</summary>${mm[2]}</details>` : st.say);
   }
   document.getElementById("l11anext").onclick = () => { if (s < S.length - 1) { s++; draw(); } };
   document.getElementById("l11aback").onclick = () => { if (s > 0) { s--; draw(); } };
@@ -1344,7 +1363,7 @@ const hwMap = (id, on = {}) => {
     T(8, 368, "● = request / object moving", "m", 10.5);
     if (!reduce) st.mv.forEach((m, k) => {
       const pts = m.map(n => P[n]), d = "M" + pts.map(p => p.join(" ")).join(" L");
-      svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.2, "stroke-dasharray": "3 3", opacity: .45}));
+      svg.insertBefore(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.2, "stroke-dasharray": "3 3", opacity: .45}), svg.firstChild);
       const dot = el("circle", {r: 5.5, fill: "var(--accent)", stroke: "var(--card)", "stroke-width": 1.5, cx: pts[0][0], cy: pts[0][1], opacity: 0});
       svg.appendChild(dot);
       const a = el("animateMotion", {dur: (STEP_MS - 200) / 1000 + "s", begin: "indefinite", fill: "freeze", path: "M0 0 " + pts.slice(1).map(p => `L${p[0] - pts[0][0]} ${p[1] - pts[0][1]}`).join(" ")});
@@ -1412,7 +1431,7 @@ const hwMap = (id, on = {}) => {
     const g = el("g");
     if (o.page) g.appendChild(el("rect", {x: -8, y: -7, width: 16, height: 14, rx: 2, fill: PC[o.page], stroke: "var(--card)", "stroke-width": 1.5}));
     else { g.appendChild(el("circle", {r: 9, fill: "var(--warn)", stroke: "var(--card)", "stroke-width": 1.5})); const t = el("text", {x: -4, y: 4, class: "hotT b", style: "font-size:10.5px"}); t.textContent = o.task; g.appendChild(t); }
-    svg.appendChild(el("path", {d: `M${o.from.join(" ")} L${o.to.join(" ")}`, fill: "none", stroke: "var(--accent)", "stroke-width": 1, "stroke-dasharray": "3 3", opacity: .45}));
+    svg.insertBefore(el("path", {d: `M${o.from.join(" ")} L${o.to.join(" ")}`, fill: "none", stroke: "var(--accent)", "stroke-width": 1, "stroke-dasharray": "3 3", opacity: .45}), svg.firstChild);
     g.appendChild(el("animateMotion", {dur: "1.6s", begin: `${k * 0.8}s`, repeatCount: "indefinite", path: `M${o.from.join(" ")} L${o.to.join(" ")}`}));
     svg.appendChild(g);
   }
@@ -1530,6 +1549,79 @@ const hwMap = (id, on = {}) => {
     say.innerHTML = c.say;
   }
   document.querySelectorAll("#l15btns [data-m]").forEach(b => b.onclick = () => { mode = b.dataset.m; document.querySelectorAll("#l15btns [data-m]").forEach(x => x.setAttribute("aria-pressed", x === b)); draw(); });
+  draw();
+})();
+
+/* ===================== LAB 16 (Training 10: checkpoint & resume) ===================== */
+(() => {
+  const svg = document.getElementById("l16"), say = document.getElementById("l16say"), code = document.getElementById("l16code");
+  const RC = ["var(--accent)", "var(--r1)", "var(--r2)", "var(--r3)"];
+  const X0 = 64, EW = 64; // epoch column x, width
+  const S = [
+    {done: 0, part: 0, say: "Start: 4 ranks, 4 epochs. A checkpoint file lives on <b>shared storage</b> that every rank can read."},
+    {done: 0, part: 1, say: "Epoch 0 runs on all 4 ranks (each on its own quarter of the data)."},
+    {done: 1, part: 0, save: 0, barrier: true, say: "End of epoch 0: <b>rank 0 writes</b> the checkpoint (to a tmp file, then renames it → never half-written). The others <b>wait at a barrier</b>: nobody starts epoch 1 until the file exists. Like <code>std::barrier</code>: everyone waits until all have arrived."},
+    {done: 2, part: 0, save: 1, barrier: true, say: "Epoch 1 → save again (the file now says <b>epoch = 1</b>)."},
+    {done: 2, part: .5, crash: true, say: "💥 Halfway through epoch 2 the node dies. Everything in memory is gone; the half-done epoch 2 is <b>lost work</b>."},
+    {done: 2, part: 0, read: true, say: "Restart: <b>every rank reads the same file</b> (<code>map_location</code> puts it on its own device) and loads weights, optimizer state, epoch and RNG state."},
+    {done: 4, part: 0, resumed: true, say: "Continue at <b>epoch = 1 + 1 = 2</b>. Same weights, same momentum, same shuffle (set_epoch(2)), same random numbers → the end result is <b>identical</b> to a run that never crashed."},
+  ];
+  let mode = "ok", s = 0;
+  const T = (x, y, t, cls, sz, fill) => { const e = el("text", {x, y, class: cls || "", style: `font-size:${sz || 11}px`}); if (fill) e.setAttribute("fill", fill); e.textContent = t; svg.appendChild(e); };
+  function draw() {
+    svg.innerHTML = ""; const st = S[s];
+    for (let e = 0; e < 4; e++) T(X0 + e * EW + 14, 14, `epoch ${e}`, "m", 10);
+    for (let r = 0; r < 4; r++) {
+      const y = 22 + r * 34;
+      T(6, y + 17, `rank ${r}`, "b", 10.5, RC[r]);
+      for (let e = 0; e < 4; e++) {
+        const x = X0 + e * EW;
+        svg.appendChild(el("rect", {x, y, width: EW - 4, height: 24, rx: 4, class: "box"}));
+        let f = e < st.done ? 1 : e === st.done ? st.part : 0;
+        if (st.resumed && e === 2) f = 1;
+        if (f > 0) svg.appendChild(el("rect", {x, y, width: (EW - 4) * f, height: 24, rx: 4, fill: RC[r], opacity: st.resumed && e >= 2 ? .55 : .85}));
+        if (st.crash && e === 2) T(x + (EW - 4) / 2 + 2, y + 17, "💥", "", 13);
+      }
+    }
+    // barrier line
+    if (st.barrier) { const x = X0 + st.done * EW - 2; svg.appendChild(el("line", {x1: x, y1: 18, x2: x, y2: 158, stroke: "var(--bad)", "stroke-width": 2.5, "stroke-dasharray": "5 3"})); T(x - 26, 170, "barrier", "r b", 10); }
+    if (st.crash) { T(X0 + 2 * EW + 2, 170, "lost work", "r b", 10); }
+    if (st.resumed) T(X0 + 2 * EW, 170, "resumed from epoch 2", "a b", 10);
+    // storage
+    svg.appendChild(el("rect", {x: 8, y: 184, width: 324, height: 60, rx: 8, class: (st.save != null || st.read) ? "boxA" : "box"}));
+    T(16, 200, "shared storage", "b", 11);
+    const fileOk = !(mode === "all" && st.save != null);
+    if (s >= 2) {
+      svg.appendChild(el("rect", {x: 120, y: 208, width: 96, height: 28, rx: 5, fill: fileOk ? "var(--good-soft)" : "var(--bad-soft)", stroke: fileOk ? "var(--good)" : "var(--bad)", "stroke-width": 1.5}));
+      T(126, 226, fileOk ? `ckpt.pt (epoch ${Math.min(Math.max((st.save ?? 1), 0), 1)})` : "ckpt.pt ⚠ mixed", fileOk ? "b" : "r b", 10);
+    }
+    // arrows: write / read
+    const arrow = (x1, y1, x2, y2, col) => { svg.appendChild(el("line", {x1, y1, x2, y2, stroke: col, "stroke-width": 2})); svg.appendChild(el("circle", {cx: x2, cy: y2, r: 3.5, fill: col})); };
+    if (st.save != null) {
+      const writers = mode === "all" ? [0, 1, 2, 3] : [0];
+      writers.forEach(r => arrow(X0 + st.done * EW - 10 - r * 6, 34 + r * 34, 140 + r * 18, 208, RC[r]));
+    }
+    if (st.read) [0, 1, 2, 3].forEach(r => arrow(168, 208, X0 + 2 * EW + 10 + r * 8, 46 + r * 34, RC[r]));
+    // load result for keys bug
+    if (mode === "keys" && st.read) { T(16, 262, "load_state_dict → ✗ Missing keys: fc.weight · Unexpected keys: module.fc.weight", "r b", 9.5); }
+    if (mode === "all" && st.save != null) { T(16, 262, "4 processes write the same path at once → file can end up mixed or broken", "r b", 9.5); }
+    T(16, 284, "write = rank 0 only · read = every rank", "m", 10);
+    T(16, 302, "lost on a crash = work since the last save", "m", 10);
+    // file contents
+    const keyLine = mode === "keys" ? '  "model": {"module.fc.weight": …},  # ddp.state_dict()' : '  "model": {"fc.weight": …},  # ddp.module.…';
+    code.textContent = (s >= 2 ? "" : "# (no checkpoint yet)\n") + "ckpt = {\n" + keyLine + "\n" +
+      '  "optimizer": {momentum …},  # next updates\n' +
+      '  "epoch": 1,     # where + same shuffle\n' +
+      '  "rng": rng_state,  # same random numbers\n}\n' +
+      (mode === "all" ? "# bug: torch.save on EVERY rank\n#      → 4 writers, 1 file\n# fix: if rank == 0: save\n#      dist.barrier()" :
+       mode === "keys" ? "# bug: ddp.state_dict() adds 'module.'\n#      to every key\n# fix: ddp.module.state_dict()" :
+       "# rank 0: torch.save(ckpt, tmp)\n#         os.replace(tmp, path)\n# all:    dist.barrier()\n# resume: torch.load(path,\n#           map_location=device)");
+    say.innerHTML = `<b>${s}/${S.length - 1}</b> · ` + st.say;
+  }
+  document.querySelectorAll("#l16btns [data-m]").forEach(b => b.onclick = () => { mode = b.dataset.m; document.querySelectorAll("#l16btns [data-m]").forEach(x => x.setAttribute("aria-pressed", x === b)); draw(); });
+  document.getElementById("l16next").onclick = () => { if (s < S.length - 1) { s++; draw(); } };
+  document.getElementById("l16back").onclick = () => { if (s > 0) { s--; draw(); } };
+  document.getElementById("l16reset").onclick = () => { s = 0; draw(); };
   draw();
 })();
 
