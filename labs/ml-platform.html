@@ -49,6 +49,21 @@
   .pipe .stg.on{background:var(--accent-soft)}
   .pipe .stg.on .n{background:var(--accent);color:#fff}
   .pipe .stg.on .w{color:var(--accent)}
+  .calls span.ck{transition:opacity .3s, box-shadow .3s}
+  .calls span.dim{opacity:.3}
+  .calls span.cur{box-shadow:0 0 0 2px var(--accent);opacity:1}
+  details.more{display:inline}
+  details.more summary{display:inline;cursor:pointer;color:var(--accent);font-size:13px}
+  details.more[open] summary{display:block;margin-bottom:4px}
+  @media (min-width: 1100px){
+    header,main{max-width:1200px}
+    section{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);column-gap:24px;align-items:start;grid-auto-flow:row dense}
+    section > *{grid-column:1 / -1}
+    section > svg:not(.hw){grid-column:1;grid-row:span 14;max-height:calc(100vh - 32px);position:sticky;top:16px}
+    section > .tag{justify-self:start}
+    section > svg.hw, section > .calls, section > pre.code, section > .say, section > .meter, section > .now, section > dl.rf, section > .pipe{grid-column:2}
+    section > .controls{grid-column:2}
+  }
   details.area{margin:18px 0 8px}
   details.area>summary{cursor:pointer;font-size:19px;font-weight:700;padding:10px 4px;border-bottom:2px solid var(--line);list-style:none;display:flex;align-items:center;gap:8px}
   details.area>summary::-webkit-details-marker{display:none}
@@ -108,7 +123,7 @@
   <nav class="toc2">
     <div class="tocrow"><span class="toclbl">Training (DDP)</span><a href="#lab11a">1 · One DDP step (map)</a><a href="#lab1">2 · DataLoader loop</a><a href="#lab2">3 · Sampler on/off</a><a href="#lab6">4 · set_epoch</a><a href="#lab7">5 · workers</a><a href="#lab3">6 · persistent_workers</a><a href="#lab5">7 · zero_grad</a><a href="#lab11">8 · buckets &amp; hooks</a><a href="#lab10">9 · no_sync</a></div>
     <div class="tocrow"><span class="toclbl">Kubernetes</span><a href="#lab13">1 · who reads which field</a><a href="#lab4">2 · Deployment + Service</a><a href="#lab8">3 · who said no?</a></div>
-    <div class="tocrow"><span class="toclbl">Linux</span><a href="#lab14">1 · vmstat in hardware</a><a href="#lab9">2 · read vmstat</a></div>
+    <div class="tocrow"><span class="toclbl">Linux</span><a href="#lab14">1 · vmstat in hardware</a><a href="#lab9">2 · read vmstat</a><a href="#lab15">3 · network layers</a></div>
   </nav>
 </header>
 <main>
@@ -337,7 +352,7 @@
 </details>
 
 <details class="area" id="area-linux" open>
-<summary>Linux <span class="cnt">2 labs</span></summary>
+<summary>Linux <span class="cnt">3 labs</span></summary>
 <section id="lab14">
   <span class="tag">Linux · L1–L4</span>
   <h2>Linux 1 · What each <code>vmstat</code> number is, in the hardware</h2>
@@ -370,6 +385,22 @@
 
 </section>
 
+<section id="lab15">
+  <span class="tag">Linux · L5</span>
+  <h2>Linux 3 · Where network traffic goes: socket → TCP → interface → NIC</h2>
+  <p class="why">A slow download (e.g. <code>docker pull</code>). Data comes from a remote server, through a switch, into your machine's network card, and up through the kernel to the program. Each tool looks at a different layer: pick one.</p>
+  <div class="controls" id="l15btns">
+    <button data-m="hw" aria-pressed="true">hardware</button><button data-m="dev" aria-pressed="false">sar -n DEV</button>
+    <button data-m="etcp" aria-pressed="false">sar -n ETCP</button><button data-m="ss" aria-pressed="false">ss -ti</button>
+  </div>
+  <svg id="l15" viewBox="0 0 340 300" aria-label="network layers"></svg>
+  <pre class="code" id="l15out" aria-label="example output"></pre>
+  <div class="say" id="l15say"></div>
+  <p class="so"><b>So what:</b> slow transfer → ask two questions. Is the <b>pipe</b> full? (<code>sar -n DEV</code> on the interface, compared with the link speed.) Or is <b>one conversation</b> struggling? (<code>ss -ti</code> per connection: rtt, cwnd, retransmits; <code>sar -n ETCP</code> for retransmits machine-wide.)</p>
+</section>
+
+
+
 </details>
 
 </main>
@@ -377,6 +408,7 @@
 <script>
 const NS = "http://www.w3.org/2000/svg";
 const el = (tag, attrs = {}, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; };
+const STEP_MS = 1500; // one move of a dot (slower, per her request)
 const arrowDefs = svg => { const d = el("defs"); const m = el("marker", {id: svg.id + "ah", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto"}); m.appendChild(el("path", {d: "M0,0L10,5L0,10z", fill: "var(--muted)"})); d.appendChild(m); svg.appendChild(d); return `url(#${svg.id}ah)`; };
 const box = (svg, x, y, w, h, cls, label, sub) => { svg.appendChild(el("rect", {x, y, width: w, height: h, rx: 8, class: cls})); if (label) svg.appendChild(el("text", {x: x + 10, y: y + (sub ? h / 2 - 2 : h / 2 + 4), class: cls === "hot" ? "hotT b" : "b"}, label)); if (sub) svg.appendChild(el("text", {x: x + 10, y: y + h / 2 + 14, class: cls === "hot" ? "hotT" : "m"}, sub)); };
 const line = (svg, d, cls, marker) => svg.appendChild(el("path", {d, class: cls, "marker-end": marker || ""}));
@@ -1049,7 +1081,7 @@ const hwMap = (id, on = {}) => {
     // hold the previous look of changed chips until the moving dots arrive
     const firstFan = st.mv.findIndex(x => x.includes("bus"));
     const kks = st.mv.map((m, k) => m.includes("bus") ? firstFan : k);
-    const revealAt = (!reduce && st.mv.length) ? 150 + (Math.max(...kks) + 1) * 900 : 0;
+    const revealAt = (!reduce && st.mv.length) ? 150 + (Math.max(...kks) + 1) * STEP_MS : 0;
     const prev = S[s - 1];
     if (revealAt && prev) {
       const g = el("g"); svg.appendChild(g);
@@ -1080,19 +1112,26 @@ const hwMap = (id, on = {}) => {
       const sender = /^r(\d)/.test(m[0]) ? +m[0][1] : 0, dc = RC[sender];
       const dot = el("circle", {r: 5.5, fill: dc, stroke: "var(--card)", "stroke-width": 1.5, cx: pts[0][0], cy: pts[0][1]});
       svg.appendChild(dot);
-      const a = el("animateMotion", {dur: "0.9s", begin: "indefinite", fill: "freeze", path: "M0 0 " + pts.slice(1).map(p => `L${p[0] - pts[0][0]} ${p[1] - pts[0][1]}`).join(" ")});
+      const a = el("animateMotion", {dur: (STEP_MS - 200) / 1000 + "s", begin: "indefinite", fill: "freeze", path: "M0 0 " + pts.slice(1).map(p => `L${p[0] - pts[0][0]} ${p[1] - pts[0][1]}`).join(" ")});
       dot.appendChild(a); dot.setAttribute("opacity", 0);
       const isFan = m.includes("bus"), delay = isFan ? (m === st.mv.find(x => x.includes("bus")) ? 0 : 0) : 0;
       const kk = isFan ? st.mv.findIndex(x => x.includes("bus")) : k;
-      setTimeout(() => { try { dot.setAttribute("opacity", 1); a.beginElement(); } catch (e) {} }, 150 + kk * 900);
-      setTimeout(() => dot.remove(), 150 + kk * 900 + 1000);
+      setTimeout(() => { try { dot.setAttribute("opacity", 1); a.beginElement(); } catch (e) {} }, 150 + kk * STEP_MS);
+      setTimeout(() => dot.remove(), 150 + kk * STEP_MS + STEP_MS);
     });
     else st.mv.forEach(m => { const d = "M" + m.map(n => P[n].join(" ")).join(" L"); svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.5, "stroke-dasharray": "3 3"})); });
-    callsEl.innerHTML = st.calls.length ? '<span class="lbl">calls:</span>' + st.calls.map(c => `<span>${esc(c)}</span>`).join("<i>→</i>") : "";
+    callsEl.innerHTML = st.calls.length ? '<span class="lbl">calls:</span>' + st.calls.map(c => `<span class="ck">${esc(c)}</span>`).join("<i>→</i>") : "";
     if (st.reads && st.reads.length) callsEl.innerHTML += '<div style="flex-basis:100%;height:2px"></div><span class="lbl">reads:</span>' + st.reads.map(c => `<span class="rd">${esc(c)}</span>`).join(" ");
+    const cks = [...callsEl.querySelectorAll(".ck")];
+    if (!reduce && cks.length > 1) {
+      const total = Math.max(revealAt, cks.length * 700), per = total / cks.length;
+      cks.forEach((c, i) => { c.classList.add("dim"); setTimeout(() => { cks.forEach(x => x.classList.remove("cur")); c.classList.remove("dim"); c.classList.add("cur"); }, 150 + i * per); });
+      setTimeout(() => cks.forEach(x => x.classList.remove("cur")), 150 + cks.length * per + 600);
+    }
     code.innerHTML = LINES.map(([t, c], i) => `<span class="ln${st.code.includes(i) ? " on" : ""}">${esc(t)}${c ? "  <span class=\"cm\">" + esc(c) + "</span>" : ""}</span>`).join("");
     const lbl = ["0", "1a", "1b", "2", "3", "4", "5", "6a", "6b", "7a", "7b", "8", "9"][s];
-    say.innerHTML = `<b>${lbl}/9</b> · ` + st.say;
+    const mm = st.say.match(/^(<b>[\s\S]*?<\/b>)([\s\S]*)$/);
+    say.innerHTML = `<b>${lbl}/9</b> · ` + (mm && mm[2].trim() ? `${mm[1]} <details class="more"><summary>details</summary>${mm[2]}</details>` : st.say);
   }
   document.getElementById("l11anext").onclick = () => { if (s < S.length - 1) { s++; draw(); } };
   document.getElementById("l11aback").onclick = () => { if (s > 0) { s--; draw(); } };
@@ -1308,10 +1347,10 @@ const hwMap = (id, on = {}) => {
       svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.2, "stroke-dasharray": "3 3", opacity: .45}));
       const dot = el("circle", {r: 5.5, fill: "var(--accent)", stroke: "var(--card)", "stroke-width": 1.5, cx: pts[0][0], cy: pts[0][1], opacity: 0});
       svg.appendChild(dot);
-      const a = el("animateMotion", {dur: "0.9s", begin: "indefinite", fill: "freeze", path: "M0 0 " + pts.slice(1).map(p => `L${p[0] - pts[0][0]} ${p[1] - pts[0][1]}`).join(" ")});
+      const a = el("animateMotion", {dur: (STEP_MS - 200) / 1000 + "s", begin: "indefinite", fill: "freeze", path: "M0 0 " + pts.slice(1).map(p => `L${p[0] - pts[0][0]} ${p[1] - pts[0][1]}`).join(" ")});
       dot.appendChild(a);
-      setTimeout(() => { try { dot.setAttribute("opacity", 1); a.beginElement(); } catch (e) {} }, 150 + k * 900);
-      setTimeout(() => dot.remove(), 150 + k * 900 + 1000);
+      setTimeout(() => { try { dot.setAttribute("opacity", 1); a.beginElement(); } catch (e) {} }, 150 + k * STEP_MS);
+      setTimeout(() => dot.remove(), 150 + k * STEP_MS + STEP_MS);
     });
     else st.mv.forEach(m => { const d = "M" + m.map(n => P[n].join(" ")).join(" L"); svg.appendChild(el("path", {d, fill: "none", stroke: "var(--accent)", "stroke-width": 1.5, "stroke-dasharray": "3 3"})); });
     rf.innerHTML = `<dt>Who</dt><dd><b>${st.who}</b></dd><dt>Reads</dt><dd>${st.reads}</dd><dt>If it fails</dt><dd>${st.fail}</dd>`;
@@ -1435,6 +1474,62 @@ const hwMap = (id, on = {}) => {
     say.innerHTML = c.say;
   }
   document.querySelectorAll("#l14btns [data-m]").forEach(b => b.onclick = () => { mode = b.dataset.m; document.querySelectorAll("#l14btns [data-m]").forEach(x => x.setAttribute("aria-pressed", x === b)); draw(); });
+  draw();
+})();
+
+/* ===================== LAB 15 (Linux 3: network layers) ===================== */
+(() => {
+  const svg = document.getElementById("l15"), say = document.getElementById("l15say"), out = document.getElementById("l15out");
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const L = { // id: x, y, w, h, title, sub, kind (sw = software, hw = hardware)
+    app: [8, 26, 200, 32, "docker pull (a process)", "your program", "sw"],
+    sock: [8, 64, 200, 32, "socket", "one per TCP connection", "sw"],
+    tcp: [8, 102, 200, 32, "kernel TCP/IP", "ordering, retransmits, errors", "sw"],
+    iface: [8, 140, 200, 32, "interface  eth0", "the OS's name for a network port", "sw"],
+    nic: [8, 186, 200, 32, "NIC (network card)", "hardware, plugged into PCIe", "hw"],
+    sw: [228, 186, 104, 32, "switch", "in the rack", "hw"],
+    remote: [228, 26, 104, 70, "remote server", "(registry)", "hw"],
+  };
+  const M = {
+    hw: {on: ["iface", "nic", "sw", "remote"], out: "$ ip link            # interfaces the OS knows\\n1: lo       (loopback, inside the machine only)\\n2: eth0     (backed by the NIC)\\n3: docker0  (virtual bridge for containers)\\n$ lspci | grep -i ethernet   # the actual card on PCIe\\n  Ethernet controller: … 10GbE",
+      say: "<b>NIC</b> = the physical network card (Ethernet port, or an InfiniBand card in GPU clusters), plugged into PCIe like a GPU. <b>Interface</b> = the name the OS gives a port (<code>eth0</code>, <code>ens5</code>). Most interfaces are a NIC; some are virtual (<code>lo</code>, <code>docker0</code>). The cable goes from the NIC to a <b>switch</b>, then to the other server."},
+    dev: {on: ["iface"], out: "$ sar -n DEV 1\\nIFACE   rxkB/s     txkB/s\\neth0    118000.0   900.0     ← ≈ 0.94 Gbit/s in\\nlo          0.2      0.2\\n(link speed: 1 Gbit/s → the pipe is FULL)",
+      say: "<b>sar -n DEV</b> = bytes and packets per second <b>per interface</b>. Compare with the link speed (<code>ethtool eth0</code>). Near the limit → the <b>pipe is full</b>: more tuning of TCP won't help, you need a faster link or less traffic."},
+    etcp: {on: ["tcp"], out: "$ sar -n ETCP 1\\natmptf/s  estres/s  retrans/s  isegerr/s  orsts/s\\n   0.0      0.0       42.0       0.0       0.0\\n            ↑ 42 segments re-sent per second",
+      say: "<b>sar -n ETCP</b> = TCP <b>errors</b> for the whole machine: retransmits per second, bad segments, resets. Rising <b>retrans/s</b> = packets are being lost somewhere (bad cable, overloaded switch, congested path), and TCP is resending them, which slows everything down."},
+    ss: {on: ["sock"], out: "$ ss -ti dst :443\\nESTAB 0 0  10.0.0.5:51234  203.0.113.7:443\\n   rtt:180/40  cwnd:10  retrans:0/35  bytes_received:…\\n   ↑ round-trip time   ↑ window   ↑ retransmits so far",
+      say: "<b>ss -ti</b> = one line per <b>connection</b> (socket) with TCP's internals: <b>rtt</b> (round-trip time), <b>cwnd</b> (how much it may send before waiting), <b>retrans</b>. High rtt or many retransmits on <i>this</i> connection, while the interface isn't full → the problem is the path to that server, not your link."},
+  };
+  let mode = "hw";
+  const T = (x, y, t, cls, sz) => { const e = el("text", {x, y, class: cls || "", style: `font-size:${sz || 11}px`}); e.textContent = t; svg.appendChild(e); };
+  function draw() {
+    svg.innerHTML = ""; const c = M[mode];
+    svg.appendChild(el("rect", {x: 2, y: 2, width: 212, height: 224, rx: 10, fill: "none", stroke: "var(--muted)"}));
+    T(10, 16, "your machine", "b", 11.5);
+    T(100, 183, "software ↑ · hardware ↓", "m", 9);
+    for (const [id, [x, y, w, h, t, sub, kind]] of Object.entries(L)) {
+      const on = c.on.includes(id);
+      svg.appendChild(el("rect", {x, y, width: w, height: h, rx: 6, class: on ? "boxA" : "box"}));
+      T(x + 7, y + 14, t, on ? "a b" : "b", 11); T(x + 7, y + 27, sub, "m", 9.5);
+    }
+    // cables
+    svg.appendChild(el("path", {d: "M208 202 H228", stroke: "var(--muted)", "stroke-width": 3, fill: "none"}));
+    svg.appendChild(el("path", {d: "M280 186 V96", stroke: "var(--muted)", "stroke-width": 3, fill: "none"}));
+    T(212, 236, "cable", "m", 9.5);
+    // tool labels on the left edge
+    [["ss -ti", 80], ["sar -n ETCP", 118], ["sar -n DEV", 156]].forEach(([t, y]) => { const k = t === "ss -ti" ? "ss" : t.includes("ETCP") ? "etcp" : "dev"; T(222, y + 4, "← " + t, mode === k ? "a b" : "m", 10); });
+    // packets flowing down → up
+    if (!reduce) for (let k = 0; k < 3; k++) {
+      const g = el("rect", {x: -5, y: -4, width: 10, height: 8, rx: 2, fill: "var(--accent)"});
+      g.appendChild(el("animateMotion", {dur: "3.2s", begin: `${k * 1.05}s`, repeatCount: "indefinite", path: "M280 70 V202 H108 V42"}));
+      svg.appendChild(g);
+    }
+    T(8, 258, "■ = data packets: remote → switch → NIC → kernel → your program", "m", 10);
+    T(8, 276, "One interface can carry many sockets (connections).", "m", 10);
+    out.textContent = c.out.replace(/\\n/g, "\n");
+    say.innerHTML = c.say;
+  }
+  document.querySelectorAll("#l15btns [data-m]").forEach(b => b.onclick = () => { mode = b.dataset.m; document.querySelectorAll("#l15btns [data-m]").forEach(x => x.setAttribute("aria-pressed", x === b)); draw(); });
   draw();
 })();
 

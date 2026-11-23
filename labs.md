@@ -8,11 +8,11 @@ Hands-on notes from building an ML training and serving platform: distributed tr
 
 ### Interactive labs
 
-[ML platform interactive labs](/labs/ml-platform.html): 14 step-through labs in three areas. Each area starts with the big picture, then zooms in.
+[ML platform interactive labs](/labs/ml-platform.html): 15 step-through labs in three areas. Each area starts with the big picture, then zooms in.
 
 - **Training (DDP), 9 labs:** one training step on a hardware map (CPU, PCIe, GPU), with the functions called and the settings they read; then the DataLoader loop, `DistributedSampler`, `set_epoch`, DataLoader workers, `persistent_workers`, `zero_grad()`, gradient buckets and hooks, and gradient accumulation with `no_sync`.
 - **Kubernetes, 3 labs:** which component reads which YAML field from `kubectl apply` to traffic; deleting or crashing Pods behind a Service; and whether the API server or the scheduler refused a Pod.
-- **Linux, 2 labs:** what each `vmstat` number means in the hardware (tasks on CPU cores, pages moving between RAM, page cache and swap), then reading a `vmstat` line to find the bottleneck.
+- **Linux, 3 labs:** what each `vmstat` number means in the hardware (tasks on CPU cores, pages moving between RAM, page cache and swap), reading a `vmstat` line to find the bottleneck, and where network traffic goes (socket → TCP → interface → network card) with the tool that looks at each layer.
 
 ### Flashcards
 
