@@ -12,7 +12,7 @@ Hands-on notes from building an ML training and serving platform: distributed tr
 
 - **Training (DDP), 10 labs:** one training step on a hardware map (CPU, PCIe, GPU), with the functions called and the settings they read; then the DataLoader loop, `DistributedSampler`, `set_epoch`, DataLoader workers, `persistent_workers`, `zero_grad()`, gradient buckets and hooks, gradient accumulation with `no_sync`, and checkpoint/resume (who writes, who reads, what the file holds).
 - **Kubernetes, 3 labs:** which component reads which YAML field from `kubectl apply` to traffic; deleting or crashing Pods behind a Service; and whether the API server or the scheduler refused a Pod.
-- **Linux, 3 labs:** what each `vmstat` number means in the hardware (tasks on CPU cores, pages moving between RAM, page cache and swap), reading a `vmstat` line to find the bottleneck, and where network traffic goes (socket → TCP → interface → network card) with the tool that looks at each layer.
+- **Linux, 3 labs:** what each `vmstat` number means in the hardware (tasks on CPU cores, pages moving between RAM, page cache and swap); where network traffic goes (socket → TCP → interface → network card) and which tool looks at each layer; then practice: read a `vmstat` line and find the bottleneck.
 
 ### Flashcards
 

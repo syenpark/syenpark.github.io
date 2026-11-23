@@ -59,7 +59,7 @@
     header,main{max-width:1200px}
     section{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);column-gap:24px;align-items:start;grid-auto-flow:row dense}
     section > *{grid-column:1 / -1}
-    section > svg:not(.hw){grid-column:1;grid-row:span 14;max-height:calc(100vh - 32px);position:sticky;top:16px}
+    section > svg:not(.hw){grid-column:1;grid-row:span 14;justify-self:center;width:auto;height:auto;max-width:100%;max-height:calc(100vh - 32px)}
     section > .tag{justify-self:start}
     section > svg.hw{grid-column:1}
     section > .calls, section > pre.code, section > .say, section > .meter, section > .now, section > dl.rf, section > .pipe{grid-column:2}
@@ -124,7 +124,7 @@
   <nav class="toc2">
     <div class="tocrow"><span class="toclbl">Training (DDP)</span><a href="#lab11a">1 · One DDP step (map)</a><a href="#lab1">2 · DataLoader loop</a><a href="#lab2">3 · Sampler on/off</a><a href="#lab6">4 · set_epoch</a><a href="#lab7">5 · workers</a><a href="#lab3">6 · persistent_workers</a><a href="#lab5">7 · zero_grad</a><a href="#lab11">8 · buckets &amp; hooks</a><a href="#lab10">9 · no_sync</a><a href="#lab16">10 · checkpoint</a></div>
     <div class="tocrow"><span class="toclbl">Kubernetes</span><a href="#lab13">1 · who reads which field</a><a href="#lab4">2 · Deployment + Service</a><a href="#lab8">3 · who said no?</a></div>
-    <div class="tocrow"><span class="toclbl">Linux</span><a href="#lab14">1 · vmstat in hardware</a><a href="#lab9">2 · read vmstat</a><a href="#lab15">3 · network layers</a></div>
+    <div class="tocrow"><span class="toclbl">Linux</span><a href="#lab14">1 · vmstat in hardware</a><a href="#lab15">2 · network layers</a><a href="#lab9">3 · diagnose with vmstat</a></div>
   </nav>
 </header>
 <main>
@@ -385,12 +385,26 @@
   </div>
   <svg id="l14" viewBox="0 0 340 384" aria-label="vmstat columns in hardware"></svg>
   <div class="say" id="l14say"></div>
-  <p class="so"><b>So what:</b> vmstat counts three kinds of things. <b>Tasks</b>: r = running or waiting for a core, b = stuck waiting for the disk. <b>Time</b>: us / sy / id / wa = how each CPU second was spent. <b>Pages and blocks moving</b>: bi / bo = file data between disk and RAM, si / so = process memory pushed out to swap and pulled back. Read them together, then use Linux 2 to practise.</p>
+  <p class="so"><b>So what:</b> vmstat counts three kinds of things. <b>Tasks</b>: r = running or waiting for a core, b = stuck waiting for the disk. <b>Time</b>: us / sy / id / wa = how each CPU second was spent. <b>Pages and blocks moving</b>: bi / bo = file data between disk and RAM, si / so = process memory pushed out to swap and pulled back. Read them together, then practise in Linux 3.</p>
+</section>
+
+<section id="lab15">
+  <span class="tag">Linux · L5</span>
+  <h2>Linux 2 · Where network traffic goes: socket → TCP → interface → NIC</h2>
+  <p class="why">A slow download (e.g. <code>docker pull</code>). Data comes from a remote server, through a switch, into your machine's network card, and up through the kernel to the program. Each tool looks at a different layer: pick one.</p>
+  <div class="controls" id="l15btns">
+    <button data-m="hw" aria-pressed="true">hardware</button><button data-m="dev" aria-pressed="false">sar -n DEV</button>
+    <button data-m="etcp" aria-pressed="false">sar -n ETCP</button><button data-m="ss" aria-pressed="false">ss -ti</button>
+  </div>
+  <svg id="l15" viewBox="0 0 340 300" aria-label="network layers"></svg>
+  <pre class="code" id="l15out" aria-label="example output"></pre>
+  <div class="say" id="l15say"></div>
+  <p class="so"><b>So what:</b> slow transfer → ask two questions. Is the <b>pipe</b> full? (<code>sar -n DEV</code> on the interface, compared with the link speed.) Or is <b>one conversation</b> struggling? (<code>ss -ti</code> per connection: rtt, cwnd, retransmits; <code>sar -n ETCP</code> for retransmits machine-wide.)</p>
 </section>
 
 <section id="lab9">
   <span class="tag">Linux · L1–L3</span>
-  <h2>Linux 2 · Read a <code>vmstat 1</code> line — what's the bottleneck?</h2>
+  <h2>Linux 3 · Read a <code>vmstat 1</code> line — what's the bottleneck?</h2>
   <p class="why">An 8-core machine. Pick a scenario, guess the bottleneck from the numbers, then reveal.</p>
   <div class="controls">
     <button data-s="ok" aria-pressed="true">A</button><button data-s="cpu" aria-pressed="false">B</button>
@@ -402,20 +416,6 @@
   <div class="say" id="l9say">Scenario A. What's limiting progress — CPU, I/O, memory, or synchronization?</div>
   <p class="so"><b>So what:</b> vmstat says <b>which resource</b>; then <code>top</code> / <code>pidstat -u -t</code> say <b>which process and thread</b>, and <code>strace</code> says <b>which syscall</b>. Confirm, fix, measure again.</p>
 
-</section>
-
-<section id="lab15">
-  <span class="tag">Linux · L5</span>
-  <h2>Linux 3 · Where network traffic goes: socket → TCP → interface → NIC</h2>
-  <p class="why">A slow download (e.g. <code>docker pull</code>). Data comes from a remote server, through a switch, into your machine's network card, and up through the kernel to the program. Each tool looks at a different layer: pick one.</p>
-  <div class="controls" id="l15btns">
-    <button data-m="hw" aria-pressed="true">hardware</button><button data-m="dev" aria-pressed="false">sar -n DEV</button>
-    <button data-m="etcp" aria-pressed="false">sar -n ETCP</button><button data-m="ss" aria-pressed="false">ss -ti</button>
-  </div>
-  <svg id="l15" viewBox="0 0 340 300" aria-label="network layers"></svg>
-  <pre class="code" id="l15out" aria-label="example output"></pre>
-  <div class="say" id="l15say"></div>
-  <p class="so"><b>So what:</b> slow transfer → ask two questions. Is the <b>pipe</b> full? (<code>sar -n DEV</code> on the interface, compared with the link speed.) Or is <b>one conversation</b> struggling? (<code>ss -ti</code> per connection: rtt, cwnd, retransmits; <code>sar -n ETCP</code> for retransmits machine-wide.)</p>
 </section>
 
 
@@ -706,7 +706,7 @@ const hwMap = (id, on = {}) => {
       svg.appendChild(el("text", {x: 4, y, class: mode === "c" ? "r b" : "a b"}, lbl));
       ord.forEach((v, k) => { const owner = k % 2, show = mode !== "c" || owner === oi; cell(bx(k), y + 6, v, show ? rc(owner) : "box", show ? 1 : .35); });
       ord.forEach((_, k) => svg.appendChild(el("text", {x: bx(k) + 6, y: y + 42, class: "m", style: "font-size:9.5px"}, `p${k}`)));
-      y += 54;
+      y += 62;
     });
     svg.appendChild(el("text", {x: 4, y, class: "m"}, "③ keep own positions: rank 0 = p0,p2,p4… · rank 1 = p1,p3…"));
     y += 8;
@@ -993,7 +993,7 @@ const hwMap = (id, on = {}) => {
       calls: ["Net()", "model.cuda()", "PCIe copy: W → this rank's GPU"],
       reads: [".cuda() → GPU number LOCAL_RANK (set by torchrun)"],
       say: "<b>1a · .cuda().</b> Each rank copies <b>its own</b> W over PCIe to <b>its own</b> GPU. PCIe is the road inside one machine (CPU RAM → GPU). Still all different: A, B, C, D."},
-    {code: [1, 2, 3, 4, 5], z: {main: "DDP(model); sampler; loader", mem: 1, comm: "broadcast W (once)", link: 1, others: 1}, c: {W: ["p", "W·A"], bA: "h", bB: "h", bC: "h"}, o: {W: ["h", "W·A copied"]},
+    {code: [1, 2, 3, 4, 5], z: {main: "DDP(model) + loader", mem: 1, comm: "broadcast W (once)", link: 1, others: 1}, c: {W: ["p", "W·A"], bA: "h", bB: "h", bC: "h"}, o: {W: ["h", "W·A copied"]},
       mv: OTHERS(["W", "comm", "link"]),
       calls: ["DDP(model)", "① broadcast(W) from rank 0 → NCCL", "② Reducer: buckets + a hook per parameter (every rank)", "sampler learns its rank"],
       reads: ["DDP: device_ids, bucket_cap_mb=25, broadcast_buffers=True", "sampler: rank, num_replicas=4 (from torchrun env), shuffle=True, seed=0, drop_last=False"],
@@ -1028,12 +1028,12 @@ const hwMap = (id, on = {}) => {
       calls: ["L5 grad ready → hook", "Reducer: A full", "torch.distributed all_reduce(A, async)", "NCCL ncclAllReduce: GPU kernels ⇄ all ranks"],
       reads: ["DDP: bucket_cap_mb"],
       say: "<b>L5 done → bucket A is full.</b> Who does what? The <b>hook</b> (a small function the Reducer registered on each parameter) copies L5's grad into its slot in the bucket buffer. The <b>Reducer</b> sees that A is now full and calls <code>torch.distributed</code>'s async <code>all_reduce(A)</code>, a thin PyTorch wrapper that hands the job to <b>NCCL</b>'s own all-reduce (<code>ncclAllReduce</code>). The all-reduce algorithm itself lives in NCCL: its GPU kernels read the buffer and do the sending and receiving. Every rank fills A at about the same time and calls <code>all_reduce(A)</code>; NCCL waits until <b>all</b> ranks have joined, then each one <b>sends its part and receives the others'</b> (dot colour = sender). The averaged result is written <b>back into bucket A</b>; the bucket is not emptied."},
-    {code: [12], z: {main: "loss.backward()", compute: "L4, L3 grads", mem: 1, comm: "all_reduce(B) ⇄", link: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad L6 … L3"], bA: ["p", "A ✓ averaged"], bB: ["h", "B full ⇄"], bC: "p"}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} · B ⇄"]},
+    {code: [12], z: {main: "loss.backward()", compute: "L4, L3 grads", mem: 1, comm: "all_reduce(B) ⇄", link: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad L6 … L3"], bA: ["p", "A ✓ avg"], bB: ["h", "B full ⇄"], bC: "p"}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} · B ⇄"]},
       mv: [["compute", "grad"], ["grad", "bB"], ...OTHERSg(["bB", "comm", "link"]), ...BACK(["link", "comm", "bB"])],
       calls: ["autograd: L4, L3", "hooks → bucket B", "Reducer: B full", "all_reduce(B, async)", "NCCL ⇄ all ranks"],
       reads: ["DDP: bucket_cap_mb"],
       say: "<b>Overlap.</b> While NCCL was exchanging A on the comm stream, the compute stream kept going: L4, then L3. Now B is full → its all-reduce starts, again on every rank (Training 8 shows this as a timeline)."},
-    {code: [12], z: {main: "loss.backward()", compute: "L2, L1 grads", mem: 1, comm: "all_reduce(C) ⇄", link: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad all layers"], bA: ["p", "A ✓ averaged"], bB: ["p", "B ✓ averaged"], bC: ["h", "C full ⇄"]}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} · C ⇄"]},
+    {code: [12], z: {main: "loss.backward()", compute: "L2, L1 grads", mem: 1, comm: "all_reduce(C) ⇄", link: 1, others: 1}, c: {W: ["p", "W·A"], xb: "p", act: "p", grad: ["h", ".grad all layers"], bA: ["p", "A ✓ avg"], bB: ["p", "B ✓ avg"], bC: ["h", "C full ⇄"]}, o: {W: ["p", "W·A"], d: ["p", "xb {i}"], g: ["h", "g{i} · C ⇄"]},
       mv: [["compute", "grad"], ["grad", "bC"], ...OTHERSg(["bC", "comm", "link"]), ...BACK(["link", "comm", "bC"])],
       calls: ["autograd: L2, L1", "hooks → bucket C", "Reducer: C full", "all_reduce(C, async)", "NCCL ⇄ all ranks"],
       reads: ["DDP: bucket_cap_mb"],
@@ -1406,7 +1406,7 @@ const hwMap = (id, on = {}) => {
         say: "<b>us / sy / id / wa = how each CPU second was spent</b>, in %, adding up to 100. <b>us</b> = running your program's own code. <b>sy</b> = running kernel code for it (system calls: reading files, sending packets, allocating memory). <b>id</b> = nothing to do. <b>wa</b> = nothing to do <i>but</i> some task is waiting on disk I/O (counts as idle time)."},
     cs: {v: {r: 3, cs: 90000, us: 18, sy: 9, id: 73}, hl: ["cs"], cores: ["A", "", "", ""], queue: ["B"], ram: {anon: 24, cache: 20},
          mv: [{task: "A", from: [38, 90], to: [272, 84]}, {task: "B", from: [272, 84], to: [38, 90]}],
-         say: "<b>cs = context switches per second</b>: a core stops one task, saves its registers, and loads another. <b>Voluntary</b>: the task goes to sleep (waits for a lock, the disk, the network). <b>Involuntary</b>: its time slice ran out. Very high cs with idle CPUs = threads keep sleeping and waking, e.g. fighting over a <b>lock</b> (Linux 2, scenario D)."},
+         say: "<b>cs = context switches per second</b>: a core stops one task, saves its registers, and loads another. <b>Voluntary</b>: the task goes to sleep (waits for a lock, the disk, the network). <b>Involuntary</b>: its time slice ran out. Very high cs with idle CPUs = threads keep sleeping and waking, e.g. fighting over a <b>lock</b> (Linux 3, scenario D)."},
     in: {v: {in: 12000, bi: 3000}, hl: ["in"], cores: ["A", "", "", ""], ram: {anon: 24, cache: 20}, disk: "files", irq: true,
          say: "<b>in = interrupts per second</b>: hardware tapping the CPU on the shoulder: \"I'm done\" from the disk, \"a packet arrived\" from the network card, the timer tick. The CPU pauses what it's doing to handle each one. Lots of I/O → lots of interrupts."},
     mem: {v: {free: "0.3G", cache: "9.5G"}, hl: ["free", "cache"], cores: ["A", "", "", ""], ram: {anon: 22, cache: 38}, disk: "files",
@@ -1432,6 +1432,8 @@ const hwMap = (id, on = {}) => {
     if (o.page) g.appendChild(el("rect", {x: -8, y: -7, width: 16, height: 14, rx: 2, fill: PC[o.page], stroke: "var(--card)", "stroke-width": 1.5}));
     else { g.appendChild(el("circle", {r: 9, fill: "var(--warn)", stroke: "var(--card)", "stroke-width": 1.5})); const t = el("text", {x: -4, y: 4, class: "hotT b", style: "font-size:10.5px"}); t.textContent = o.task; g.appendChild(t); }
     svg.insertBefore(el("path", {d: `M${o.from.join(" ")} L${o.to.join(" ")}`, fill: "none", stroke: "var(--accent)", "stroke-width": 1, "stroke-dasharray": "3 3", opacity: .45}), svg.firstChild);
+    g.setAttribute("visibility", "hidden");
+    g.appendChild(el("set", {attributeName: "visibility", to: "visible", begin: `${k * 0.8}s`, fill: "freeze"}));
     g.appendChild(el("animateMotion", {dur: "1.6s", begin: `${k * 0.8}s`, repeatCount: "indefinite", path: `M${o.from.join(" ")} L${o.to.join(" ")}`}));
     svg.appendChild(g);
   }
@@ -1483,6 +1485,7 @@ const hwMap = (id, on = {}) => {
     for (let k = 0; k < 16; k++) { const [x, y] = cellS(k); page(x, y + (k < 8 ? 4 : -14 + 18), k < (c.swap || 0) ? "anon" : null, true); }
     if (c.irq) {
       [[90, 300], [250, 300]].forEach(([x, y], k) => { if (reduce) return; const g = el("g"); g.appendChild(el("path", {d: "M0 -8 L-4 1 L1 1 L-2 9 L5 -2 L0 -2 Z", fill: "var(--warn)"}));
+        g.setAttribute("visibility", "hidden"); g.appendChild(el("set", {attributeName: "visibility", to: "visible", begin: `${k * 0.6}s`, fill: "freeze"}));
         g.appendChild(el("animateMotion", {dur: "1.2s", begin: `${k * 0.6}s`, repeatCount: "indefinite", path: `M${x} ${y} L${60 + k * 116} 92`})); svg.appendChild(g); });
       T(180, 352, "⚡ interrupt: device → CPU", "a", 10);
     }
@@ -1540,6 +1543,7 @@ const hwMap = (id, on = {}) => {
     // packets flowing down → up
     if (!reduce) for (let k = 0; k < 3; k++) {
       const g = el("rect", {x: -5, y: -4, width: 10, height: 8, rx: 2, fill: "var(--accent)"});
+      g.setAttribute("visibility", "hidden"); g.appendChild(el("set", {attributeName: "visibility", to: "visible", begin: `${k * 1.05}s`, fill: "freeze"}));
       g.appendChild(el("animateMotion", {dur: "3.2s", begin: `${k * 1.05}s`, repeatCount: "indefinite", path: "M280 70 V202 H108 V42"}));
       svg.appendChild(g);
     }
@@ -1639,6 +1643,12 @@ const hwMap = (id, on = {}) => {
     e.preventDefault(); t.scrollIntoView({behavior: "smooth", block: "start"}); history.replaceState(null, "", a.getAttribute("href"));
   }));
   const h = location.hash && document.querySelector(location.hash); if (h) { const d = h.closest("details.area"); if (d) d.open = true; }
+})();
+
+/* ===================== keep every lab figure's aspect ratio (wide layout fits one screen, nothing overflows) ===================== */
+(() => {
+  const fit = svg => { const vb = (svg.getAttribute("viewBox") || "").split(/\s+/).map(Number); if (vb.length === 4 && vb[2] > 0 && vb[3] > 0) svg.style.aspectRatio = `${vb[2]} / ${vb[3]}`; };
+  document.querySelectorAll("section > svg").forEach(svg => { fit(svg); new MutationObserver(() => fit(svg)).observe(svg, {attributes: true, attributeFilter: ["viewBox"]}); });
 })();
 </script>
 </body>
