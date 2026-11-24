@@ -273,7 +273,7 @@
     <div>backward + sync time<strong id="l11t">–</strong></div>
   </div>
   <div class="say" id="l11say"></div>
-  <p class="so"><b>So what:</b> a <b>hook</b> is a function autograd calls the moment one parameter's gradient is ready. DDP's hook drops it into its <b>bucket</b>; when a bucket is full, it launches that bucket's all-reduce <b>asynchronously</b> while backward keeps computing earlier layers. Communication <b>overlaps</b> computation. Too few buckets = no overlap; too many = per-call overhead piles up (<code>bucket_cap_mb</code>, default 25 MB, sets the size).</p>
+  <p class="so"><b>So what:</b> a <b>hook</b> is a function autograd calls the moment one parameter's gradient is ready. DDP's hook drops it into its <b>bucket</b>; when a bucket is full, it launches that bucket's all-reduce <b>asynchronously</b> while backward keeps computing earlier layers. Communication <b>overlaps</b> computation. Too few buckets = no overlap; too many = per-call overhead piles up (<code>bucket_cap_mb</code>, default 25 MB, sets the size). <b>"Full" means every gradient assigned to that bucket has arrived</b> — DDP assigns layers to buckets up front (closing a bucket once it reaches the cap, so one can be a bit bigger than the cap), and the last bucket is sent at the end of backward even if it is small. A layer is never split across buckets.</p>
 
 </section>
 

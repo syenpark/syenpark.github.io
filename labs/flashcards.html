@@ -226,7 +226,7 @@ const CARDS = [
 { id:"D10", t:"DDP", q:"L5's gradient is ready. Who does what until bucket A is averaged across ranks?",
   what:"autograd → <b>hook</b> → <b>Reducer</b> (bucket full?) → <b>all_reduce</b> (torch.distributed) → <b>NCCL</b> runs it.",
   how:"autograd finishes L5's grad and calls the hook the Reducer registered on that parameter → the hook copies the grad into bucket A → A is now full, so the Reducer launches an <b>async</b> all_reduce(A) → NCCL exchanges A with every rank on the comm stream and writes the average back into A.",
-  so:"Backward keeps computing L4, L3… on the compute stream while NCCL sends A: communication <b>overlaps</b> computation. Too few buckets = no overlap; too many = per-call overhead.",
+  so:"Backward keeps computing L4, L3… on the compute stream while NCCL sends A: communication <b>overlaps</b> computation. Too few buckets = no overlap; too many = per-call overhead. \"Full\" = every gradient assigned to the bucket has arrived (layers are assigned up front, never split; the last bucket is sent even if small).",
   en:"When a gradient is ready, autograd fires DDP's hook; once a bucket is full the Reducer launches an async all-reduce that NCCL executes on its own stream, overlapping communication with the rest of backward.",
   trap:"\"the Reducer fires the hook\" — autograd fires it; and all_reduce isn't in DDP — torch.distributed hands it to NCCL"},
 
