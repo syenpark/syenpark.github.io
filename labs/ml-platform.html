@@ -78,6 +78,8 @@
   h2{font-size:18px;margin:8px 0 4px;line-height:1.35}
   .why{color:var(--muted);font-size:14px;margin:0 0 10px}
   svg{width:100%;height:auto;display:block;margin:6px 0}
+  .rk{border:1px dashed var(--line);border-radius:12px;padding:4px 12px 10px;margin:10px 0}
+  .rk svg{max-width:560px;margin:6px auto;aspect-ratio:340/128}
   svg text{fill:var(--fg);font:12px -apple-system,"Segoe UI",sans-serif}
   svg .m{fill:var(--muted)} svg .a{fill:var(--accent)} svg .g{fill:var(--good)} svg .r{fill:var(--bad)} svg .b{font-weight:700}
   .box{fill:var(--card);stroke:var(--line);stroke-width:1.5}
@@ -110,6 +112,10 @@
   .calls .rd{background:var(--good-soft);color:var(--good)}
   .rf{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:14px;margin-top:8px;background:var(--chip);border-radius:10px;padding:10px 12px}
   .rf dt{color:var(--muted);font-weight:600}
+  .terms{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;background:var(--chip);border-radius:10px;padding:10px 12px;margin:8px 0}
+  .terms dt{font-weight:700}
+  .terms dd{margin:0}
+  @media (max-width:520px){.terms{grid-template-columns:1fr}.terms dd{margin-bottom:6px}}
   .rf dd{margin:0}
   .rf dd code{font-size:12.5px}
   .calls .lbl{background:none;color:var(--muted);padding:0 4px 0 0}
@@ -256,6 +262,16 @@
   <span class="tag">DDP · D10</span>
   <h2>Training 8 · Buckets &amp; hooks: when does all-reduce start?</h2>
   <svg class="hw" id="hw-lab11" viewBox="0 0 340 128" aria-label="where it runs: CPU or GPU"></svg>
+  <div class="rk">
+    <p class="why"><b>First: who exchanges gradients?</b> A <b>rank</b> = one training <b>process</b>. On GPUs it's one rank per GPU, but a rank can also run on the CPU. Each rank trains on <b>different samples</b>, so each gets a <b>different gradient</b>. All-reduce turns them into the same average. Pick a setup:</p>
+    <div class="controls" id="l11rb">
+      <button data-r="cpu" aria-pressed="true">your bucket run: 2 ranks on CPU</button>
+      <button data-r="gpu" aria-pressed="false">2 ranks on 2 GPUs</button>
+      <button data-r="one" aria-pressed="false">1 rank</button>
+    </div>
+    <svg id="l11r" viewBox="0 0 340 128" aria-label="ranks and all-reduce"></svg>
+    <div class="say" id="l11rsay"></div>
+  </div>
   <p class="why"><b>compute</b> = backward kernels on the GPU (producer). <b>comm</b> = the GPU's <b>comm stream</b>, where NCCL exchanges a full bucket with the other GPUs (consumer). The data travels over <b>NVLink</b> between GPUs in the same machine, or over the <b>network card</b> (InfiniBand / Ethernet) between machines. They run at the same time on separate GPU streams. New to hooks/NCCL? Do Training 1 first.</p>
   <p class="why"><b>NCCL</b> (NVIDIA Collective Communications Library) is the library that actually moves the data between GPUs. It runs collective operations such as all-reduce and broadcast as GPU kernels and picks the fastest path (NVLink, PCIe or the network). DDP's Reducer only <i>asks</i> for "all-reduce bucket A"; NCCL does it. You select it with <code>init_process_group(backend="nccl")</code>.</p>
   <p class="why">A 6-layer model. <code>backward()</code> runs from the <b>last</b> layer (L6) to the first (L1); each layer's gradient takes 1 time unit. Every all-reduce costs a fixed 1.1 units of overhead + 0.25 per layer it carries. One press = one layer's gradient is ready.</p>
@@ -265,14 +281,17 @@
     <button data-m="6" aria-pressed="false">6 tiny buckets</button>
   </div>
   <div class="controls"><button class="primary" id="l11next">Next layer ▶</button><button id="l11reset">Reset</button></div>
-  <svg id="l11" viewBox="0 0 340 196" aria-label="ddp buckets and hooks"></svg>
+  <svg id="l11" viewBox="0 0 340 214" aria-label="ddp buckets and hooks"></svg>
   <pre class="code" id="l11code" aria-label="ddp hook"></pre>
   <div class="now" id="l11now"></div>
   <div class="meter">
     <div>all-reduce calls<strong id="l11calls">0</strong></div>
     <div>backward + sync time<strong id="l11t">–</strong></div>
+    <div>comm hidden behind backward<strong id="l11hid">–</strong></div>
+    <div>comm exposed (GPU waits)<strong id="l11exp">–</strong></div>
   </div>
   <div class="say" id="l11say"></div>
+  <p class="so"><b>Bucket size never removes the all-reduce.</b> Every bucket is still sent, every step. What bucket size changes is <b>when</b> each send happens: during backward (<b>hidden</b>, free) or after it (<b>exposed</b>, the GPU waits). The gradients and the final weights are the same for every setting.</p>
   <p class="so"><b>So what:</b> a <b>hook</b> is a function autograd calls the moment one parameter's gradient is ready. DDP's hook drops it into its <b>bucket</b>; when a bucket is full, it launches that bucket's all-reduce <b>asynchronously</b> while backward keeps computing earlier layers. Communication <b>overlaps</b> computation. Too few buckets = no overlap; too many = per-call overhead piles up (<code>bucket_cap_mb</code>, default 25 MB, sets the size). <b>"Full" means every gradient assigned to that bucket has arrived</b> — DDP assigns layers to buckets up front (closing a bucket once it reaches the cap, so one can be a bit bigger than the cap), and the last bucket is sent at the end of backward even if it is small. A layer is never split across buckets.</p>
 
 </section>
@@ -282,6 +301,11 @@
   <h2>Training 9 · Gradient accumulation: all-reduce every micro-batch, or once?</h2>
   <svg class="hw" id="hw-lab10" viewBox="0 0 340 128" aria-label="where it runs: CPU or GPU"></svg>
   <p class="why">Goal: one weight update from <b>128 samples</b> per rank. 2 ranks; each backward sends gradients in 2 buckets (buckets: Training 8). Two separate knobs: <b>accumulation</b> (feed 32 at a time, step every 4) cuts <b>memory</b>; <b>no_sync</b> cuts <b>communication</b>.</p>
+  <dl class="terms">
+    <dt>iteration</dt><dd>one pass of the <code>for</code> loop = one <b>micro-batch</b> (32 samples) = 1 forward + 1 <b>backward</b>. Press Next once = one iteration.</dd>
+    <dt>optimizer step</dt><dd>one <b>weight update</b> (<code>optimizer.step()</code>). With ACCUM = 4 it happens once every <b>4 iterations</b>.</dd>
+    <dt>all-reduce calls</dt><dd>happen inside <b>backward</b>, one per bucket. So: calls = (backwards that sync) × (buckets) — here buckets = 2.</dd>
+  </dl>
   <div class="controls">
     <button data-m="full" aria-pressed="false">A: batch 128 (fits)</button>
     <button data-m="sync" aria-pressed="true">B: accumulate, sync every</button>
@@ -297,6 +321,7 @@
     <div>all-reduce calls<strong id="l10calls">0</strong></div>
     <div>weights after step<strong id="l10w">–</strong></div>
   </div>
+  <div class="now" id="l10count"></div>
   <div class="say" id="l10say"></div>
   <p class="so"><b>So what:</b> A is the ideal, but 128 may not fit in GPU memory. B fits (32 at a time) but DDP syncs after <b>every</b> backward → 4× the communication. C keeps B's memory and gets back to A's communication: <code>.grad</code> sums locally because backward <b>adds (+=)</b>, so one all-reduce of the sum gives the same average. Keep the <b>last</b> micro-batch outside <code>no_sync</code>, or the ranks never sync.</p>
 </section>
@@ -395,6 +420,7 @@
   <div class="controls" id="l15btns">
     <button data-m="hw" aria-pressed="true">hardware</button><button data-m="dev" aria-pressed="false">sar -n DEV</button>
     <button data-m="etcp" aria-pressed="false">sar -n ETCP</button><button data-m="ss" aria-pressed="false">ss -ti</button>
+    <button data-m="loss" aria-pressed="false">why slow? loss → cwnd</button>
   </div>
   <svg id="l15" viewBox="0 0 340 300" aria-label="network layers"></svg>
   <pre class="code" id="l15out" aria-label="example output"></pre>
@@ -944,6 +970,8 @@ const hwMap = (id, on = {}) => {
     const n = N(), ok = !skip(n - 1);
     document.getElementById("l10w").textContent = m < n ? "–" : ok ? "identical ✓" : "diverged ✗";
     const k = m - 1;
+    let syncs = 0; for (let j = 0; j < m; j++) if (!skip(j)) syncs++;
+    document.getElementById("l10count").innerHTML = `iteration <b>${m}/${n}</b> · backwards so far <b>${m}</b> · that synced <b>${syncs}</b> · optimizer steps <b>${m === n ? 1 : 0}</b><br>all-reduce calls = ${syncs} synced backward${syncs === 1 ? "" : "s"} × 2 buckets = <b>${syncs * 2}</b>`;
     if (m === 0) { say.textContent = full() ? "Press Next iteration. Here all 128 samples fit, so one iteration = one step." : "Press Next iteration. One press = one loop iteration = 32 samples (a micro-batch)."; return; }
     if (full()) { say.innerHTML = "One iteration, one backward, <b>2 all-reduce calls</b> (2 buckets), one step. Ideal — but needs memory for <b>128</b> samples at once. Same final gradient (7.5) as B and C (the g values here already include the ÷ACCUM scale)."; return; }
     if (m < 4) say.innerHTML = skip(k) ? `Iteration ${m}: samples ${k * 32}–${k * 32 + 31}. Inside <b>no_sync()</b> → backward only <b>adds</b> g${m} into .grad. No communication, no step yet.` : `Iteration ${m}: samples ${k * 32}–${k * 32 + 31}. backward adds g${m} into .grad, and DDP <b>all-reduces</b> it (2 buckets = 2 calls). No step yet.`;
@@ -1158,6 +1186,48 @@ const hwMap = (id, on = {}) => {
   draw();
 })();
 
+/* ===================== LAB 11 · ranks panel ===================== */
+(() => {
+  const svg = document.getElementById("l11r"), say = document.getElementById("l11rsay");
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let r = "cpu";
+  const T = (x, y, t, cls, anchor) => svg.appendChild(el("text", {x, y, class: cls || "", "text-anchor": anchor || "start"}, t));
+  function rankBox(x, k, dev, data, g, after) {
+    svg.appendChild(el("rect", {x, y: 24, width: 128, height: 76, rx: 8, class: "box", stroke: RCOL[k], "stroke-width": 2}));
+    T(x + 8, 40, `rank ${k}${dev}`, "b");
+    T(x + 8, 56, data, "m");
+    T(x + 8, 73, `L6.grad = ${g}`);
+    T(x + 8, 91, after, after.startsWith("after") ? "a b" : "m");
+  }
+  const RCOL = ["var(--accent)", "#d9822b"];
+  function draw() {
+    svg.innerHTML = "";
+    if (r === "one") {
+      T(4, 14, "one machine · 1 process", "m");
+      rankBox(106, 0, " · GPU 0", "ALL samples", "2.0", "nothing to average");
+      T(170, 118, "no all-reduce · no DDP needed", "r b", "middle");
+      say.innerHTML = "<b>1 rank</b> = one process sees all the data, so there is only one gradient. There is nothing to average and no all-reduce. DDP (and buckets) only matter when there are <b>2 or more ranks</b>.";
+      return;
+    }
+    const gpu = r === "gpu";
+    T(4, 14, gpu ? "one machine · 2 GPUs · 2 processes" : "your laptop · CPU only · 2 processes", "m");
+    rankBox(6, 0, gpu ? " · GPU 0" : " · CPU", "samples 0, 2, 4…", "2.0", "after all-reduce: 3.0");
+    rankBox(206, 1, gpu ? " · GPU 1" : " · CPU", "samples 1, 3, 5…", "4.0", "after all-reduce: 3.0");
+    svg.appendChild(el("path", {d: "M138 62 H202", stroke: "var(--muted)", "stroke-width": 1.5, fill: "none", "stroke-dasharray": "3 3"}));
+    T(170, 54, "all-reduce", "a b", "middle");
+    T(170, 78, gpu ? "NCCL" : "gloo", "m", "middle");
+    T(170, 120, gpu ? "comm on the GPU's comm stream → overlaps compute" : "comm and compute share the same CPU cores", gpu ? "g" : "m", "middle");
+    if (!reduce) [[0, "M140 62 H200"], [1, "M200 62 H140"]].forEach(([k, p]) => {
+      const d = el("circle", {r: 4.5, fill: RCOL[k]}); d.appendChild(el("animateMotion", {dur: "1.6s", repeatCount: "indefinite", path: p})); svg.appendChild(d);
+    });
+    say.innerHTML = gpu
+      ? "Same 2 ranks, now each on its own GPU. NCCL runs the all-reduce on each GPU's <b>comm stream</b>, so it really runs <b>at the same time</b> as the backward kernels. This is where bucket size pays off: it decides how much of the all-reduce is <b>hidden</b> behind backward."
+      : "Your <code>c1_ddp_buckets.py</code> run: <b>no GPU</b>, but <b>2 ranks</b> (2 processes) on the CPU, each with different samples → different gradients → all-reduce still needed (via <b>gloo</b>). Because gloo and backward use the <b>same CPU cores</b>, there is little real overlap, which is why your backward time barely changed with the bucket size.";
+  }
+  document.querySelectorAll("#l11rb [data-r]").forEach(b => b.onclick = () => { r = b.dataset.r; document.querySelectorAll("#l11rb [data-r]").forEach(x => x.setAttribute("aria-pressed", x === b)); draw(); });
+  draw();
+})();
+
 /* ===================== LAB 11 ===================== */
 (() => {
   const svg = document.getElementById("l11"), say = document.getElementById("l11say"), code = document.getElementById("l11code"), now = document.getElementById("l11now");
@@ -1232,12 +1302,21 @@ const hwMap = (id, on = {}) => {
       if (px(e) - px(b.start) > 14) svg.appendChild(el("text", {x: px(b.start) + 4, y: yN + 15, class: "hotT b"}, b.name)); });
     for (let t = 0; t <= 9; t++) { svg.appendChild(el("line", {x1: px(t), x2: px(t), y1: yN + 24, y2: yN + 28, class: "ln"})); svg.appendChild(el("text", {x: px(t) - 3, y: yN + 40, class: "m"}, String(t))); }
     if (!end && T > 0) svg.appendChild(el("line", {x1: px(T), x2: px(T), y1: yG - 4, y2: yN + 26, stroke: "var(--fg)", "stroke-width": 1.5, "stroke-dasharray": "3 2"}));
-    if (end) svg.appendChild(el("text", {x: 4, y: 190, class: "b"}, `done at t = ${+total.toFixed(2)}  (backward alone = 6)`));
+    const commAll = P.reduce((a, b) => a + (b.end - b.start), 0), hid = P.reduce((a, b) => a + Math.max(0, Math.min(b.end, 6) - b.start), 0), exp = Math.max(0, total - 6);
+    if (end) {
+      svg.appendChild(el("line", {x1: px(6), x2: px(6), y1: yG - 6, y2: yN + 26, stroke: "var(--bad)", "stroke-width": 1.5}));
+      svg.appendChild(el("text", {x: px(6) - 4, y: yG - 8, class: "r", "text-anchor": "end"}, "backward ends"));
+      svg.appendChild(el("text", {x: px(6) - 6, y: yN + 56, class: "g b", "text-anchor": "end"}, `← hidden ${+hid.toFixed(2)}`));
+      svg.appendChild(el("text", {x: px(6) + 6, y: yN + 56, class: "r b"}, `exposed ${+exp.toFixed(2)} →`));
+      svg.appendChild(el("text", {x: 4, y: 206, class: "b"}, `done at t = ${+total.toFixed(2)}  (backward alone = 6)`));
+    }
     // code highlight + now line + text
     const hl = new Set();
     const calls = P.filter(b => b.start < (end ? Infinity : T + 1e-9) && Math.max(...b.ls.map(readyAt)) <= T).length;
     document.getElementById("l11calls").textContent = String(calls);
     document.getElementById("l11t").textContent = end ? `${+total.toFixed(2)} units` : "–";
+    document.getElementById("l11hid").textContent = end ? `${+hid.toFixed(2)} of ${+commAll.toFixed(2)}` : "–";
+    document.getElementById("l11exp").textContent = end ? `${+exp.toFixed(2)} units` : "–";
     if (s === 0) { now.textContent = ""; say.innerHTML = "Press <b>Next layer</b>. Backward starts at the <b>last</b> layer, so DDP fills buckets in <b>reverse</b> order: L6 goes into the first bucket."; renderCode(hl); return; }
     const k = 7 - s, b = bucketOf(k), got = b.ls.filter(j => readyAt(j) <= T).length, full = got === b.ls.length;
     [1, 2, 3, 4].forEach(i => hl.add(i)); if (full) { hl.add(5); hl.add(6); } if (end) { hl.add(9); hl.add(10); }
@@ -1247,9 +1326,9 @@ const hwMap = (id, on = {}) => {
     if (!end) say.innerHTML = full
       ? (queued ? `Bucket ${b.name} is full, but the comm stream is still busy with the previous bucket, so it <b>queues</b>. Each call pays the fixed overhead again.` : `Bucket ${b.name} is full → the hook launches its all-reduce <b>right now</b>. The GPU doesn't wait: it keeps computing L${k - 1 || ""} gradients <b>while the network sends</b>.`)
       : nb === 1 ? `L${k}'s hook fired, but the single bucket isn't full until L1 is done. Nothing is sent yet — the comm stream <b>sits idle</b> during backward.` : `L${k}'s hook fired. Bucket ${b.name} has ${got}/${b.ls.length} → not full, so nothing is sent yet.`;
-    else say.innerHTML = nb === 1 ? `Backward finished at t=6, and only <b>then</b> one big all-reduce starts. GPU waits ${+(total - 6).toFixed(2)} units. Fewest calls, but <b>no overlap</b>.`
+    else say.innerHTML = `All ${P.length} all-reduce${P.length > 1 ? "s" : ""} ran: comm total ${+commAll.toFixed(2)} = <b>${+hid.toFixed(2)} hidden</b> (during backward) + <b>${+exp.toFixed(2)} exposed</b> (after). ` + (nb === 1 ? `Backward finished at t=6, and only <b>then</b> one big all-reduce starts. GPU waits ${+(total - 6).toFixed(2)} units. Fewest calls, but <b>no overlap</b>.`
       : nb === 3 ? `Buckets A and B were already sent <b>during</b> backward; only C remains after t=6. GPU waits ${+(total - 6).toFixed(2)} units — the <b>best</b> of the three.`
-      : `6 calls → 6 × the fixed overhead. They <b>queue</b> on the comm stream and fall behind; GPU waits ${+(total - 6).toFixed(2)} units — <b>worse</b> than 1 big bucket.`;
+      : `6 calls → 6 × the fixed overhead. They <b>queue</b> on the comm stream and fall behind; GPU waits ${+(total - 6).toFixed(2)} units — <b>worse</b> than 1 big bucket.`);
   }
   document.querySelectorAll("#lab11 [data-m]").forEach(b => b.onclick = () => { nb = +b.dataset.m; document.querySelectorAll("#lab11 [data-m]").forEach(x => x.setAttribute("aria-pressed", x === b)); s = 0; draw(); });
   document.getElementById("l11next").onclick = () => { if (s < 6) { s++; draw(); } };
@@ -1521,6 +1600,8 @@ const hwMap = (id, on = {}) => {
       say: "<b>sar -n ETCP</b> = TCP <b>errors</b> for the whole machine: retransmits per second, bad segments, resets. Rising <b>retrans/s</b> = packets are being lost somewhere (bad cable, overloaded switch, congested path), and TCP is resending them, which slows everything down."},
     ss: {on: ["sock"], out: "$ ss -ti dst :443\\nESTAB 0 0  10.0.0.5:51234  203.0.113.7:443\\n   rtt:180/40  cwnd:10  retrans:0/35  bytes_received:…\\n   ↑ round-trip time   ↑ window   ↑ retransmits so far",
       say: "<b>ss -ti</b> = one line per <b>connection</b> (socket) with TCP's internals: <b>rtt</b> (round-trip time), <b>cwnd</b> (how much it may send before waiting), <b>retrans</b>. High rtt or many retransmits on <i>this</i> connection, while the interface isn't full → the problem is the path to that server, not your link."},
+    loss: {on: ["tcp", "sock"], out: "Setup: 1 Gbit/s link, slow download\n$ sar -n DEV 1\n  eth0 rxkB/s 30000   ← 24% of link\n$ sar -n TCP 1\n  oseg/s 5000         ← segments SENT/s\n$ sar -n ETCP 1\n  retrans/s 50        ← RE-sent/s\n  loss ≈ 50 / 5000 = 1%\n$ ss -ti\n  cwnd:10  rtt:40ms\n  speed ≈ cwnd ÷ rtt\n        = 10 × 1.4 KB / 0.04 s\n        ≈ 350 KB/s",
+      say: "Three different numbers: <b>retrans/s</b> = a <b>count</b> (50 re-sent per second). <b>Loss %</b> = that count ÷ how many were sent (50 / 5000 = 1%); the same 50/s is tiny on a busy link and huge on a quiet one. <b>cwnd</b> = TCP's <b>reaction</b>: on each loss TCP <b>shrinks</b> the window (how much it may send before waiting for an ACK). Smaller window → less data in flight per round trip → <b>speed ≈ cwnd ÷ rtt</b> drops, even though the link is mostly empty. So the chain is: <b>loss → cwnd shrinks → slow</b>. Next question: <b>where</b> are packets lost (your NIC: drops in <code>ip -s link</code>; or the path/switch)?"},
   };
   let mode = "hw";
   const T = (x, y, t, cls, sz) => { const e = el("text", {x, y, class: cls || "", style: `font-size:${sz || 11}px`}); e.textContent = t; svg.appendChild(e); };

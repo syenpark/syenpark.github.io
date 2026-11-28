@@ -205,7 +205,7 @@ const CARDS = [
 { id:"D9", t:"DDP", q:"Gradient accumulation with DDP: why use no_sync()?",
   what:"Run N micro-batches, step once. <b>no_sync()</b> skips the all-reduce on the first N−1 backwards.",
   how:"backward <b>adds (+=)</b> into .grad, so the micro-batch gradients sum locally; only the last backward (outside no_sync) all-reduces the sum. Averaging across ranks commutes with summing micro-batches: avg(g1+…+g4) = avg(g1)+…+avg(g4).",
-  so:"Same weights, 1/N of the communication (8 → 2 all-reduce calls in my run, backward ≈1.6× faster). Wrap ALL N in no_sync and ranks never sync → weights drift apart.",
+  so:"Count it: calls = (backwards that sync) × (buckets). ACCUM = 4, 2 buckets: without no_sync 4 × 2 = <b>8</b>; with no_sync on the first 3, only the last syncs: 1 × 2 = <b>2</b> (never 0). Terms: 1 iteration = 1 micro-batch = 1 backward; 1 optimizer step = every 4 iterations. Same weights, 1/N of the communication (8 → 2 all-reduce calls in my run, backward ≈1.6× faster). Wrap ALL N in no_sync and ranks never sync → weights drift apart.",
   en:"Accumulation cuts memory per pass; no_sync cuts all-reduce calls. I wrap all but the last micro-batch in no_sync, so gradients accumulate locally and DDP all-reduces once per optimizer step — same result, a fraction of the communication.",
   trap:"\"no_sync makes the batch smaller\" — no: accumulation shrinks the micro-batch; no_sync only skips communication. (And no_sync on ALL N → never synced.)"},
 
@@ -228,7 +228,14 @@ const CARDS = [
   how:"autograd finishes L5's grad and calls the hook the Reducer registered on that parameter → the hook copies the grad into bucket A → A is now full, so the Reducer launches an <b>async</b> all_reduce(A) → NCCL exchanges A with every rank on the comm stream and writes the average back into A.",
   so:"Backward keeps computing L4, L3… on the compute stream while NCCL sends A: communication <b>overlaps</b> computation. Too few buckets = no overlap; too many = per-call overhead. \"Full\" = every gradient assigned to the bucket has arrived (layers are assigned up front, never split; the last bucket is sent even if small).",
   en:"When a gradient is ready, autograd fires DDP's hook; once a bucket is full the Reducer launches an async all-reduce that NCCL executes on its own stream, overlapping communication with the rest of backward.",
-  trap:"\"the Reducer fires the hook\" — autograd fires it; and all_reduce isn't in DDP — torch.distributed hands it to NCCL"},
+  trap:"\"the Reducer fires the hook\" — autograd fires it; and all_reduce isn't in DDP — torch.distributed hands it to NCCL. Also: bucket size does NOT remove all-reduce time — every bucket is still sent; it moves the time from exposed (after backward, GPU waits) to hidden (during backward)."},
+
+{ id:"RK", t:"DDP", q:"What is a rank, and when is there an all-reduce at all?",
+  what:"A <b>rank</b> = one training <b>process</b>. Usually one per GPU, but ranks can run on the CPU too (<code>torchrun --nproc_per_node=2</code> on a laptop = 2 ranks, gloo).",
+  how:"Each rank trains on different samples (DistributedSampler) → different gradients → all-reduce averages them so every rank applies the same update. 1 rank = one gradient = nothing to average.",
+  so:"All-reduce needs ≥ 2 ranks, not ≥ 2 GPUs. On CPU (gloo) compute and comm share the cores, so overlap barely helps; on GPUs (NCCL comm stream) bucket size decides how much comm is hidden.",
+  en:"A rank is one process in the job; with two or more ranks each computes a different gradient, so DDP all-reduces them — that's true even on CPU with gloo, but the overlap only really pays off on GPUs with NCCL.",
+  trap:"\"rank = GPU, so no GPU means no all-reduce\" — my bucket run had 2 ranks on the CPU and still all-reduced"},
 
 { id:"R1", t:"DDP", q:"Reducer vs all_reduce vs NCCL?",
   what:"<b>Reducer</b> = DDP's manager (C++, one per rank). <b>all_reduce</b> = the operation: sum/average across ranks. <b>NCCL</b> = the library that actually does it on the GPUs.",
@@ -342,8 +349,8 @@ const CARDS = [
 
 { id:"L5", t:"Linux", q:"Network: ss vs sar?",
   what:"<b>NIC</b> = the network card (hardware, on PCIe). <b>Interface</b> = the OS\u2019s name for a port (eth0; lo and docker0 are virtual). <b>sar -n DEV</b> = throughput per interface · <b>ss -ti</b> = per connection (rtt, cwnd, retrans) · <b>sar -n ETCP</b> = TCP retransmits/errors machine-wide.",
-  how:"Slow transfer: is the link saturated (sar) or are connections stuck / retransmitting (ss, sar -n ETCP)?",
-  so:"Pick the tool by the question: the pipe vs the conversations in it.",
+  how:"Slow transfer: is the link saturated (sar -n DEV) or are connections stuck / retransmitting (ss, sar -n ETCP)? Link NOT full but slow → <b>loss → TCP shrinks cwnd → less in flight per round trip → speed ≈ cwnd ÷ rtt drops</b>.",
+  so:"Pick the tool by the question: the pipe vs the conversations in it. retrans/s is a count; loss % = retrans/s ÷ segments sent/s (sar -n TCP oseg/s); cwnd is TCP's reaction, not a loss %.",
   en:"sar tells me whether the interface itself is saturated; ss and TCP counters tell me whether individual connections are stuck or retransmitting."},
 
 { id:"L6", t:"Linux", q:"The troubleshooting path from symptom to root cause?",
